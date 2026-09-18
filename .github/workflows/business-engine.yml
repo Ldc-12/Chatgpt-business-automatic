@@ -7,9 +7,11 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  discover:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,10 +21,20 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
       - run: python src/business_engine.py
-      - name: Commit report
+      - run: python src/product_factory.py
+      - name: Commit generated data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/opportunities.json
-          git diff --cached --quiet || git commit -m "chore: update opportunity report"
+          git add data site
+          git diff --cached --quiet || git commit -m "chore: refresh opportunities and validation products"
           git push
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

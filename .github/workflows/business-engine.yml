@@ -7,6 +7,10 @@ on:
   schedule:
     - cron: "17 */6 * * *"
 
+concurrency:
+  group: autonomous-business-engine-main
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pages: write
@@ -30,7 +34,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data site
-          git diff --cached --quiet || git commit -m "chore: refresh opportunities and validation products"
+          git diff --cached --quiet || git commit -m "chore: refresh opportunities and product catalog"
           git push
 
       - name: Upload Pages artifact

@@ -1,0 +1,18 @@
+{
+  "name": "AI Coding Productivity ROI Kit",
+  "slug": "ai-coding-productivity-roi-kit",
+  "tagline": "Measure whether AI coding tools actually save you time.",
+  "description": "A practical 7-day tracking and ROI kit for developers using AI coding assistants. Track task time, rework, review effort, and estimated value instead of relying on guesswork.",
+  "price_usd": 12,
+  "status": "ready_for_sale",
+  "target_user": "developers, freelancers, and small engineering teams",
+  "generated_at": "2026-09-18T07:57:11.868201+00:00",
+  "files": [
+    "README.md",
+    "task-log.csv",
+    "weekly-review.md",
+    "roi-calculator.csv",
+    "team-rollup.csv",
+    "quick-start.md"
+  ]
+}

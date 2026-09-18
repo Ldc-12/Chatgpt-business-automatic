@@ -1,57 +1,20 @@
 [
   {
-    "name": "Productivity Effects Across Generations of AI Coding Tools — Action Kit",
-    "slug": "productivity-effects-across-generations-of-ai-coding-tools",
-    "description": "A 7-day experiment kit to test whether productivity effects across generations of ai coding tools solves a measurable workflow problem.",
-    "source": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6843118",
-    "score": 4,
-    "generated_at": "2026-09-18T05:28:58.546989+00:00",
-    "price": 0,
-    "status": "free_validation",
-    "validation_question": "Would a user save enough time, money, or errors to pay for a deeper version?"
-  },
-  {
-    "name": "The Productivity Illusion of Enterprise AI Coding — Action Kit",
-    "slug": "the-productivity-illusion-of-enterprise-ai-coding",
-    "description": "A 7-day experiment kit to test whether the productivity illusion of enterprise ai coding solves a measurable workflow problem.",
-    "source": "https://cacm.acm.org/blogcacm/the-productivity-illusion-at-the-heart-of-enterprise-ai-coding/",
-    "score": 4,
-    "generated_at": "2026-09-18T05:28:58.547184+00:00",
-    "price": 0,
-    "status": "free_validation",
-    "validation_question": "Would a user save enough time, money, or errors to pay for a deeper version?"
-  },
-  {
-    "name": "Show HN: MySamantha – a productivity app where the AI is optional — Action Kit",
-    "slug": "show-hn-mysamantha-a-productivity-app-where-the-ai-is-optional",
-    "description": "A 7-day experiment kit to test whether show hn: mysamantha – a productivity app where the ai is optional solves a measurable workflow problem.",
-    "source": "https://news.ycombinator.com/item?id=49645994",
-    "score": 4,
-    "generated_at": "2026-09-18T05:28:58.547433+00:00",
-    "price": 0,
-    "status": "free_validation",
-    "validation_question": "Would a user save enough time, money, or errors to pay for a deeper version?"
-  },
-  {
-    "name": "Botsitting: The Unpaid Labour Behind Every AI Productivity Claim — Action Kit",
-    "slug": "botsitting-the-unpaid-labour-behind-every-ai-productivity-claim",
-    "description": "A 7-day experiment kit to test whether botsitting: the unpaid labour behind every ai productivity claim solves a measurable workflow problem.",
-    "source": "https://smarterarticles.co.uk/botsitting-the-unpaid-labour-behind-every-ai-productivity-claim",
-    "score": 4,
-    "generated_at": "2026-09-18T05:28:58.547552+00:00",
-    "price": 0,
-    "status": "free_validation",
-    "validation_question": "Would a user save enough time, money, or errors to pay for a deeper version?"
-  },
-  {
-    "name": "Canaries in the Gold Mine: Early Productivity Gains from AI — Action Kit",
-    "slug": "canaries-in-the-gold-mine-early-productivity-gains-from-ai",
-    "description": "A 7-day experiment kit to test whether canaries in the gold mine: early productivity gains from ai solves a measurable workflow problem.",
-    "source": "https://www.nber.org/papers/w35684",
-    "score": 4,
-    "generated_at": "2026-09-18T05:28:58.547686+00:00",
-    "price": 0,
-    "status": "free_validation",
-    "validation_question": "Would a user save enough time, money, or errors to pay for a deeper version?"
+    "name": "AI Coding Productivity ROI Kit",
+    "slug": "ai-coding-productivity-roi-kit",
+    "tagline": "Measure whether AI coding tools actually save you time.",
+    "description": "A practical 7-day tracking and ROI kit for developers using AI coding assistants. Track task time, rework, review effort, and estimated value instead of relying on guesswork.",
+    "price_usd": 12,
+    "status": "ready_for_sale",
+    "target_user": "developers, freelancers, and small engineering teams",
+    "generated_at": "2026-09-18T07:57:11.868201+00:00",
+    "files": [
+      "README.md",
+      "task-log.csv",
+      "weekly-review.md",
+      "roi-calculator.csv",
+      "team-rollup.csv",
+      "quick-start.md"
+    ]
   }
 ]

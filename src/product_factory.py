@@ -10,15 +10,15 @@ def slug(text):
 def build_product(item, index):
     title = item["idea"].replace("Micro-tool for: ", "").strip()
     s = slug(title)
-    product = {
+    # Convert a source signal into a concrete validation offer.\n    product = {
         "name": f"{title} — Action Kit",
         "slug": s,
-        "description": f"A compact action kit for testing the idea behind {title}.",
+        "description": f"A 7-day experiment kit to test whether {title.lower()} solves a measurable workflow problem.",
         "source": item.get("source", ""),
         "score": item.get("score", 0),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "price": 0,
-        "status": "free_validation"
+        "status": "free_validation",\n        "validation_question": "Would a user save enough time, money, or errors to pay for a deeper version?"
     }
     path = f"{OUT}/{s}"
     os.makedirs(path, exist_ok=True)

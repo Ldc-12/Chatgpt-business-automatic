@@ -6,7 +6,7 @@
     "status": "ready_for_sale",
     "tagline": "Measure whether AI coding tools actually save you time.",
     "target_user": "developers, freelancers, small engineering teams",
-    "generated_at": "2026-09-18T11:18:44.858809+00:00",
+    "generated_at": "2026-09-18T16:26:06.392805+00:00",
     "files": [
       "quick-start.md",
       "task-log.csv",
@@ -22,7 +22,7 @@
     "status": "ready_for_sale",
     "tagline": "A repeatable system for following up on unpaid invoices.",
     "target_user": "freelancers, consultants, small agencies",
-    "generated_at": "2026-09-18T11:18:44.859308+00:00",
+    "generated_at": "2026-09-18T16:26:06.393598+00:00",
     "files": [
       "quick-start.md",
       "invoice-tracker.csv",
@@ -37,7 +37,7 @@
     "status": "ready_for_sale",
     "tagline": "Find repetitive work worth automating before buying another tool.",
     "target_user": "solo businesses and small teams",
-    "generated_at": "2026-09-18T11:18:44.859797+00:00",
+    "generated_at": "2026-09-18T16:26:06.394247+00:00",
     "files": [
       "audit-sheet.csv",
       "automation-scorecard.md",
@@ -52,7 +52,7 @@
     "status": "ready_for_sale",
     "tagline": "Organize applications, follow-ups and interview preparation.",
     "target_user": "job seekers and career changers",
-    "generated_at": "2026-09-18T11:18:44.860341+00:00",
+    "generated_at": "2026-09-18T16:26:06.394926+00:00",
     "files": [
       "application-tracker.csv",
       "interview-prep.md",
@@ -67,7 +67,7 @@
     "status": "ready_for_sale",
     "tagline": "Plan, produce and review repeatable AI-assisted content.",
     "target_user": "creators, marketers, solo businesses",
-    "generated_at": "2026-09-18T11:18:44.860747+00:00",
+    "generated_at": "2026-09-18T16:26:06.395565+00:00",
     "files": [
       "content-pipeline.csv",
       "prompt-brief.md",

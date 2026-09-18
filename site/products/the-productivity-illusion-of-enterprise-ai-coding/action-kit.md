@@ -1,6 +1,6 @@
 # The Productivity Illusion of Enterprise AI Coding — Action Kit
 
-A compact action kit for testing the idea behind The Productivity Illusion of Enterprise AI Coding.
+A 7-day experiment kit to test whether the productivity illusion of enterprise ai coding solves a measurable workflow problem.
 
 ## 7-day workflow
 1. Define the outcome and current baseline.

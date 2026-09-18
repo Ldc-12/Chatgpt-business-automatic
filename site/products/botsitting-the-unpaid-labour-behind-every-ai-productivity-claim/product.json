@@ -1,10 +1,11 @@
 {
   "name": "Botsitting: The Unpaid Labour Behind Every AI Productivity Claim — Action Kit",
   "slug": "botsitting-the-unpaid-labour-behind-every-ai-productivity-claim",
-  "description": "A compact action kit for testing the idea behind Botsitting: The Unpaid Labour Behind Every AI Productivity Claim.",
+  "description": "A 7-day experiment kit to test whether botsitting: the unpaid labour behind every ai productivity claim solves a measurable workflow problem.",
   "source": "https://smarterarticles.co.uk/botsitting-the-unpaid-labour-behind-every-ai-productivity-claim",
   "score": 4,
-  "generated_at": "2026-09-18T04:48:53.144844+00:00",
+  "generated_at": "2026-09-18T05:19:20.492138+00:00",
   "price": 0,
-  "status": "free_validation"
+  "status": "free_validation",
+  "validation_question": "Would a user save enough time, money, or errors to pay for a deeper version?"
 }

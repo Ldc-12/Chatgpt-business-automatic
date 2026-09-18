@@ -1,6 +1,6 @@
 # Show HN: MySamantha – a productivity app where the AI is optional — Action Kit
 
-A compact action kit for testing the idea behind Show HN: MySamantha – a productivity app where the AI is optional.
+A 7-day experiment kit to test whether show hn: mysamantha – a productivity app where the ai is optional solves a measurable workflow problem.
 
 ## 7-day workflow
 1. Define the outcome and current baseline.

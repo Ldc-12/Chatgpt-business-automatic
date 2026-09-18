@@ -1,6 +1,6 @@
 # Canaries in the Gold Mine: Early Productivity Gains from AI — Action Kit
 
-A compact action kit for testing the idea behind Canaries in the Gold Mine: Early Productivity Gains from AI.
+A 7-day experiment kit to test whether canaries in the gold mine: early productivity gains from ai solves a measurable workflow problem.
 
 ## 7-day workflow
 1. Define the outcome and current baseline.

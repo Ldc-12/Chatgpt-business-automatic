@@ -1,6 +1,6 @@
 # Productivity Effects Across Generations of AI Coding Tools — Action Kit
 
-A compact action kit for testing the idea behind Productivity Effects Across Generations of AI Coding Tools.
+A 7-day experiment kit to test whether productivity effects across generations of ai coding tools solves a measurable workflow problem.
 
 ## 7-day workflow
 1. Define the outcome and current baseline.

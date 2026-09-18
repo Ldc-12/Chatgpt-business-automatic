@@ -1,6 +1,6 @@
 # Botsitting: The Unpaid Labour Behind Every AI Productivity Claim — Action Kit
 
-A compact action kit for testing the idea behind Botsitting: The Unpaid Labour Behind Every AI Productivity Claim.
+A 7-day experiment kit to test whether botsitting: the unpaid labour behind every ai productivity claim solves a measurable workflow problem.
 
 ## 7-day workflow
 1. Define the outcome and current baseline.

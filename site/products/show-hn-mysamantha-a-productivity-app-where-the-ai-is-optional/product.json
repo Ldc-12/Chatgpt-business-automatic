@@ -1,10 +1,10 @@
 {
-  "name": "Show HN: MySamantha – a productivity app where the AI is optional — Quickstart Kit",
+  "name": "Show HN: MySamantha – a productivity app where the AI is optional — Action Kit",
   "slug": "show-hn-mysamantha-a-productivity-app-where-the-ai-is-optional",
-  "description": "A practical starter kit inspired by: Show HN: MySamantha – a productivity app where the AI is optional. Includes a concise workflow, checklist, and reusable templates.",
+  "description": "A compact action kit for testing the idea behind Show HN: MySamantha – a productivity app where the AI is optional.",
   "source": "https://news.ycombinator.com/item?id=49645994",
   "score": 4,
-  "generated_at": "2026-09-18T04:28:03.004432+00:00",
+  "generated_at": "2026-09-18T04:48:53.144553+00:00",
   "price": 0,
   "status": "free_validation"
 }

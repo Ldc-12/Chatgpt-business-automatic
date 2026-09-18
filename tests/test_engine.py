@@ -5,7 +5,7 @@ def test_score():
     assert score("automation productivity workflow") > 0
 
 def test_paid_catalog_is_valid():
-    assert len(PRODUCTS) >= 5
+    assert len(PRODUCTS) >= 12
     slugs = [p["slug"] for p in PRODUCTS]
     assert len(slugs) == len(set(slugs))
     for product in PRODUCTS:

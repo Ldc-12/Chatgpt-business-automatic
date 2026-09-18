@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Micro Product Lab</title><style>body{font-family:system-ui;max-width:900px;margin:40px auto;padding:0 20px}article{border:1px solid #ddd;border-radius:12px;padding:20px;margin:16px 0}a{color:inherit}</style></head>
+<body><h1>Micro Product Lab</h1><p>Small practical kits generated from current developer and productivity signals.</p><div id="app">Loading…</div>
+<script>fetch("products.json").then(r=>r.json()).then(ps=>{app.innerHTML=ps.map(p=>'<article><h2>'+p.name+'</h2><p>'+p.description+'</p><p><strong>Free validation edition</strong></p><a href="products/'+p.slug+'/README.md">View kit</a></article>').join("")}).catch(()=>app.textContent="No products generated yet.");</script>
+</body></html>

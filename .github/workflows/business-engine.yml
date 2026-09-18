@@ -9,8 +9,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   build:
@@ -32,12 +30,3 @@ jobs:
           git add data site
           git diff --cached --quiet || git commit -m "chore: refresh opportunities and validation products"
           git push
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-      - name: Deploy Pages
-        id: deployment
-        uses: actions/deploy-pages@v4

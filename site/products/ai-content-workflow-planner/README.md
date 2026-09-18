@@ -1,15 +1,14 @@
-# AI Coding Productivity ROI Kit
+# AI Content Workflow Planner
 
-**Measure whether AI coding tools actually save you time.**
+**Plan, produce and review repeatable AI-assisted content.**
 
-Designed for: developers, freelancers, small engineering teams.
+Designed for: creators, marketers, solo businesses.
 
 ## Included
-- quick-start.md
-- task-log.csv
-- roi-calculator.csv
+- content-pipeline.csv
+- prompt-brief.md
+- quality-checklist.md
 - weekly-review.md
-- team-rollup.csv
 
 ## Use
 Download the files, replace the example rows/content, and run the workflow for one week.

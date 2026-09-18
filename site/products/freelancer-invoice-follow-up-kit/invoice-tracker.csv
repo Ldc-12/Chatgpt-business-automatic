@@ -1,0 +1,2 @@
+client,invoice_id,amount,currency,due_date,status,last_contact,next_contact,notes
+Example,INV-001,500,USD,2026-01-15,overdue,2026-01-22,2026-01-29,replace example

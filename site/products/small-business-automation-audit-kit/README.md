@@ -1,15 +1,14 @@
-# AI Coding Productivity ROI Kit
+# Small Business Automation Audit Kit
 
-**Measure whether AI coding tools actually save you time.**
+**Find repetitive work worth automating before buying another tool.**
 
-Designed for: developers, freelancers, small engineering teams.
+Designed for: solo businesses and small teams.
 
 ## Included
+- audit-sheet.csv
+- automation-scorecard.md
 - quick-start.md
-- task-log.csv
-- roi-calculator.csv
-- weekly-review.md
-- team-rollup.csv
+- pilot-plan.md
 
 ## Use
 Download the files, replace the example rows/content, and run the workflow for one week.
@@ -18,7 +17,7 @@ Download the files, replace the example rows/content, and run the workflow for o
 This is a practical template system, not a guarantee of results.
 
 ## Suggested launch price
-US$12 one-time.
+US$15 one-time.
 
 ## License
 For purchaser personal or internal business use. No redistribution or resale.

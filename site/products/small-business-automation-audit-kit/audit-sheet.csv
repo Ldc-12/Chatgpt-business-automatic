@@ -1,0 +1,2 @@
+process,owner,frequency,minutes_per_run,monthly_runs,monthly_minutes,error_risk,customer_impact,automation_candidate,notes
+Example,Admin,weekly,60,4,240,medium,medium,yes,replace example

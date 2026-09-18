@@ -1,15 +1,14 @@
-# AI Coding Productivity ROI Kit
+# Job Search Application Tracker Pro
 
-**Measure whether AI coding tools actually save you time.**
+**Organize applications, follow-ups and interview preparation.**
 
-Designed for: developers, freelancers, small engineering teams.
+Designed for: job seekers and career changers.
 
 ## Included
-- quick-start.md
-- task-log.csv
-- roi-calculator.csv
+- application-tracker.csv
+- interview-prep.md
 - weekly-review.md
-- team-rollup.csv
+- quick-start.md
 
 ## Use
 Download the files, replace the example rows/content, and run the workflow for one week.
@@ -18,7 +17,7 @@ Download the files, replace the example rows/content, and run the workflow for o
 This is a practical template system, not a guarantee of results.
 
 ## Suggested launch price
-US$12 one-time.
+US$9 one-time.
 
 ## License
 For purchaser personal or internal business use. No redistribution or resale.

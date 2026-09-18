@@ -1,58 +1,7 @@
 {
-  "generated_at": "2026-09-18T04:48:53.101519+00:00",
-  "status": "live",
-  "opportunities": [
-    {
-      "idea": "Micro-tool for: Productivity Effects Across Generations of AI Coding Tools",
-      "source": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6843118",
-      "score": 4
-    },
-    {
-      "idea": "Micro-tool for: The Productivity Illusion of Enterprise AI Coding",
-      "source": "https://cacm.acm.org/blogcacm/the-productivity-illusion-at-the-heart-of-enterprise-ai-coding/",
-      "score": 4
-    },
-    {
-      "idea": "Micro-tool for: Show HN: MySamantha – a productivity app where the AI is optional",
-      "source": "https://news.ycombinator.com/item?id=49645994",
-      "score": 4
-    },
-    {
-      "idea": "Micro-tool for: Botsitting: The Unpaid Labour Behind Every AI Productivity Claim",
-      "source": "https://smarterarticles.co.uk/botsitting-the-unpaid-labour-behind-every-ai-productivity-claim",
-      "score": 4
-    },
-    {
-      "idea": "Micro-tool for: Canaries in the Gold Mine: Early Productivity Gains from AI",
-      "source": "https://www.nber.org/papers/w35684",
-      "score": 4
-    },
-    {
-      "idea": "Micro-tool for: Good Culture Is the Biggest Productivity Hack, Not AI",
-      "source": "https://newsletter.eng-leadership.com/p/good-culture-is-the-biggest-productivity",
-      "score": 4
-    },
-    {
-      "idea": "Micro-tool for: 90% of executives say AI hasn't boosted productivity",
-      "source": "https://fortune.com/2026/08/22/executives-ai-productivity-layoffs-study/",
-      "score": 4
-    },
-    {
-      "idea": "Micro-tool for: AI Engineering Productivity Metrics: Is AI Improving Your Team?",
-      "source": "https://www.howdy.com/blog/ai-engineering-productivity-metrics",
-      "score": 4
-    },
-    {
-      "idea": "Micro-tool for: The US productivity-pay gap is 2.55x or 1.18x, on the same BLS data",
-      "source": "https://eco3min.fr/en/productivity-pay-gap-four-conventions-2/",
-      "score": 2
-    },
-    {
-      "idea": "Micro-tool for: A 30-Year-Old Japanese Book Predicted Our Productivity Crisis",
-      "source": "https://medium.com/@tl2do/a-30-year-old-japanese-book-predicted-our-productivity-crisis-heres-what-it-got-right-6897e44a8ec1",
-      "score": 2
-    }
-  ],
-  "error": null,
+  "generated_at": "2026-09-18T05:17:10.902364+00:00",
+  "status": "feed_error: HTTPError",
+  "opportunities": [],
+  "error": "HTTP Error 502: Bad Gateway",
   "next_step": "Generate and test a small digital product. Paid deployment, payments, and external credentials remain gated."
 }

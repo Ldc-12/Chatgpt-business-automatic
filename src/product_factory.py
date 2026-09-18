@@ -10,7 +10,7 @@ def slug(text):
 def build_product(item, index):
     title = item["idea"].replace("Micro-tool for: ", "").strip()
     s = slug(title)
-    # Convert a source signal into a concrete validation offer.\n    product = {
+    product = {
         "name": f"{title} — Action Kit",
         "slug": s,
         "description": f"A 7-day experiment kit to test whether {title.lower()} solves a measurable workflow problem.",
@@ -18,14 +18,26 @@ def build_product(item, index):
         "score": item.get("score", 0),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "price": 0,
-        "status": "free_validation",\n        "validation_question": "Would a user save enough time, money, or errors to pay for a deeper version?"
+        "status": "free_validation",
+        "validation_question": "Would a user save enough time, money, or errors to pay for a deeper version?"
     }
     path = f"{OUT}/{s}"
     os.makedirs(path, exist_ok=True)
     with open(f"{path}/product.json", "w", encoding="utf-8") as f:
         json.dump(product, f, ensure_ascii=False, indent=2)
-    workflow = ["Define the outcome and current baseline.", "Choose one repeatable workflow to improve.", "Run it for 7 days and record time, quality, and exceptions.", "Review the measurements and keep only changes that improve the baseline."]
-    checklist = ["Write the desired outcome in one sentence.", "Record the current process before changing it.", "Set one measurable success metric.", "Run a small pilot before wider rollout.", "Document the final repeatable process."]
+    workflow = [
+        "Define the outcome and current baseline.",
+        "Choose one repeatable workflow to improve.",
+        "Run it for 7 days and record time, quality, and exceptions.",
+        "Review the measurements and keep only changes that improve the baseline."
+    ]
+    checklist = [
+        "Write the desired outcome in one sentence.",
+        "Record the current process before changing it.",
+        "Set one measurable success metric.",
+        "Run a small pilot before wider rollout.",
+        "Document the final repeatable process."
+    ]
     template = "Goal:\nCurrent process:\nBaseline metric:\nChange tested:\nResult after 7 days:\nDecision:\nNext experiment:"
     with open(f"{path}/action-kit.md", "w", encoding="utf-8") as f:
         f.write(f"# {product['name']}\n\n{product['description']}\n\n## 7-day workflow\n")

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-19T02:28:55.549237+00:00",
-  "status": "fallback: HTTPError",
+  "generated_at": "2026-09-19T02:29:43.937095+00:00",
+  "status": "fallback: TimeoutError",
   "opportunities": [
     {
       "idea": "Freelancer Invoice Follow-up Kit",
@@ -24,6 +24,6 @@
       "promise": "Find three repetitive workflows that are candidates for automation and estimate their weekly time cost."
     }
   ],
-  "error": "HTTP Error 502: Bad Gateway",
+  "error": "The read operation timed out",
   "next_step": "Generate, publish, and validate small digital products before enabling paid deployment or payments."
 }

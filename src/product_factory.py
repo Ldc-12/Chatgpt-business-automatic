@@ -225,6 +225,17 @@ def build_product(product):
         "<p><a href='README.md'>Product details</a></p></body></html>"
     )
     write(path + "/index.html", html)
+    delivery_path = os.path.join("site", "delivery", product["slug"])
+    os.makedirs(delivery_path, exist_ok=True)
+    links = "".join("<li><a href='../../products/" + product["slug"] + "/" + name + "'>" + name + "</a></li>" for name in product["files"])
+    delivery_html = (
+        "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+        "<title>Purchase complete - " + product["name"] + "</title></head><body style='font-family:system-ui;max-width:820px;margin:40px auto;padding:0 20px;line-height:1.6'>"
+        "<h1>Thank you for your purchase</h1><p><strong>" + product["name"] + "</strong></p>"
+        "<p>Your digital files are ready below. Save this page for future access.</p><ul>" + links + "</ul>"
+        "<p>For support, contact the seller through the email shown on your Stripe receipt.</p></body></html>"
+    )
+    write(os.path.join(delivery_path, "index.html"), delivery_html)
     return meta
 
 def main():

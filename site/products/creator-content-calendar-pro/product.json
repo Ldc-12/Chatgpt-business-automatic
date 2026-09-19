@@ -1,0 +1,15 @@
+{
+  "name": "Creator Content Calendar Pro",
+  "slug": "creator-content-calendar-pro",
+  "price_usd": 9,
+  "status": "active",
+  "checkout_url": "https://buy.stripe.com/cNi8wRfm7bT1eQO4Cm9Zm0a",
+  "tagline": "Plan a consistent publishing cadence with reusable ideas and review checkpoints.",
+  "target_user": "creators, newsletters, solo marketers",
+  "generated_at": "2026-09-19T02:28:55.597005+00:00",
+  "files": [
+    "content-calendar.csv",
+    "idea-bank.csv",
+    "monthly-review.md"
+  ]
+}

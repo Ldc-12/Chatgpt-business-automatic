@@ -1,2 +1,2 @@
 date,task_id,task_type,baseline_minutes,ai_minutes,human_edit_minutes,review_minutes,rework_minutes,outcome,notes
-2026-01-01,T001,feature,60,20,25,10,5,completed,replace example row
+2026-01-01,T001,feature,60,20,25,10,5,completed,replace example

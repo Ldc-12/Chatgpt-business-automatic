@@ -2,14 +2,14 @@
   "name": "Small Business Automation Audit Kit",
   "slug": "small-business-automation-audit-kit",
   "price_usd": 15,
-  "status": "ready_for_sale",
+  "status": "active",
+  "checkout_url": "https://buy.stripe.com/fZu5kF1vh4qzcIG6Ku9Zm02",
   "tagline": "Find repetitive work worth automating before buying another tool.",
   "target_user": "solo businesses and small teams",
-  "generated_at": "2026-09-18T16:26:06.394247+00:00",
+  "generated_at": "2026-09-19T02:28:55.592960+00:00",
   "files": [
     "audit-sheet.csv",
     "automation-scorecard.md",
-    "quick-start.md",
     "pilot-plan.md"
   ]
 }

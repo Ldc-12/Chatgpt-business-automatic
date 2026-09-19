@@ -2,15 +2,14 @@
   "name": "AI Coding Productivity ROI Kit",
   "slug": "ai-coding-productivity-roi-kit",
   "price_usd": 12,
-  "status": "ready_for_sale",
+  "status": "active",
+  "checkout_url": "https://buy.stripe.com/cNi5kFei3g9hbECd8S9Zm00",
   "tagline": "Measure whether AI coding tools actually save you time.",
   "target_user": "developers, freelancers, small engineering teams",
-  "generated_at": "2026-09-18T16:26:06.392805+00:00",
+  "generated_at": "2026-09-19T02:28:55.591610+00:00",
   "files": [
     "quick-start.md",
     "task-log.csv",
-    "roi-calculator.csv",
-    "weekly-review.md",
-    "team-rollup.csv"
+    "roi-calculator.csv"
   ]
 }

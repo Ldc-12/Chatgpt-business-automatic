@@ -1,0 +1,31 @@
+{
+  "status": "active",
+  "platforms": {
+    "stripe": {
+      "status": "active",
+      "checkout_urls": {
+        "ai-coding-productivity-roi-kit": "https://buy.stripe.com/cNi5kFei3g9hbECd8S9Zm00",
+        "freelancer-invoice-follow-up-kit": "https://buy.stripe.com/9B6bJ3a1NcX5eQO6Ku9Zm01",
+        "small-business-automation-audit-kit": "https://buy.stripe.com/fZu5kF1vh4qzcIG6Ku9Zm02",
+        "job-search-application-tracker-pro": "https://buy.stripe.com/eVqaEZddZcX5242c4O9Zm03",
+        "ai-content-workflow-planner": "https://buy.stripe.com/14A6oJ6PBg9hgYW8SC9Zm04",
+        "client-onboarding-workflow-kit": "https://buy.stripe.com/fZu9AV5Lx8GPfUS3yi9Zm05",
+        "meeting-action-tracker": "https://buy.stripe.com/bJeeVf7TFf5d2429WG9Zm06",
+        "sop-builder-starter-kit": "https://buy.stripe.com/14A3cxgqbbT15ge0m69Zm07",
+        "freelance-proposal-pipeline": "https://buy.stripe.com/28EfZjgqbaOXbEC1qa9Zm08",
+        "simple-sales-pipeline-kit": "https://buy.stripe.com/3cI4gBc9V1en6ki1qa9Zm09",
+        "creator-content-calendar-pro": "https://buy.stripe.com/cNi8wRfm7bT1eQO4Cm9Zm0a",
+        "personal-finance-admin-tracker": "https://buy.stripe.com/3cI28t3Dp3mv5gec4O9Zm0b"
+      }
+    },
+    "gumroad": {
+      "status": "not_used",
+      "checkout_url": null
+    },
+    "lemonsqueezy": {
+      "status": "not_used",
+      "checkout_url": null
+    }
+  },
+  "note": "Stripe Payment Links supplied by the store owner are used as the live checkout for each catalog product."
+}

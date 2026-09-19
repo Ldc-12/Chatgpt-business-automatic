@@ -1,0 +1,2 @@
+item,category,amount,currency,due_date,frequency,autopay,review_date,status,notes
+Example,Subscription,10,USD,2026-01-15,monthly,yes,2026-02-01,active,replace example

@@ -1,5 +1,4 @@
 # Content Brief
-
 Audience:
 Goal:
 Key claim:

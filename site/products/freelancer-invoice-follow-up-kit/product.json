@@ -2,14 +2,14 @@
   "name": "Freelancer Invoice Follow-Up Kit",
   "slug": "freelancer-invoice-follow-up-kit",
   "price_usd": 9,
-  "status": "ready_for_sale",
+  "status": "active",
+  "checkout_url": "https://buy.stripe.com/9B6bJ3a1NcX5eQO6Ku9Zm01",
   "tagline": "A repeatable system for following up on unpaid invoices.",
   "target_user": "freelancers, consultants, small agencies",
-  "generated_at": "2026-09-18T16:26:06.393598+00:00",
+  "generated_at": "2026-09-19T02:28:55.592268+00:00",
   "files": [
     "quick-start.md",
     "invoice-tracker.csv",
-    "follow-up-templates.md",
-    "weekly-review.md"
+    "follow-up-templates.md"
   ]
 }

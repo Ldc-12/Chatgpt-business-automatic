@@ -1,24 +1,15 @@
 # AI Coding Productivity ROI Kit
-
 **Measure whether AI coding tools actually save you time.**
-
 Designed for: developers, freelancers, small engineering teams.
-
 ## Included
 - quick-start.md
 - task-log.csv
 - roi-calculator.csv
-- weekly-review.md
-- team-rollup.csv
-
 ## Use
-Download the files, replace the example rows/content, and run the workflow for one week.
-
+Replace the example content with your own data and use the workflow for one week.
 ## Important
 This is a practical template system, not a guarantee of results.
-
-## Suggested launch price
+## Price
 US$12 one-time.
-
 ## License
 For purchaser personal or internal business use. No redistribution or resale.

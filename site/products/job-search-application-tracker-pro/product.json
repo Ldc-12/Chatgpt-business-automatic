@@ -2,14 +2,14 @@
   "name": "Job Search Application Tracker Pro",
   "slug": "job-search-application-tracker-pro",
   "price_usd": 9,
-  "status": "ready_for_sale",
+  "status": "active",
+  "checkout_url": "https://buy.stripe.com/eVqaEZddZcX5242c4O9Zm03",
   "tagline": "Organize applications, follow-ups and interview preparation.",
   "target_user": "job seekers and career changers",
-  "generated_at": "2026-09-18T16:26:06.394926+00:00",
+  "generated_at": "2026-09-19T02:28:55.593530+00:00",
   "files": [
     "application-tracker.csv",
     "interview-prep.md",
-    "weekly-review.md",
-    "quick-start.md"
+    "weekly-review.md"
   ]
 }

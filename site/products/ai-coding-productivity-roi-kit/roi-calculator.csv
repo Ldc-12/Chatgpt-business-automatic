@@ -1,8 +1,6 @@
 input,value,notes
 hours_saved_per_week,0,Measured hours saved
-hourly_value,50,Your estimated value per hour
-weekly_value,=B2*B3,Estimated weekly value
-annual_value,=B4*52,Simple annualized value
+hourly_value,50,Estimated value per hour
+weekly_value,0,Estimated weekly value
+annual_value,0,Simple annualized value
 tool_cost_per_month,0,Monthly AI/tool cost
-annual_tool_cost,=B6*12,Annualized cost
-net_annual_value,=B5-B7,Estimated net annual value

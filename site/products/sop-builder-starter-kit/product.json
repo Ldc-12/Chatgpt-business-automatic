@@ -4,9 +4,10 @@
   "price_usd": 11,
   "status": "active",
   "checkout_url": "https://buy.stripe.com/14A3cxgqbbT15ge0m69Zm07",
+  "delivery_url": "https://ldc-12.github.io/Chatgpt-business-automatic/delivery/sop-builder-starter-kit/",
   "tagline": "Document repeatable business processes so work is easier to delegate.",
   "target_user": "small businesses, operators, team leads",
-  "generated_at": "2026-09-19T02:29:43.985728+00:00",
+  "generated_at": "2026-09-19T02:32:57.139806+00:00",
   "files": [
     "sop-template.md",
     "process-inventory.csv",

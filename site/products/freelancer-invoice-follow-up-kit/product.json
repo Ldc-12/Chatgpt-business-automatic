@@ -4,9 +4,10 @@
   "price_usd": 9,
   "status": "active",
   "checkout_url": "https://buy.stripe.com/9B6bJ3a1NcX5eQO6Ku9Zm01",
+  "delivery_url": "https://ldc-12.github.io/Chatgpt-business-automatic/delivery/freelancer-invoice-follow-up-kit/",
   "tagline": "A repeatable system for following up on unpaid invoices.",
   "target_user": "freelancers, consultants, small agencies",
-  "generated_at": "2026-09-19T02:29:43.983569+00:00",
+  "generated_at": "2026-09-19T02:32:57.136266+00:00",
   "files": [
     "quick-start.md",
     "invoice-tracker.csv",

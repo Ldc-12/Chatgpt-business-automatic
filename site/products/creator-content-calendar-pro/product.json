@@ -4,9 +4,10 @@
   "price_usd": 9,
   "status": "active",
   "checkout_url": "https://buy.stripe.com/cNi8wRfm7bT1eQO4Cm9Zm0a",
+  "delivery_url": "https://ldc-12.github.io/Chatgpt-business-automatic/delivery/creator-content-calendar-pro/",
   "tagline": "Plan a consistent publishing cadence with reusable ideas and review checkpoints.",
   "target_user": "creators, newsletters, solo marketers",
-  "generated_at": "2026-09-19T02:29:43.987151+00:00",
+  "generated_at": "2026-09-19T02:32:57.141473+00:00",
   "files": [
     "content-calendar.csv",
     "idea-bank.csv",

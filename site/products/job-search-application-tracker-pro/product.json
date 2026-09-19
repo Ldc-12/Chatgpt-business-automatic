@@ -4,9 +4,10 @@
   "price_usd": 9,
   "status": "active",
   "checkout_url": "https://buy.stripe.com/eVqaEZddZcX5242c4O9Zm03",
+  "delivery_url": "https://ldc-12.github.io/Chatgpt-business-automatic/delivery/job-search-application-tracker-pro/",
   "tagline": "Organize applications, follow-ups and interview preparation.",
   "target_user": "job seekers and career changers",
-  "generated_at": "2026-09-19T02:29:43.984456+00:00",
+  "generated_at": "2026-09-19T02:32:57.137502+00:00",
   "files": [
     "application-tracker.csv",
     "interview-prep.md",

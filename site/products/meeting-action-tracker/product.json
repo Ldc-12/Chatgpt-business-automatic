@@ -4,9 +4,10 @@
   "price_usd": 7,
   "status": "active",
   "checkout_url": "https://buy.stripe.com/bJeeVf7TFf5d2429WG9Zm06",
+  "delivery_url": "https://ldc-12.github.io/Chatgpt-business-automatic/delivery/meeting-action-tracker/",
   "tagline": "Convert meetings into owners, deadlines and visible follow-through.",
   "target_user": "small teams, project leads, freelancers",
-  "generated_at": "2026-09-19T02:29:43.985433+00:00",
+  "generated_at": "2026-09-19T02:32:57.139225+00:00",
   "files": [
     "action-log.csv",
     "meeting-notes.md",

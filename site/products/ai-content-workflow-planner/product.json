@@ -4,9 +4,10 @@
   "price_usd": 12,
   "status": "active",
   "checkout_url": "https://buy.stripe.com/14A6oJ6PBg9hgYW8SC9Zm04",
+  "delivery_url": "https://ldc-12.github.io/Chatgpt-business-automatic/delivery/ai-content-workflow-planner/",
   "tagline": "Plan, produce and review repeatable AI-assisted content.",
   "target_user": "creators, marketers, solo businesses",
-  "generated_at": "2026-09-19T02:29:43.984743+00:00",
+  "generated_at": "2026-09-19T02:32:57.138080+00:00",
   "files": [
     "content-pipeline.csv",
     "prompt-brief.md",

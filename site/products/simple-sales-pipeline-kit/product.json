@@ -4,9 +4,10 @@
   "price_usd": 10,
   "status": "active",
   "checkout_url": "https://buy.stripe.com/3cI4gBc9V1en6ki1qa9Zm09",
+  "delivery_url": "https://ldc-12.github.io/Chatgpt-business-automatic/delivery/simple-sales-pipeline-kit/",
   "tagline": "Keep prospects, next actions and deal stages visible without a heavy CRM.",
   "target_user": "solo salespeople, freelancers, small businesses",
-  "generated_at": "2026-09-19T02:29:43.986353+00:00",
+  "generated_at": "2026-09-19T02:32:57.140905+00:00",
   "files": [
     "sales-pipeline.csv",
     "stage-definitions.md",

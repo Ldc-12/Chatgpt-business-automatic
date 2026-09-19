@@ -7,27 +7,20 @@
 <style>
 body{font-family:system-ui;max-width:980px;margin:40px auto;padding:0 20px;line-height:1.6}
 article{border:1px solid #ddd;border-radius:14px;padding:24px;margin:18px 0}
-.cta{display:inline-block;padding:10px 15px;border:1px solid #222;border-radius:9px;text-decoration:none;color:inherit}
-.price{font-size:1.2rem;font-weight:700}
-.status{font-size:.9rem;opacity:.75}
+.cta{display:inline-block;padding:10px 15px;border:1px solid #222;border-radius:9px;text-decoration:none;color:inherit;margin-right:8px}
+.price{font-size:1.2rem;font-weight:700}.status{font-size:.9rem;opacity:.75}
 </style>
 </head>
 <body>
 <h1>Micro Product Lab</h1>
 <p>Practical digital tools and kits for measurable productivity improvements.</p>
-<p class="status">12 digital products are live. Payments are processed securely by Stripe Payment Links. After payment, Stripe can redirect customers to the matching delivery page.</p>
+<p class="status">12 digital products are live. Payments are processed securely by Stripe Payment Links.</p>
 <div id="app">Loading…</div>
 <script>
+const app=document.getElementById("app");
 fetch("products.json")
 .then(r=>{if(!r.ok)throw new Error("catalog unavailable");return r.json()})
-.then(ps=>{
-  app.innerHTML=ps.map(p=>'<article><h2>'+p.name+'</h2><p>'+p.tagline+'</p><p><strong>For:</strong> '+p.target_user+'</p><p class="price">US
-})
-.catch(()=>app.textContent="Product catalog is temporarily unavailable.");
-</script>
-</body>
-</html>+p.price_usd+' one-time</p><p><strong>Payment ready</strong> · secure Stripe checkout.</p><a class="cta" href="products/'+encodeURIComponent(p.slug)+'/">View product</a> <a class="cta" href="'+p.checkout_url+'">Buy now</a></article>').join("");
-})
+.then(ps=>{app.innerHTML=ps.map(p=>'<article><h2>'+p.name+'</h2><p>'+p.tagline+'</p><p><strong>For:</strong> '+p.target_user+'</p><p class="price">US$'+p.price_usd+' one-time</p><p><strong>Payment ready</strong> · secure Stripe checkout.</p><a class="cta" href="products/'+encodeURIComponent(p.slug)+'/">View product</a><a class="cta" href="'+p.checkout_url+'">Buy now</a></article>').join("")})
 .catch(()=>app.textContent="Product catalog is temporarily unavailable.");
 </script>
 </body>

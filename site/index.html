@@ -15,13 +15,18 @@ article{border:1px solid #ddd;border-radius:14px;padding:24px;margin:18px 0}
 <body>
 <h1>Micro Product Lab</h1>
 <p>Practical digital tools and kits for measurable productivity improvements.</p>
-<p class="status">Catalog is automated. Payment links are added only after a marketplace account is genuinely activated.</p>
+<p class="status">12 digital products are live. Payments are processed securely by Stripe Payment Links.</p>
 <div id="app">Loading…</div>
 <script>
 fetch("products.json")
 .then(r=>{if(!r.ok)throw new Error("catalog unavailable");return r.json()})
 .then(ps=>{
-  app.innerHTML=ps.map(p=>'<article><h2>'+p.name+'</h2><p>'+p.tagline+'</p><p><strong>For:</strong> '+p.target_user+'</p><p class="price">US$'+p.price_usd+' one-time</p><p><strong>Catalog ready</strong> · payment checkout pending.</p><a class="cta" href="products/'+encodeURIComponent(p.slug)+'/">View product</a></article>').join("");
+  app.innerHTML=ps.map(p=>'<article><h2>'+p.name+'</h2><p>'+p.tagline+'</p><p><strong>For:</strong> '+p.target_user+'</p><p class="price">US
+})
+.catch(()=>app.textContent="Product catalog is temporarily unavailable.");
+</script>
+</body>
+</html>+p.price_usd+' one-time</p><p><strong>Payment ready</strong> · secure Stripe checkout.</p><a class="cta" href="products/'+encodeURIComponent(p.slug)+'/">View product</a> <a class="cta" href="'+p.checkout_url+'">Buy now</a></article>').join("");
 })
 .catch(()=>app.textContent="Product catalog is temporarily unavailable.");
 </script>

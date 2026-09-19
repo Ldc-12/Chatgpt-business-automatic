@@ -178,7 +178,7 @@ What should be stopped?"""),
 - [ ] Kickoff scheduled
 - [ ] First milestone agreed"""),
             "welcome-email.md": md("""# Welcome Email
-Subject: Welcome — next steps for [Project]
+Subject: Welcome - next steps for [Project]
 
 Hi [Client], thanks for getting started. Here are the next steps, the information we need, and the date of our kickoff."""),
             "weekly-review.md": md("""# Weekly Review
@@ -211,7 +211,7 @@ Decisions:
 1.
 
 Actions:
-- [Owner] — [Action] — due [Date]
+- [Owner] - [Action] - due [Date]
 
 Open questions:"""),
         },
@@ -358,7 +358,7 @@ def build_product(p):
     for filename, body in p["files"].items():
         write(path + "/" + filename, body)
     items = "".join("<li>" + x + "</li>" for x in p["files"])
-    html = "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>" + p["name"] + "</title></head><body><h1>" + p["name"] + "</h1><p><strong>" + p["tagline"] + "</strong></p><p>For " + p["target"] + ".</p><h2>Included</h2><ul>" + items + "</ul><p><strong>US$" + str(p["price_usd"]) + " one-time</strong></p><p><a href='" + CHECKOUT_URLS[p["slug"]] + "' class='cta'>Buy now — US$" + str(p["price_usd"]) + "</a></p><p><a href='README.md'>Product details</a></p></body></html>"
+    html = "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>" + p["name"] + "</title></head><body><h1>" + p["name"] + "</h1><p><strong>" + p["tagline"] + "</strong></p><p>For " + p["target"] + ".</p><h2>Included</h2><ul>" + items + "</ul><p><strong>US$" + str(p["price_usd"]) + " one-time</strong></p><p><a href='" + CHECKOUT_URLS[p["slug"]] + "' class='cta'>Buy now - US$" + str(p["price_usd"]) + "</a></p><p><a href='README.md'>Product details</a></p></body></html>"
     write(path + "/index.html", html)
     return meta
 

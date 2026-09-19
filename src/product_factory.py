@@ -228,12 +228,21 @@ def build_product(product):
     delivery_path = os.path.join("site", "delivery", product["slug"])
     os.makedirs(delivery_path, exist_ok=True)
     links = "".join("<li><a href='../../products/" + product["slug"] + "/" + name + "'>" + name + "</a></li>" for name in product["files"])
+    delivery_url = DELIVERY_BASE + product["slug"] + "/?session_id={CHECKOUT_SESSION_ID}"
     delivery_html = (
         "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-        "<title>Purchase complete - " + product["name"] + "</title></head><body style='font-family:system-ui;max-width:820px;margin:40px auto;padding:0 20px;line-height:1.6'>"
-        "<h1>Thank you for your purchase</h1><p><strong>" + product["name"] + "</strong></p>"
-        "<p>Your digital files are ready below. Save this page for future access.</p><ul>" + links + "</ul>"
-        "<p>For support, contact the seller through the email shown on your Stripe receipt.</p></body></html>"
+        "<title>Delivery - " + product["name"] + "</title>"
+        "<style>body{font-family:system-ui;max-width:820px;margin:40px auto;padding:0 20px;line-height:1.6}"
+        ".box{padding:18px;border:1px solid #ddd;border-radius:12px;margin:20px 0}"
+        "a{word-break:break-word}</style></head><body>"
+        "<h1>Order delivery</h1><p><strong>" + product["name"] + "</strong></p>"
+        "<div class='box'><strong>After payment:</strong> Stripe should redirect you here automatically.</div>"
+        "<h2>Download</h2><ul>" + links + "</ul>"
+        "<p>If you reached this page directly, payment has not been verified by this static page. "
+        "For a secure fulfillment setup, the Stripe webhook service must verify the completed Checkout Session.</p>"
+        "<p>Delivery URL template: <code>" + delivery_url + "</code></p>"
+        "<p>Keep your Stripe receipt as proof of purchase. For support, contact the seller through the email shown on your receipt.</p>"
+        "</body></html>"
     )
     write(os.path.join(delivery_path, "index.html"), delivery_html)
     return meta

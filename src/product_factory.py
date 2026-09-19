@@ -173,6 +173,8 @@ def write(path, content):
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
 
+DELIVERY_BASE = "https://ldc-12.github.io/Chatgpt-business-automatic/delivery/"
+
 def build_product(product):
     path = os.path.join(OUT, product["slug"])
     os.makedirs(path, exist_ok=True)
@@ -182,7 +184,7 @@ def build_product(product):
         "slug": product["slug"],
         "price_usd": product["price_usd"],
         "status": "active",
-        "checkout_url": checkout_url,
+        "checkout_url": checkout_url,\n        "delivery_url": DELIVERY_BASE + product["slug"] + "/",
         "tagline": product["tagline"],
         "target_user": product["target"],
         "generated_at": datetime.now(timezone.utc).isoformat(),

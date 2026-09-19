@@ -6,6 +6,21 @@ OUT = "site/products"
 def md(text):
     return text.strip() + "\n"
 
+CHECKOUT_URLS = {
+    "ai-coding-productivity-roi-kit": "https://buy.stripe.com/cNi5kFei3g9hbECd8S9Zm00",
+    "freelancer-invoice-follow-up-kit": "https://buy.stripe.com/9B6bJ3a1NcX5eQO6Ku9Zm01",
+    "small-business-automation-audit-kit": "https://buy.stripe.com/fZu5kF1vh4qzcIG6Ku9Zm02",
+    "job-search-application-tracker-pro": "https://buy.stripe.com/eVqaEZddZcX5242c4O9Zm03",
+    "ai-content-workflow-planner": "https://buy.stripe.com/14A6oJ6PBg9hgYW8SC9Zm04",
+    "client-onboarding-workflow-kit": "https://buy.stripe.com/fZu9AV5Lx8GPfUS3yi9Zm05",
+    "meeting-action-tracker": "https://buy.stripe.com/bJeeVf7TFf5d2429WG9Zm06",
+    "sop-builder-starter-kit": "https://buy.stripe.com/14A3cxgqbbT15ge0m69Zm07",
+    "freelance-proposal-pipeline": "https://buy.stripe.com/28EfZjgqbaOXbEC1qa9Zm08",
+    "simple-sales-pipeline-kit": "https://buy.stripe.com/3cI4gBc9V1en6ki1qa9Zm09",
+    "creator-content-calendar-pro": "https://buy.stripe.com/cNi8wRfm7bT1eQO4Cm9Zm0a",
+    "personal-finance-admin-tracker": "https://buy.stripe.com/3cI28t3Dp3mv5gec4O9Zm0b",
+}
+
 PRODUCTS = [
     {
         "name": "AI Coding Productivity ROI Kit",
@@ -330,8 +345,8 @@ def build_product(p):
         "name": p["name"],
         "slug": p["slug"],
         "price_usd": p["price_usd"],
-        "status": "catalog_ready",
-        "checkout_url": None,
+        "status": "active",
+        "checkout_url": CHECKOUT_URLS.get(p["slug"]),
         "tagline": p["tagline"],
         "target_user": p["target"],
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -343,7 +358,7 @@ def build_product(p):
     for filename, body in p["files"].items():
         write(path + "/" + filename, body)
     items = "".join("<li>" + x + "</li>" for x in p["files"])
-    html = "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>" + p["name"] + "</title></head><body><h1>" + p["name"] + "</h1><p><strong>" + p["tagline"] + "</strong></p><p>For " + p["target"] + ".</p><h2>Included</h2><ul>" + items + "</ul><p><strong>US$" + str(p["price_usd"]) + " one-time</strong></p><p>Checkout is not connected yet; this page intentionally does not expose a fake payment link.</p><p><a href='README.md'>Product details</a></p></body></html>"
+    html = "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>" + p["name"] + "</title></head><body><h1>" + p["name"] + "</h1><p><strong>" + p["tagline"] + "</strong></p><p>For " + p["target"] + ".</p><h2>Included</h2><ul>" + items + "</ul><p><strong>US$" + str(p["price_usd"]) + " one-time</strong></p><p><a href='" + CHECKOUT_URLS[p["slug"]] + "' class='cta'>Buy now — US$" + str(p["price_usd"]) + "</a></p><p><a href='README.md'>Product details</a></p></body></html>"
     write(path + "/index.html", html)
     return meta
 
@@ -354,15 +369,13 @@ def main():
         json.dump(products, f, ensure_ascii=False, indent=2)
     with open("site/checkout.json", "w", encoding="utf-8") as f:
         json.dump({
-            "status": "awaiting_marketplace_checkout_urls",
+            "status": "active",
             "platforms": {
-                "gumroad": {"status": "blocked_by_payout_verification", "checkout_url": None},
-                "lemonsqueezy": {"status": "blocked_by_store_activation_verification", "checkout_url": None},
-                "stripe": {"status": "account_created_but_activation_not_confirmed", "checkout_url": None},
-                "payhip": {"status": "candidate", "checkout_url": None},
-                "itch_io": {"status": "candidate", "checkout_url": None}
+                "stripe": {"status": "active", "checkout_urls": CHECKOUT_URLS},
+                "gumroad": {"status": "not_used", "checkout_url": None},
+                "lemonsqueezy": {"status": "not_used", "checkout_url": None}
             },
-            "note": "No payment URL is fabricated. Add a real product checkout URL when a marketplace account is activated."
+            "note": "Stripe Payment Links supplied by the store owner are used as the live checkout for each catalog product."
         }, ensure_ascii=False, indent=2)
     print("Generated " + str(len(products)) + " catalog-ready products")
 

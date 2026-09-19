@@ -204,16 +204,7 @@ Decisions:
 Open questions:
 Actions:
 Next meeting:"""),
-            "follow-up.md": md("""# Meeting Follow-Up
-Subject: Actions from [Meeting]
-
-Decisions:
-1.
-
-Actions:
-- [Owner] - [Action] - due [Date]
-
-Open questions:"""),
+            "follow-up.md": md("# Meeting Follow-Up\nSubject: Actions from [Meeting]\n\nDecisions:\n1.\n\nActions:\n- [Owner] - [Action] - due [Date]\n\nOpen questions:"),
         },
     },
     {

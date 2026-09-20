@@ -29,6 +29,7 @@ jobs:
       - run: python -m pytest -q
       - run: python src/business_engine.py
       - run: python src/product_factory.py
+      - run: python src/xianyu_factory.py
       # Generated catalog and delivery pages are deployed as the Pages artifact.
       # Do not commit generated files here: concurrent runs would race on main.
 

@@ -1,4 +1,4 @@
-import json, os, re
+import json, os, re, zipfile
 from datetime import datetime, timezone
 
 OUT = "site/xianyu"
@@ -99,7 +99,8 @@ def main():
     for p in catalog:
         slug=p["slug"]
         path=f"{OUT}/{slug}"
-        write(path+"/listing.txt", p["listing"])\n        make_zip(slug)
+        write(path+"/listing.txt", p["listing"])
+        make_zip(slug)
         write(path+"/README.md", "# "+p["name"]+"\n\n闲鱼标题：\n"+p["title"]+"\n\n价格：￥"+str(p["price_rmb"])+"\n\n"+p["listing"])
         cards.append(f"<article><h2>{p['name']}</h2><p>{p['summary']}</p><strong>￥{p['price_rmb']}</strong><p><a href='{slug}/listing.txt'>复制闲鱼详情文案</a> · <a href='{p['source_product']}'>产品预览</a></p></article>")
     html = """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>闲鱼上架素材中心</title><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:1000px;margin:0 auto;padding:28px;line-height:1.65}article{border:1px solid #ddd;border-radius:14px;padding:18px;margin:14px 0}a{color:#06c}strong{font-size:22px}</style></head><body><h1>闲鱼上架素材中心</h1><p>12 个大陆版数字效率产品。当前采用低门槛测试价；成交数据稳定后，再根据内容深度、买家反馈和转化数据逐步调整。</p>""" + "".join(cards) + """<hr><p><strong>合规提示：</strong>请按闲鱼当前商品、支付、虚拟商品及知识产权规则发布；不要绕过平台支付或以虚假方式描述商品。</p></body></html>"""

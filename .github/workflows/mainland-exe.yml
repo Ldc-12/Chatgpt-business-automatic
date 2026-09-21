@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "apps/自由职业催款管理工具.py"
+      - "tests/test_mainland_freelancer_tool.py"
       - ".github/workflows/mainland-exe.yml"
 permissions:
   contents: read
@@ -13,8 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: "3.12"}
-      - run: python -m pip install pyinstaller
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pytest pyinstaller
+      - name: Automated regression tests
+        run: python -m pytest -q tests/test_mainland_freelancer_tool.py
       - name: Source self-test
         run: python "apps/自由职业催款管理工具.py" --self-test
       - name: Build EXE

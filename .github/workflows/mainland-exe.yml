@@ -23,6 +23,22 @@ jobs:
             source: apps/轻量销售客户跟进工具.py
             test: tests/test_mainland_sales_tool.py
             exe: MainlandSalesFollowupTool
+          - key: jobs
+            source: apps/求职申请管理Pro.py
+            test: tests/test_mainland_jobs.py
+            exe: MainlandJobTrackerPro
+          - key: finance
+            source: apps/小微企业经营收支管理.py
+            test: tests/test_mainland_finance.py
+            exe: MainlandSmallBusinessFinance
+          - key: meetings
+            source: apps/会议行动项管理.py
+            test: tests/test_mainland_meetings.py
+            exe: MainlandMeetingActions
+          - key: sop
+            source: apps/SOP项目执行管理.py
+            test: tests/test_mainland_sop.py
+            exe: MainlandSOPManager
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

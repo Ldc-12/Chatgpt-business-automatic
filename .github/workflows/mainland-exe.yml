@@ -22,14 +22,14 @@ jobs:
       - name: Source self-test
         run: python "apps/自由职业催款管理工具.py" --self-test
       - name: Build EXE
-        run: pyinstaller --onefile --windowed --name 自由职业催款管理工具 "apps/自由职业催款管理工具.py"
-      - name: EXE startup self-test
+        run: pyinstaller --onefile --windowed --name MainlandFreelancerTool "apps/自由职业催款管理工具.py"
+      - name: EXE file and startup check
         shell: powershell
         run: |
-          $p = Start-Process -FilePath "dist/自由职业催款管理工具.exe" -ArgumentList "--self-test" -Wait -PassThru
+          if (!(Test-Path "dist/MainlandFreelancerTool.exe")) { throw "EXE missing" }
+          $p = Start-Process -FilePath "dist/MainlandFreelancerTool.exe" -ArgumentList "--self-test" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "EXE self-test failed with exit code $($p.ExitCode)" }
-          if (!(Test-Path "dist/自由职业催款管理工具.exe")) { throw "EXE missing" }
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-freelancer-tool-windows
-          path: dist/自由职业催款管理工具.exe
+          path: dist/MainlandFreelancerTool.exe

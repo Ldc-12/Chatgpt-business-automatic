@@ -1,0 +1,31 @@
+name: Mainland Windows EXE
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "apps/自由职业催款管理工具.py"
+      - ".github/workflows/mainland-exe.yml"
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: python -m pip install pyinstaller
+      - name: Source self-test
+        run: python "apps/自由职业催款管理工具.py" --self-test
+      - name: Build EXE
+        run: pyinstaller --onefile --windowed --name 自由职业催款管理工具 "apps/自由职业催款管理工具.py"
+      - name: EXE startup self-test
+        shell: powershell
+        run: |
+          $p = Start-Process -FilePath "dist/自由职业催款管理工具.exe" -ArgumentList "--self-test" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "EXE self-test failed with exit code $($p.ExitCode)" }
+          if (!(Test-Path "dist/自由职业催款管理工具.exe")) { throw "EXE missing" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-freelancer-tool-windows
+          path: dist/自由职业催款管理工具.exe

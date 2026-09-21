@@ -3,14 +3,26 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "apps/自由职业催款管理工具.py"
-      - "tests/test_mainland_freelancer_tool.py"
+      - "apps/**.py"
+      - "tests/test_mainland_*.py"
       - ".github/workflows/mainland-exe.yml"
 permissions:
   contents: read
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - key: freelancer
+            source: apps/自由职业催款管理工具.py
+            test: tests/test_mainland_freelancer_tool.py
+            exe: MainlandFreelancerTool
+          - key: sales
+            source: apps/轻量销售客户跟进工具.py
+            test: tests/test_mainland_sales_tool.py
+            exe: MainlandSalesFollowupTool
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -18,18 +30,18 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install pytest pyinstaller
       - name: Automated regression tests
-        run: python -m pytest -q tests/test_mainland_freelancer_tool.py
+        run: python -m pytest -q ${{ matrix.test }}
       - name: Source self-test
-        run: python "apps/自由职业催款管理工具.py" --self-test
+        run: python "${{ matrix.source }}" --self-test
       - name: Build EXE
-        run: pyinstaller --onefile --windowed --name MainlandFreelancerTool "apps/自由职业催款管理工具.py"
-      - name: EXE file and startup check
+        run: pyinstaller --onefile --windowed --name "${{ matrix.exe }}" "${{ matrix.source }}"
+      - name: EXE startup check
         shell: powershell
         run: |
-          if (!(Test-Path "dist/MainlandFreelancerTool.exe")) { throw "EXE missing" }
-          $p = Start-Process -FilePath "dist/MainlandFreelancerTool.exe" -ArgumentList "--self-test" -Wait -PassThru
+          if (!(Test-Path "dist/${{ matrix.exe }}.exe")) { throw "EXE missing" }
+          $p = Start-Process -FilePath "dist/${{ matrix.exe }}.exe" -ArgumentList "--self-test" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "EXE self-test failed with exit code $($p.ExitCode)" }
       - uses: actions/upload-artifact@v4
         with:
-          name: mainland-freelancer-tool-windows
-          path: dist/MainlandFreelancerTool.exe
+          name: mainland-${{ matrix.key }}-windows
+          path: dist/${{ matrix.exe }}.exe

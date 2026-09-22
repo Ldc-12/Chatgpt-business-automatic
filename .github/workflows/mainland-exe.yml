@@ -8,6 +8,7 @@ on:
       - ".github/workflows/mainland-exe.yml"
 permissions:
   contents: read
+  actions: read
 jobs:
   build:
     runs-on: windows-latest
@@ -57,7 +58,55 @@ jobs:
           if (!(Test-Path "dist/${{ matrix.exe }}.exe")) { throw "EXE missing" }
           $p = Start-Process -FilePath "dist/${{ matrix.exe }}.exe" -ArgumentList "--self-test" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "EXE self-test failed with exit code $($p.ExitCode)" }
+      - name: Create standalone delivery ZIP
+        shell: powershell
+        run: |
+          $readme = @"
+          ${{ matrix.exe }}
+          Windows 单机版｜大陆版
+
+          双击 EXE 即可运行。数据默认保存在当前用户的 %LOCALAPPDATA%\\MainlandBusinessTools 目录。
+          本工具无需 ChatGPT、VPN 或外部 AI 服务。
+          首次使用建议：先添加一条测试数据，确认保存、编辑、删除和 CSV 导出正常，再录入正式数据。
+          "@
+          Set-Content -Path "dist/使用说明-大陆版.txt" -Value $readme -Encoding UTF8
+          Compress-Archive -Path "dist/${{ matrix.exe }}.exe","dist/使用说明-大陆版.txt" -DestinationPath "dist/${{ matrix.exe }}-大陆版.zip" -Force
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-${{ matrix.key }}-windows
-          path: dist/${{ matrix.exe }}.exe
+          path: |
+            dist/${{ matrix.exe }}.exe
+            dist/${{ matrix.exe }}-大陆版.zip
+
+  package:
+    name: Phase 1 customer delivery package
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mainland-*-windows
+          path: release
+          merge-multiple: true
+      - name: Create catalog and combined package
+        shell: bash
+        run: |
+          cat > release/README-大陆版.md <<'EOF'
+          # 第一阶段 Windows 工具包
+
+          本包包含 6 款独立 Windows EXE。
+          使用方式：双击对应 EXE 即可运行。
+          数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
+          工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。
+          EOF
+          mkdir -p release/package
+          cp release/*.exe release/package/
+          cp release/README-大陆版.md release/package/
+          cd release
+          zip -r Phase1-Mainland-Windows-Tools.zip package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-customer-package
+          path: |
+            release/Phase1-Mainland-Windows-Tools.zip
+            release/README-大陆版.md

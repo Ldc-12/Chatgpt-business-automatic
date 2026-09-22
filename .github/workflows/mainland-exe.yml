@@ -70,7 +70,7 @@ jobs:
           首次使用建议：先添加一条测试数据，确认保存、编辑、删除和 CSV 导出正常，再录入正式数据。
           "@
           Set-Content -Path "dist/使用说明-大陆版.txt" -Value $readme -Encoding UTF8
-          Compress-Archive -Path "dist/${{ matrix.exe }}.exe","dist/使用说明-大陆版.txt" -DestinationPath "dist/${{ matrix.exe }}-大陆版.zip" -Force
+          python -c "from pathlib import Path; import zipfile; out=Path('dist/${{ matrix.exe }}-大陆版.zip'); files=[Path('dist/${{ matrix.exe }}.exe'),Path('dist/使用说明-大陆版.txt')]; z=zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED); [z.write(f,f.name) for f in files]; z.close()"
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-${{ matrix.key }}-windows

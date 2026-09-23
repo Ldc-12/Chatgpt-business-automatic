@@ -112,6 +112,7 @@ def self_test():
     assert "客户" in FIELDS
 if __name__ == "__main__":
     require_license("轻量销售客户跟进工具")
-    if "--self-test" in sys.argv:self_test()
-        else:App().mainloop()
-    
+    if "--self-test" in sys.argv:
+        self_test()
+    else:
+        App().mainloop()

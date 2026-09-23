@@ -238,8 +238,10 @@ def self_test():
 
 
 if __name__ == "__main__":
+    require_license("自由职业催款管理工具")
     if "--self-test" in sys.argv:
-        self_test()
-        print("SELF_TEST_OK")
-    else:
-        App().mainloop()
+            self_test()
+            print("SELF_TEST_OK")
+        else:
+            App().mainloop()
+    

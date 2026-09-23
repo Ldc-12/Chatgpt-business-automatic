@@ -57,6 +57,7 @@ class App:
 def self_test(): assert "公司" in FIELDS and num("￥12,000")==12000 and due(today())==0;print("SELF_TEST_OK")
 if __name__ == "__main__":
     require_license("求职申请管理Pro")
-    if "--self-test" in sys.argv:self_test()
-     else:App(tk.Tk()).root.mainloop()
-    
+    if "--self-test" in sys.argv:
+        self_test()
+    else:
+        App(tk.Tk()).root.mainloop()

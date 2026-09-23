@@ -70,7 +70,7 @@ jobs:
           首次使用建议：先添加一条测试数据，确认保存、编辑、删除和 CSV 导出正常，再录入正式数据。
           "@
           Set-Content -Path "dist/README-mainland.txt" -Value $readme -Encoding UTF8
-          python -c 'import zipfile; z=zipfile.ZipFile("dist/${{ matrix.exe }}-mainland.zip","w",zipfile.ZIP_DEFLATED); z.write("dist/${{ matrix.exe }}.exe","${{ matrix.exe }}.exe"); z.write("dist/README-mainland.txt","README-mainland.txt"); z.close()'
+          python -c "import zipfile; z=zipfile.ZipFile('dist/${{ matrix.exe }}-mainland.zip','w',zipfile.ZIP_DEFLATED); z.write('dist/${{ matrix.exe }}.exe','${{ matrix.exe }}.exe'); z.write('dist/README-mainland.txt','README-mainland.txt'); z.close()"
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-${{ matrix.key }}-windows

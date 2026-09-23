@@ -55,6 +55,8 @@ class App:
  def script(self):
   messagebox.showinfo("面试/跟进话术","您好，我是XXX，应聘【职位】。想确认一下目前招聘进度及后续安排，如需补充材料我可以随时提供，谢谢！")
 def self_test(): assert "公司" in FIELDS and num("￥12,000")==12000 and due(today())==0;print("SELF_TEST_OK")
-if __name__=="__main__":
- if "--self-test" in sys.argv:self_test()
- else:App(tk.Tk()).root.mainloop()
+if __name__ == "__main__":
+    require_license("求职申请管理Pro")
+    if "--self-test" in sys.argv:self_test()
+     else:App(tk.Tk()).root.mainloop()
+    

@@ -52,6 +52,7 @@ class App:
 def self_test():assert num("￥1,200")==1200 and "金额" in FIELDS;print("SELF_TEST_OK")
 if __name__ == "__main__":
     require_license("小微企业经营收支管理")
-    if "--self-test" in sys.argv:self_test()
-     else:App(tk.Tk()).root.mainloop()
-    
+    if "--self-test" in sys.argv:
+        self_test()
+    else:
+        App(tk.Tk()).root.mainloop()

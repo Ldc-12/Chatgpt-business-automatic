@@ -5,6 +5,8 @@ on:
     paths:
       - "apps/**.py"
       - "tests/test_mainland_*.py"
+      - "src/**.py"
+      - "tools/issue_license.py"
       - ".github/workflows/mainland-exe.yml"
 permissions:
   contents: read
@@ -45,7 +47,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install pytest pyinstaller
+      - run: python -m pip install -r requirements.txt pyinstaller
       - name: Automated regression tests
         run: python -m pytest -q ${{ matrix.test }}
       - name: Source self-test
@@ -97,7 +99,7 @@ jobs:
           本包包含 6 款独立 Windows EXE。
           使用方式：双击对应 EXE 即可运行。
           数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
-          工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。
+          工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。\n          首次运行会显示设备码；购买后由卖家提供专属 license.json，放入 %LOCALAPPDATA%/MainlandBusinessTools/。
           EOF
           mkdir -p release/package
           cp release/*.exe release/package/

@@ -51,6 +51,8 @@ class App:
   messagebox.showinfo("执行统计",f"行动项：{len(self.rows)}\n未完成：{open_n}\n已完成：{len(self.rows)-open_n}\n已逾期：{overdue}")
  def script(self):messagebox.showinfo("提醒话术","您好，提醒一下会议行动项【行动项】，截止日期为【截止日期】，请更新当前进度；如有困难请及时反馈，谢谢。")
 def self_test():assert days(today())==0 and "负责人" in FIELDS;print("SELF_TEST_OK")
-if __name__=="__main__":
- if "--self-test" in sys.argv:self_test()
- else:App(tk.Tk()).root.mainloop()
+if __name__ == "__main__":
+    require_license("会议行动项管理")
+    if "--self-test" in sys.argv:self_test()
+     else:App(tk.Tk()).root.mainloop()
+    

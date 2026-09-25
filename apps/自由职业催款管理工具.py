@@ -4,6 +4,8 @@ import os
 import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+from src.license import require_license
+
 
 FIELDS = ["客户", "账单编号", "金额", "币种", "到期日", "状态", "上次跟进", "下次跟进", "备注"]
 STATUSES = ["待跟进", "已发送", "部分付款", "已付款", "逾期"]

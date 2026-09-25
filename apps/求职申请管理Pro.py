@@ -1,5 +1,7 @@
 import csv,json,os,sys,datetime,tkinter as tk
 from tkinter import ttk,filedialog,messagebox
+from src.license import require_license
+
 FIELDS=["公司","职位","联系人","联系方式","招聘来源","阶段","期望薪资","面试日期","简历版本","备注"]
 STAGES=["待申请","已申请","笔试","一面","二面","谈薪","Offer","入职","拒绝","放弃"]
 def today(): return datetime.date.today().isoformat()

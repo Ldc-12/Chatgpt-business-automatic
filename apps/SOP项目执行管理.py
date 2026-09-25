@@ -1,5 +1,6 @@
 import csv,json,os,sys,tkinter as tk
 from tkinter import ttk,filedialog,messagebox
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.license import require_license
 
 FIELDS=["项目","SOP名称","步骤","负责人","截止日期","状态","优先级","备注"];ST=["未开始","进行中","已完成","阻塞"];PR=["高","中","低"]

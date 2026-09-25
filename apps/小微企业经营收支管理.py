@@ -1,5 +1,7 @@
 import csv,json,os,sys,datetime,tkinter as tk
 from tkinter import ttk,filedialog,messagebox
+from src.license import require_license
+
 FIELDS=["日期","类型","客户/供应商","项目","金额","收付款方式","状态","备注"];TYPES=["收入","支出","应收","应付"];ST=["已完成","待处理","部分完成","逾期"]
 def num(x):
  try:return float(str(x).replace(",","").replace("，","").replace("￥","").strip() or 0)

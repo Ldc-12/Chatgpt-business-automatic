@@ -1,5 +1,6 @@
 import csv,json,os,sys,datetime,tkinter as tk
 from tkinter import ttk,filedialog,messagebox
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.license import require_license
 
 FIELDS=["公司","职位","联系人","联系方式","招聘来源","阶段","期望薪资","面试日期","简历版本","备注"]

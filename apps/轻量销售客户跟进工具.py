@@ -1,5 +1,7 @@
 import csv, datetime as dt, json, os, sys, tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+from src.license import require_license
+
 
 FIELDS=["客户","联系人","电话/微信","来源","阶段","预计金额","下次跟进","负责人","备注"]
 STAGES=["新线索","已联系","需求确认","报价中","谈判中","成交","暂停","流失"]

@@ -4,6 +4,7 @@ import os
 import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.license import require_license
 
 

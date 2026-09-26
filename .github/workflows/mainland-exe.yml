@@ -16,7 +16,7 @@ permissions:
   actions: read
 jobs:
   build:
-    timeout-minutes: 20
+    timeout-minutes: 25
     runs-on: windows-latest
     strategy:
       fail-fast: false

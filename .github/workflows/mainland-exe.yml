@@ -1,4 +1,7 @@
 name: Mainland Windows EXE
+concurrency:
+  group: mainland-windows-exe
+  cancel-in-progress: true
 on:
   workflow_dispatch:
   push:
@@ -13,6 +16,7 @@ permissions:
   actions: read
 jobs:
   build:
+    timeout-minutes: 20
     runs-on: windows-latest
     strategy:
       fail-fast: false

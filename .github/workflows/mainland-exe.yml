@@ -116,3 +116,5 @@ jobs:
           path: |
             release/Phase1-Mainland-Windows-Tools.zip
             release/README-大陆版.md
+
+# release-trigger

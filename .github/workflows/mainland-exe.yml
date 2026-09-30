@@ -50,6 +50,14 @@ jobs:
             source: apps/文件整理助手Pro.py
             test: tests/test_mainland_file_organizer.py
             exe: MainlandFileOrganizerPro
+          - key: image-tool
+            source: apps/图片批量处理助手Pro.py
+            test: tests/test_mainland_image_tool.py
+            exe: MainlandImageToolPro
+          - key: pdf-tool
+            source: apps/PDF批量工具Pro.py
+            test: tests/test_mainland_pdf_tool.py
+            exe: MainlandPDFToolPro
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -104,7 +112,7 @@ jobs:
           cat > release/README-大陆版.md <<'EOF'
           # 第一阶段 Windows 工具包
 
-          本包包含 7 款独立 Windows EXE。
+          本包包含 9 款独立 Windows EXE。
           使用方式：双击对应 EXE 即可运行。
           数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
           工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。\n          首次运行会显示设备码；购买后由卖家提供专属 license.json，放入 %LOCALAPPDATA%/MainlandBusinessTools/。

@@ -46,6 +46,10 @@ jobs:
             source: apps/SOP项目执行管理.py
             test: tests/test_mainland_sop.py
             exe: MainlandSOPManager
+          - key: launcher
+            source: apps/实用效率工具箱.py
+            test: tests/test_mainland_launcher.py
+            exe: MainlandEfficiencyToolbox
           - key: file-organizer
             source: apps/文件整理助手Pro.py
             test: tests/test_mainland_file_organizer.py
@@ -112,14 +116,14 @@ jobs:
           cat > release/README-大陆版.md <<'EOF'
           # 第一阶段 Windows 工具包
 
-          本包包含 9 款独立 Windows EXE。
+          本包包含 10 款 Windows EXE（含工具箱启动器）。
           使用方式：双击对应 EXE 即可运行。
           数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
           工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。\n          首次运行会显示设备码；购买后由卖家提供专属 license.json，放入 %LOCALAPPDATA%/MainlandBusinessTools/。
           EOF
-          mkdir -p release/package
+          mkdir -p release/package\n          cat > release/套餐说明.txt <<'EOF'\n          套餐 A｜电脑文件处理三件套｜建议售价 19.9 元\n          文件整理 + 图片批处理 + PDF 批处理\n\n          套餐 B｜办公效率工具箱｜建议售价 29.9 元\n          套餐 A + 催款 + 客户跟进 + 求职管理\n\n          套餐 C｜全能工作效率工具箱｜建议售价 39.9 元\n          全部 9 款实用工具 + 工具箱启动器\n\n          建议：低价单品用于引流，套餐用于提高客单价；具体售价上线后根据咨询和成交数据调整。\n          EOF
           cp release/*.exe release/package/
-          cp release/README-大陆版.md release/package/
+          cp release/README-大陆版.md release/套餐说明.txt release/package/
           cd release
           zip -r Phase1-Mainland-Windows-Tools.zip package
       - uses: actions/upload-artifact@v4

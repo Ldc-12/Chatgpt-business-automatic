@@ -1,7 +1,7 @@
 name: Mainland Windows EXE
 concurrency:
   group: mainland-windows-exe
-  cancel-in-progress: false
+  cancel-in-progress: true
 on:
   workflow_dispatch:
   push:

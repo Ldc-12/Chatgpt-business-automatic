@@ -79,7 +79,11 @@ jobs:
         shell: powershell
         run: |
           if (!(Test-Path "dist/${{ matrix.exe }}.exe")) { throw "EXE missing" }
-          $p = Start-Process -FilePath "dist/${{ matrix.exe }}.exe" -ArgumentList "--self-test" -Wait -PassThru
+          $p = Start-Process -FilePath "dist/${{ matrix.exe }}.exe" -ArgumentList "--self-test" -PassThru
+          if (!$p.WaitForExit(60000)) {
+            Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+            throw "EXE self-test timed out after 60 seconds"
+          }
           if ($p.ExitCode -ne 0) { throw "EXE self-test failed with exit code $($p.ExitCode)" }
       - name: Create standalone delivery ZIP
         shell: powershell

@@ -1,4 +1,5 @@
 import os
+import sys
 import tkinter as tk
 from tkinter import ttk, messagebox
 from pathlib import Path
@@ -14,6 +15,16 @@ TOOLS = [
 ("会议行动项管理","MainlandMeetingActions.exe"),
 ("SOP 项目执行管理","MainlandSOPManager.exe"),
 ]
+
+def self_test():
+    assert len(TOOLS) == 9
+    names = [name for name, _ in TOOLS]
+    exes = [exe for _, exe in TOOLS]
+    assert len(set(names)) == len(names)
+    assert len(set(exes)) == len(exes)
+    assert all(exe.lower().endswith(".exe") for exe in exes)
+    print("SELF_TEST_OK")
+
 class App(tk.Tk):
     def __init__(self):
         super().__init__(); self.title("实用效率工具箱"); self.geometry("700x560"); self.resizable(False,False)
@@ -28,4 +39,9 @@ class App(tk.Tk):
         p=Path(__file__).with_name(exe)
         if not p.exists(): messagebox.showwarning("未找到工具",f"当前套餐未包含：{exe}")
         else: os.startfile(str(p))
-if __name__=="__main__": App().mainloop()
+
+if __name__=="__main__":
+    if "--self-test" in sys.argv:
+        self_test()
+    else:
+        App().mainloop()

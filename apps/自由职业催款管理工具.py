@@ -241,8 +241,8 @@ def self_test():
 
 
 if __name__ == "__main__":
-    require_license("自由职业催款管理工具")
     if "--self-test" in sys.argv:
         self_test()
     else:
+        require_license("自由职业催款管理工具")
         App().mainloop()

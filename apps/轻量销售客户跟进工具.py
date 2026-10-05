@@ -116,7 +116,7 @@ def self_test():
 if __name__ == "__main__":
     if "--self-test" in sys.argv:
         self_test()
-        raise SystemExit(0)
+        os._exit(0)
     else:
         require_license("轻量销售客户跟进工具")
         App().mainloop()

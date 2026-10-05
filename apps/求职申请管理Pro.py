@@ -61,7 +61,7 @@ def self_test(): assert "公司" in FIELDS and num("￥12,000")==12000 and due(t
 if __name__ == "__main__":
     if "--self-test" in sys.argv:
         self_test()
-        raise SystemExit(0)
+        os._exit(0)
     else:
         require_license("求职申请管理Pro")
         App(tk.Tk()).root.mainloop()

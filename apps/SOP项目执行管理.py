@@ -52,6 +52,7 @@ def self_test():assert "SOP名称" in FIELDS and len(ST)==4;print("SELF_TEST_OK"
 if __name__ == "__main__":
     if "--self-test" in sys.argv:
         self_test()
+        raise SystemExit(0)
     else:
         require_license("SOP项目执行管理")
         App(tk.Tk()).root.mainloop()

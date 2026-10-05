@@ -50,8 +50,8 @@ class App:
   messagebox.showinfo("SOP统计",f"步骤：{total}\n已完成：{done}\n阻塞：{block}\n完成率：{rate:.1f}%")
 def self_test():assert "SOP名称" in FIELDS and len(ST)==4;print("SELF_TEST_OK")
 if __name__ == "__main__":
-    require_license("SOP项目执行管理")
     if "--self-test" in sys.argv:
         self_test()
     else:
+        require_license("SOP项目执行管理")
         App(tk.Tk()).root.mainloop()

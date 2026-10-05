@@ -243,6 +243,7 @@ def self_test():
 if __name__ == "__main__":
     if "--self-test" in sys.argv:
         self_test()
+        raise SystemExit(0)
     else:
         require_license("自由职业催款管理工具")
         App().mainloop()

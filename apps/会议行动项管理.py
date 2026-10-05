@@ -57,6 +57,7 @@ def self_test():assert days(today())==0 and "负责人" in FIELDS;print("SELF_TE
 if __name__ == "__main__":
     if "--self-test" in sys.argv:
         self_test()
+        raise SystemExit(0)
     else:
         require_license("会议行动项管理")
         App(tk.Tk()).root.mainloop()

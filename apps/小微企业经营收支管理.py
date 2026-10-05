@@ -54,8 +54,8 @@ class App:
   messagebox.showinfo("经营统计",f"收入：￥{inc:,.2f}\n支出：￥{out:,.2f}\n经营结余：￥{inc-out:,.2f}\n未收：￥{ar:,.2f}\n未付：￥{ap:,.2f}")
 def self_test():assert num("￥1,200")==1200 and "金额" in FIELDS;print("SELF_TEST_OK")
 if __name__ == "__main__":
-    require_license("小微企业经营收支管理")
     if "--self-test" in sys.argv:
         self_test()
     else:
+        require_license("小微企业经营收支管理")
         App(tk.Tk()).root.mainloop()

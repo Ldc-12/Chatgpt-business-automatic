@@ -8,7 +8,7 @@ Protected products (the product name must match exactly when issuing a license):
 - PDF批量工具 Pro
 - 自由职业催款管理工具
 - 轻量销售客户跟进工具
-- 求职申请管理 Pro
+- 求职申请管理Pro
 - 小微企业经营收支管理
 - 会议行动项管理
 - SOP项目执行管理

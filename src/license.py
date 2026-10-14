@@ -1,6 +1,6 @@
 import base64, datetime as dt, hashlib, json, os, platform, sys
 from pathlib import Path
-PUBLIC_KEY_PEM = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAOYI/eZX4VQ8loFYOyz9qyha/3fGtGPkIELoQIHz6HRE=\n-----END PUBLIC KEY-----\n"
+PUBLIC_KEY_PEM = "-----BEGIN PUBLIC KEY-----\nMCowBQY2VwAyEAaVEZd7kuzn6SSqnyzAclDwTpNWfP0U3EnBTdjk7auKs=\n-----END PUBLIC KEY-----\n"
 LICENSE_DIR = Path(os.getenv("LOCALAPPDATA", str(Path.home()))) / "MainlandBusinessTools" / "licenses"
 def default_license_path(product):
     safe = "".join(ch if ch.isalnum() or ch in "-_." else "_" for ch in product).strip("._") or "product"

@@ -37,3 +37,12 @@ def test_wrong_device_rejected(tmp_path):
         except lic.LicenseError as e: assert "其他电脑" in str(e)
         else: raise AssertionError("wrong device accepted")
     finally: lic.PUBLIC_KEY_PEM=old
+
+
+def test_default_license_paths_are_product_specific():
+    first = lic.default_license_path("文件整理助手 Pro")
+    second = lic.default_license_path("PDF批量工具 Pro")
+    assert first != second
+    assert first.parent.name == "licenses"
+    assert first.name == "文件整理助手 Pro.json"
+    assert second.name == "PDF批量工具 Pro.json"

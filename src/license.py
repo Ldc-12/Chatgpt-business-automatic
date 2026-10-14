@@ -1,7 +1,10 @@
 import base64, datetime as dt, hashlib, json, os, platform, sys
 from pathlib import Path
 PUBLIC_KEY_PEM = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAOYI/eZX4VQ8loFYOyz9qyha/3fGtGPkIELoQIHz6HRE=\n-----END PUBLIC KEY-----\n"
-DEFAULT_LICENSE_PATH = Path(os.getenv("LOCALAPPDATA", str(Path.home()))) / "MainlandBusinessTools" / "license.json"
+LICENSE_DIR = Path(os.getenv("LOCALAPPDATA", str(Path.home()))) / "MainlandBusinessTools" / "licenses"
+def default_license_path(product):
+    safe = "".join(ch if ch.isalnum() or ch in "-_." else "_" for ch in product).strip("._") or "product"
+    return LICENSE_DIR / f"{safe}.json"
 class LicenseError(Exception): pass
 def machine_id():
     if sys.platform == "win32":
@@ -23,7 +26,7 @@ def _verify(payload, signature):
         return True
     except Exception: return False
 def verify_license(product, path=None):
-    p=Path(path or DEFAULT_LICENSE_PATH)
+    p=Path(path) if path else default_license_path(product)
     if not p.exists(): raise LicenseError(f"未找到授权文件。\n设备码：{device_id(product)}\n授权文件：{p}")
     try:
         data=json.loads(p.read_text(encoding="utf-8")); payload=data["payload"]; signature=data["signature"]

@@ -40,7 +40,7 @@ def verify_license(product, path=None):
     if not _verify(payload, signature): raise LicenseError("授权签名验证失败，文件可能被修改。")
     return payload
 def activation_message(product):
-    return f"首次使用需要激活。\n\n产品：{product}\n设备码：{device_id(product)}\n\n请将设备码提供给卖家，卖家会生成专属授权文件。\n授权文件放入：%LOCALAPPDATA%\\MainlandBusinessTools\\license.json"
+    return f"首次使用需要激活。\n\n产品：{product}\n设备码：{device_id(product)}\n\n请将设备码提供给卖家，卖家会生成专属授权文件。\n授权文件放入：{default_license_path(product)}"
 def require_license(product):
     if "--self-test" in sys.argv or os.getenv("LICENSE_SELF_TEST")=="1": return {"product":product,"self_test":True}
     try: return verify_license(product)

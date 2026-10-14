@@ -55,6 +55,11 @@ class App(tk.Tk):
                 try:process(f,out,w,q,self.fmt.get());ok+=1
                 except Exception:bad+=1
         messagebox.showinfo("完成",f"成功 {ok} 张，失败 {bad} 张。\n结果：{out}")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.license import require_license
+
 if __name__=="__main__":
     if "--self-test" in sys.argv:self_test()
-    else:App().mainloop()
+    else:
+        require_license("图片批量处理助手 Pro")
+        App().mainloop()

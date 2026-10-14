@@ -65,6 +65,11 @@ class App(tk.Tk):
     def open(self):
         p=self.folder.get()
         if os.path.isdir(p) and hasattr(os,"startfile"):os.startfile(p)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.license import require_license
+
 if __name__=="__main__":
     if "--self-test" in sys.argv:self_test()
-    else:App().mainloop()
+    else:
+        require_license("PDF批量工具 Pro")
+        App().mainloop()

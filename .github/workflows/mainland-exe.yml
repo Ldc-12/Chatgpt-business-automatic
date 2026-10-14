@@ -94,7 +94,7 @@ jobs:
           ${{ matrix.exe }}
           Windows 单机版｜大陆版
 
-          双击 EXE 即可运行。数据默认保存在当前用户的 %LOCALAPPDATA%\\MainlandBusinessTools 目录。
+          首次启动会显示本机设备码，需由卖家签发该产品专属授权后才能使用。请把授权文件放入 %LOCALAPPDATA%\\MainlandBusinessTools\\licenses\\产品名.json。数据默认保存在当前用户的 %LOCALAPPDATA%\\MainlandBusinessTools 目录。
           本工具无需 ChatGPT、VPN 或外部 AI 服务。
           首次使用建议：先添加一条测试数据，确认保存、编辑、删除和 CSV 导出正常，再录入正式数据。
           "@

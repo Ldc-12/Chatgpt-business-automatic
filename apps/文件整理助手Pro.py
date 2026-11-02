@@ -3,7 +3,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-APP = "文件整理助手 Pro 1.1"
+APP = "文件整理助手 Pro 1.2"
 CATS = {
     "图片": {".jpg",".jpeg",".png",".gif",".webp",".bmp",".tif",".tiff",".heic"},
     "视频": {".mp4",".mov",".avi",".mkv",".wmv",".flv",".webm"},
@@ -12,46 +12,66 @@ CATS = {
     "压缩包": {".zip",".rar",".7z",".tar",".gz",".bz2"},
     "程序": {".exe",".msi",".bat",".cmd",".ps1",".py",".js",".html",".css"},
 }
+LOG_NAME = "整理记录.json"
+OUTPUT_DIRS = set(CATS) | {"其他"}
+
 def category(p):
     e=p.suffix.lower()
     return next((n for n, exts in CATS.items() if e in exts), "其他")
+
 def unique_target(p):
     if not p.exists(): return p
     for i in range(1,10000):
         q=p.with_name(f"{p.stem} ({i}){p.suffix}")
         if not q.exists(): return q
     raise RuntimeError("同名文件过多")
+
 def iter_files(base, recursive=False):
+    base = Path(base)
     if recursive:
         for p in base.rglob("*"):
-            if p.is_file() and not any(part in CATS or part=="其他" for part in p.relative_to(base).parts[:-1]): yield p
+            if not p.is_file():
+                continue
+            rel = p.relative_to(base)
+            # 只排除根目录下由本工具生成的分类目录；用户自己的同名子目录仍正常处理。
+            if len(rel.parts) > 1 and rel.parts[0] in OUTPUT_DIRS:
+                continue
+            if p.name == LOG_NAME:
+                continue
+            yield p
     else:
-        yield from (p for p in base.iterdir() if p.is_file())
+        yield from (p for p in base.iterdir() if p.is_file() and p.name != LOG_NAME)
+
 def organize(folder, recursive=False):
     base=Path(folder); moved=[]
     for src in list(iter_files(base,recursive)):
         if src.name.startswith("~$") or src.name.startswith("."): continue
         dst=unique_target(base/category(src)/src.name); dst.parent.mkdir(parents=True,exist_ok=True)
         shutil.move(str(src),str(dst)); moved.append((str(src),str(dst)))
-    (base/"整理记录.json").write_text(json.dumps({"time":time.time(),"moves":moved},ensure_ascii=False,indent=2),encoding="utf-8")
+    (base/LOG_NAME).write_text(json.dumps({"time":time.time(),"moves":moved},ensure_ascii=False,indent=2),encoding="utf-8")
     return moved
+
 def undo(folder):
-    base=Path(folder); log=base/"整理记录.json"
+    base=Path(folder); log=base/LOG_NAME
     if not log.exists(): return 0
     data=json.loads(log.read_text(encoding="utf-8")); n=0
     for src,dst in reversed(data.get("moves",[])):
         d=Path(dst); s=Path(src)
         if d.exists() and not s.exists(): s.parent.mkdir(parents=True,exist_ok=True); shutil.move(str(d),str(s)); n+=1
     return n
+
 def self_test():
     with tempfile.TemporaryDirectory() as d:
-        p=Path(d); (p/"a.jpg").write_bytes(b"x"); (p/"a.pdf").write_bytes(b"x"); r=organize(p); assert len(r)==2 and (p/"图片/a.jpg").exists(); assert undo(p)==2 and (p/"a.jpg").exists()
+        p=Path(d); (p/"a.jpg").write_bytes(b"x"); (p/"a.pdf").write_bytes(b"x")
+        r=organize(p); assert len(r)==2 and (p/"图片/a.jpg").exists()
+        assert undo(p)==2 and (p/"a.jpg").exists()
     print("SELF-TEST OK")
+
 class App(tk.Tk):
     def __init__(self):
         super().__init__(); self.title(APP); self.geometry("940x620"); self.minsize(800,540); self.folder=tk.StringVar(); self.recursive=tk.BooleanVar(); self.status=tk.StringVar(value="请选择文件夹，然后扫描预览"); self.rows=[]; self.ui()
     def ui(self):
-        s=ttk.Style(self); 
+        s=ttk.Style(self)
         try:s.theme_use("clam")
         except tk.TclError:pass
         r=ttk.Frame(self,padding=20); r.pack(fill="both",expand=True)
@@ -64,7 +84,7 @@ class App(tk.Tk):
         for c,t,w in [("file","文件",280),("cat","分类",100),("target","整理后位置",430)]: self.tree.heading(c,text=t); self.tree.column(c,width=w,anchor="w")
         y=ttk.Scrollbar(frame,command=self.tree.yview); self.tree.configure(yscrollcommand=y.set); self.tree.pack(side="left",fill="both",expand=True); y.pack(side="right",fill="y"); ttk.Label(r,textvariable=self.status).pack(anchor="w",pady=(8,0))
     def choose(self):
-        p=filedialog.askdirectory(title="选择需要整理的文件夹");
+        p=filedialog.askdirectory(title="选择需要整理的文件夹")
         if p:self.folder.set(p); self.scan()
     def scan(self):
         base=Path(self.folder.get()); self.tree.delete(*self.tree.get_children()); self.rows=[]
@@ -76,8 +96,8 @@ class App(tk.Tk):
     def run(self):
         if not self.rows:self.scan()
         if not self.rows:return
-        if not messagebox.askyesno("确认整理",f"即将整理 {len(self.rows)} 个文件。\n同名文件会自动改名，不覆盖原文件。继续？"):return
-        try:m=organize(self.folder.get(),self.recursive.get()); messagebox.showinfo("完成",f"成功整理 {len(m)} 个文件。\n已保存整理记录，可撤销。")
+        if not messagebox.askyesno("确认整理",f"即将整理 {len(self.rows)} 个文件。\\n同名文件会自动改名，不覆盖原文件。继续？"):return
+        try:m=organize(self.folder.get(),self.recursive.get()); messagebox.showinfo("完成",f"成功整理 {len(m)} 个文件。\\n已保存整理记录，可撤销。")
         except Exception as e: messagebox.showerror("错误",str(e))
         self.scan()
     def undo(self):
@@ -85,6 +105,7 @@ class App(tk.Tk):
     def open(self):
         p=self.folder.get()
         if os.path.isdir(p) and hasattr(os,"startfile"): os.startfile(p)
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.license import require_license
 

@@ -96,8 +96,8 @@ class App(tk.Tk):
     def run(self):
         if not self.rows:self.scan()
         if not self.rows:return
-        if not messagebox.askyesno("确认整理",f"即将整理 {len(self.rows)} 个文件。\\n同名文件会自动改名，不覆盖原文件。继续？"):return
-        try:m=organize(self.folder.get(),self.recursive.get()); messagebox.showinfo("完成",f"成功整理 {len(m)} 个文件。\\n已保存整理记录，可撤销。")
+        if not messagebox.askyesno("确认整理",f"即将整理 {len(self.rows)} 个文件。\n同名文件会自动改名，不覆盖原文件。继续？"):return
+        try:m=organize(self.folder.get(),self.recursive.get()); messagebox.showinfo("完成",f"成功整理 {len(m)} 个文件。\n已保存整理记录，可撤销。")
         except Exception as e: messagebox.showerror("错误",str(e))
         self.scan()
     def undo(self):

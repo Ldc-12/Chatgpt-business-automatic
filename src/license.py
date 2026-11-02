@@ -3,7 +3,7 @@ from pathlib import Path
 PUBLIC_KEY_PEM = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAaVEZd7kuzn6SSqnyzAclDwTpNWfP0U3EnBTdjk7auKs=\n-----END PUBLIC KEY-----\n"
 LICENSE_DIR = Path(os.getenv("LOCALAPPDATA", str(Path.home()))) / "MainlandBusinessTools" / "licenses"
 def default_license_path(product):
-    safe = "".join(ch if ch.isalnum() or ch in "-_." else "_" for ch in product).strip("._") or "product"
+    safe = "".join(ch if ch.isalnum() or ch in "-_. " else "_" for ch in product).strip("._ ") or "product"
     return LICENSE_DIR / f"{safe}.json"
 class LicenseError(Exception): pass
 def machine_id():

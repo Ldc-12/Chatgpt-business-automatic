@@ -69,7 +69,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.license import require_license
 
 if __name__=="__main__":
-    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1" or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
+    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
         self_test()
         os._exit(0)
     else:

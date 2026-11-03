@@ -135,3 +135,72 @@ def test_issue_license_cli_rejects_malformed_device_code(tmp_path):
     assert result.returncode != 0
     assert "24-character hexadecimal device code" in result.stderr
     assert not (tmp_path / "should-not-exist.json").exists()
+
+def test_expired_signed_license_is_rejected(tmp_path, monkeypatch):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives import serialization
+
+    private = Ed25519PrivateKey.generate()
+    monkeypatch.setattr(
+        lic,
+        "PUBLIC_KEY_PEM",
+        private.public_key().public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        ).decode("ascii"),
+    )
+    product = "demo-product"
+    payload = {
+        "license_id": "LIC-EXPIRED",
+        "product": product,
+        "customer": "",
+        "device_hash": lic.device_id(product),
+        "issued_at": "2020-01-01",
+        "expires_at": "2000-01-01",
+    }
+    signature = base64.b64encode(private.sign(lic._canonical(payload))).decode("ascii")
+    path = tmp_path / "expired.json"
+    path.write_text(json.dumps({"payload": payload, "signature": signature}), encoding="utf-8")
+    try:
+        lic.verify_license(product, path)
+    except lic.LicenseError as exc:
+        assert "到期" in str(exc)
+    else:
+        raise AssertionError("expired license was accepted")
+
+
+def test_tampered_signature_is_rejected(tmp_path, monkeypatch):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives import serialization
+
+    private = Ed25519PrivateKey.generate()
+    monkeypatch.setattr(
+        lic,
+        "PUBLIC_KEY_PEM",
+        private.public_key().public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        ).decode("ascii"),
+    )
+    product = "demo-product"
+    payload = {
+        "license_id": "LIC-TAMPER",
+        "product": product,
+        "customer": "",
+        "device_hash": lic.device_id(product),
+        "issued_at": dt.date.today().isoformat(),
+        "expires_at": "2099-12-31",
+    }
+    signature = bytearray(private.sign(lic._canonical(payload)))
+    signature[0] ^= 0x01
+    path = tmp_path / "tampered.json"
+    path.write_text(
+        json.dumps({"payload": payload, "signature": base64.b64encode(signature).decode("ascii")}),
+        encoding="utf-8",
+    )
+    try:
+        lic.verify_license(product, path)
+    except lic.LicenseError as exc:
+        assert "签名验证失败" in str(exc)
+    else:
+        raise AssertionError("tampered signature was accepted")

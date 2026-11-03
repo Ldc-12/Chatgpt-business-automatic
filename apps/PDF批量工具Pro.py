@@ -23,7 +23,7 @@ def self_test():
             w=PdfWriter(); [w.add_blank_page(300,400) for _ in range(n)]; open(f,"wb").write(b"") if False else None
             with open(f,"wb") as h:w.write(h)
         out=p/"merged.pdf"; merge([a,b],out); assert len(PdfReader(out).pages)==3; assert len(split(a,p/"parts"))==2
-    print("SELF-TEST OK")
+    if sys.stdout is not None: print("SELF-TEST OK")
 class App(tk.Tk):
     def __init__(self):
         super().__init__(); self.title(APP); self.geometry("860x600"); self.folder=tk.StringVar(); self.ui()
@@ -69,7 +69,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.license import require_license
 
 if __name__=="__main__":
-    if "--self-test" in sys.argv:self_test()
+    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1" or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
+        self_test()
+        os._exit(0)
     else:
         require_license("PDF批量工具 Pro")
         App().mainloop()

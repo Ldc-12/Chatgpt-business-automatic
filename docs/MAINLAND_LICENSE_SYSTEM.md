@@ -30,7 +30,7 @@ The signer now compares the seller private key's derived public key with the pub
 On the seller's trusted Windows PC, run the following from a local copy of the project:
 
 ```powershell
-py tools/export_license_public_key.py --private-key "C:\\secure\\seller-private.pem"
+py tools/export_license_public_key.py --private-key "C:\secure\seller-private.pem"
 ```
 
 The command prints a public PEM and a `SHA256=` fingerprint. Send only the fingerprint (or public PEM) for comparison. **Never send, upload, or commit the private key.** The private key is read locally and is not transmitted.
@@ -46,7 +46,7 @@ These are different keys. The client currently verifies with the embedded key on
 Use `tools/issue_license.py` on a trusted computer with the seller's private key file. The signer will stop if the private key does not match the embedded client key. Create the `licenses` folder under `%LOCALAPPDATA%\\MainlandBusinessTools` on the customer's PC, then place each product's license file there using the product-specific filename (for example, `文件整理助手 Pro.json`):
 
 ```powershell
-py tools/issue_license.py --private-key "C:\\secure\\seller-private.pem" --product "文件整理助手 Pro" --device-id "CUSTOMER_DEVICE_CODE" --customer "订单备注" --expires 2099-12-31 --out "文件整理助手 Pro.json"
+py tools/issue_license.py --private-key "C:\secure\seller-private.pem" --product "文件整理助手 Pro" --device-id "CUSTOMER_DEVICE_CODE" --customer "订单备注" --expires 2099-12-31 --out "文件整理助手 Pro.json"
 ```
 
 Replace the product, device code, customer note and expiry with the actual order details. Deliver the generated file only to that buyer and that device. Never ask customers to send passwords, ID documents or other unnecessary sensitive information.

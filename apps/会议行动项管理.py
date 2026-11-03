@@ -55,7 +55,7 @@ class App:
  def script(self):messagebox.showinfo("提醒话术","您好，提醒一下会议行动项【行动项】，截止日期为【截止日期】，请更新当前进度；如有困难请及时反馈，谢谢。")
 def self_test():
     assert days(today())==0 and "负责人" in FIELDS
-    if sys.stdout is not None: if sys.stdout is not None: print("SELF_TEST_OK")
+    if sys.stdout is not None: print("SELF_TEST_OK")
 if __name__ == "__main__":
     if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
         self_test()

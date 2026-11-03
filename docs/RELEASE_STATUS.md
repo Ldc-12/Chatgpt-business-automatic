@@ -31,7 +31,7 @@ CI 会启动每个冻结 EXE，确认进程至少存活 5 秒，再由 CI 主动
 **唯一待用户操作：**在可信 Windows 电脑的项目目录运行：
 
 ```powershell
-py tools/export_license_public_key.py --private-key "C:\\你的私钥路径\\seller-private.pem"
+py tools/export_license_public_key.py --private-key "C:\你的私钥路径\seller-private.pem"
 ```
 
 只把输出的 `SHA256=` 指纹（或公钥 PEM）发回用于比对；不要发送私钥。预期客户端指纹为上面 `src/license.py` 的 `B646...`。如果不一致，签发工具会拒绝生成客户授权，必须先确认密钥归属，再制定明确的密钥轮换方案。

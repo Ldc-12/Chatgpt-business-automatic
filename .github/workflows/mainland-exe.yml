@@ -81,10 +81,11 @@ jobs:
         shell: powershell
         run: |
           if (!(Test-Path "dist/${{ matrix.exe }}.exe")) { throw "EXE missing" }
-          $p = Start-Process -FilePath "dist/${{ matrix.exe }}.exe" -ArgumentList "--self-test" -PassThru
-          if (!$p.WaitForExit(15000)) {
+          $p = Start-Process -FilePath "dist/${{ matrix.exe }}.exe" -ArgumentList @("--self-test") -PassThru
+          Write-Host "Started frozen EXE self-test (PID=$($p.Id)); waiting up to 90 seconds for one-file extraction and first-run scanning."
+          if (!$p.WaitForExit(90000)) {
             Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
-            throw "EXE self-test timed out after 15 seconds."
+            throw "EXE self-test timed out after 90 seconds."
           }
           if ($p.ExitCode -ne 0) {
             throw "EXE self-test failed with exit code $($p.ExitCode)."

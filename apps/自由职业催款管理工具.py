@@ -241,7 +241,7 @@ def self_test():
 
 
 if __name__ == "__main__":
-    if "--self-test" in sys.argv:
+    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
         self_test()
         os._exit(0)
     else:

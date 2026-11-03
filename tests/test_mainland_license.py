@@ -1,101 +1,137 @@
-import base64,datetime as dt,json,tempfile
+import base64
+import datetime as dt
+import hashlib
+import json
+import subprocess
+import sys
 from pathlib import Path
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
 from src import license as lic
-
-def test_device_id_is_stable():
-    a=lic.device_id("demo-product")
-    assert len(a)==24 and a==lic.device_id("demo-product")
-
-def test_signed_license_roundtrip(tmp_path):
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from cryptography.hazmat.primitives import serialization
-    private=Ed25519PrivateKey.generate()
-    public=private.public_key()
-    old=lic.PUBLIC_KEY_PEM
-    lic.PUBLIC_KEY_PEM=public.public_bytes(serialization.Encoding.PEM,serialization.PublicFormat.SubjectPublicKeyInfo).decode()
-    try:
-        payload={"license_id":"LIC-TEST","product":"demo-product","customer":"test","device_hash":lic.device_id("demo-product"),"issued_at":dt.date.today().isoformat(),"expires_at":"2099-12-31"}
-        sig=private.sign(lic._canonical(payload))
-        p=tmp_path/"license.json"
-        p.write_text(json.dumps({"payload":payload,"signature":base64.b64encode(sig).decode()}),encoding="utf-8")
-        got=lic.verify_license("demo-product",p)
-        assert got["license_id"]=="LIC-TEST"
-    finally:
-        lic.PUBLIC_KEY_PEM=old
-
-def test_wrong_device_rejected(tmp_path):
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from cryptography.hazmat.primitives import serialization
-    private=Ed25519PrivateKey.generate(); public=private.public_key()
-    old=lic.PUBLIC_KEY_PEM
-    lic.PUBLIC_KEY_PEM=public.public_bytes(serialization.Encoding.PEM,serialization.PublicFormat.SubjectPublicKeyInfo).decode()
-    try:
-        payload={"license_id":"LIC-TEST","product":"demo-product","customer":"","device_hash":"WRONGDEVICE12345678901234","issued_at":"2026-01-01","expires_at":"2099-12-31"}
-        sig=private.sign(lic._canonical(payload))
-        p=tmp_path/"license.json"; p.write_text(json.dumps({"payload":payload,"signature":base64.b64encode(sig).decode()}),encoding="utf-8")
-        try: lic.verify_license("demo-product",p)
-        except lic.LicenseError as e: assert "其他电脑" in str(e)
-        else: raise AssertionError("wrong device accepted")
-    finally: lic.PUBLIC_KEY_PEM=old
+from tools.export_license_public_key import export_public_key
+from tools.issue_license import issue_license
 
 
-def test_default_license_paths_are_product_specific():
-    first = lic.default_license_path("文件整理助手 Pro")
-    second = lic.default_license_path("PDF批量工具 Pro")
-    assert first != second
-    assert first.parent.name == "licenses"
-    assert first.name == "文件整理助手 Pro.json"
-    assert second.name == "PDF批量工具 Pro.json"
-
-def test_issue_license_cli_roundtrip_with_ephemeral_test_key(tmp_path, monkeypatch):
-    """Exercise the real CLI against the client using a throwaway test key.
-
-    This verifies signer/client format compatibility only. It does NOT verify
-    that the seller's offline private key matches the production embedded key.
-    """
-    import subprocess
-    import sys
-
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from cryptography.hazmat.primitives import serialization
-
-    private = Ed25519PrivateKey.generate()
-    private_path = tmp_path / "temporary-test-only.pem"
-    private_path.write_bytes(
+def _write_private_key(path, private):
+    path.write_bytes(
         private.private_bytes(
             serialization.Encoding.PEM,
             serialization.PrivateFormat.PKCS8,
             serialization.NoEncryption(),
         )
     )
-    product = "文件整理助手 Pro"
-    device_code = lic.device_id(product)
-    output_path = tmp_path / "issued" / "license.json"
-    public_pem = private.public_key().public_bytes(
+
+
+def _public_pem(private):
+    return private.public_key().public_bytes(
         serialization.Encoding.PEM,
         serialization.PublicFormat.SubjectPublicKeyInfo,
     ).decode("ascii")
 
-    result = subprocess.run(
-        [
-            sys.executable,
-            "tools/issue_license.py",
-            "--private-key", str(private_path),
-            "--product", product,
-            "--device-id", device_code,
-            "--customer", "临时测试",
-            "--license-id", "LIC-CLI-ROUNDTRIP",
-            "--expires", "2099-12-31",
-            "--out", str(output_path),
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0, result.stderr
-    assert output_path.is_file()
 
-    monkeypatch.setattr(lic, "PUBLIC_KEY_PEM", public_pem)
+def test_device_id_is_stable():
+    value = lic.device_id("demo-product")
+    assert len(value) == 24
+    assert value == lic.device_id("demo-product")
+
+
+def test_signed_license_roundtrip(tmp_path):
+    private = Ed25519PrivateKey.generate()
+    old = lic.PUBLIC_KEY_PEM
+    lic.PUBLIC_KEY_PEM = _public_pem(private)
+    try:
+        payload = {
+            "license_id": "LIC-TEST",
+            "product": "demo-product",
+            "customer": "test",
+            "device_hash": lic.device_id("demo-product"),
+            "issued_at": dt.date.today().isoformat(),
+            "expires_at": "2099-12-31",
+        }
+        signature = private.sign(lic._canonical(payload))
+        path = tmp_path / "license.json"
+        path.write_text(
+            json.dumps(
+                {"payload": payload, "signature": base64.b64encode(signature).decode("ascii")}
+            ),
+            encoding="utf-8",
+        )
+        result = lic.verify_license("demo-product", path)
+        assert result["license_id"] == "LIC-TEST"
+    finally:
+        lic.PUBLIC_KEY_PEM = old
+
+
+def test_wrong_device_rejected(tmp_path):
+    private = Ed25519PrivateKey.generate()
+    old = lic.PUBLIC_KEY_PEM
+    lic.PUBLIC_KEY_PEM = _public_pem(private)
+    try:
+        payload = {
+            "license_id": "LIC-TEST",
+            "product": "demo-product",
+            "customer": "",
+            "device_hash": "WRONGDEVICE12345678901234",
+            "issued_at": "2026-01-01",
+            "expires_at": "2099-12-31",
+        }
+        signature = private.sign(lic._canonical(payload))
+        path = tmp_path / "license.json"
+        path.write_text(
+            json.dumps({"payload": payload, "signature": base64.b64encode(signature).decode("ascii")}),
+            encoding="utf-8",
+        )
+        try:
+            lic.verify_license("demo-product", path)
+        except lic.LicenseError as exc:
+            assert "其他电脑" in str(exc)
+        else:
+            raise AssertionError("wrong device accepted")
+    finally:
+        lic.PUBLIC_KEY_PEM = old
+
+
+def test_default_license_paths_match_all_protected_product_ids():
+    products = [
+        "文件整理助手 Pro",
+        "图片批量处理助手 Pro",
+        "PDF批量工具 Pro",
+        "自由职业催款管理工具",
+        "轻量销售客户跟进工具",
+        "求职申请管理Pro",
+        "小微企业经营收支管理",
+        "会议行动项管理",
+        "SOP项目执行管理",
+    ]
+    paths = [lic.default_license_path(product) for product in products]
+    assert len(set(paths)) == len(products)
+    assert all(path.parent.name == "licenses" for path in paths)
+    assert [path.name for path in paths] == [f"{product}.json" for product in products]
+
+
+def test_issue_license_signer_client_roundtrip_with_ephemeral_test_key(tmp_path, monkeypatch):
+    """Test signer/client format compatibility with a disposable test-only key."""
+    private = Ed25519PrivateKey.generate()
+    private_path = tmp_path / "temporary-test-only.pem"
+    _write_private_key(private_path, private)
+    monkeypatch.setattr(lic, "PUBLIC_KEY_PEM", _public_pem(private))
+
+    product = "文件整理助手 Pro"
+    device_code = lic.device_id(product)
+    issued = issue_license(
+        private_path,
+        product,
+        device_code,
+        customer="临时测试",
+        license_id="LIC-CLI-ROUNDTRIP",
+        expires="2099-12-31",
+    )
+    output_path = tmp_path / "issued" / "license.json"
+    output_path.parent.mkdir(parents=True)
+    output_path.write_text(json.dumps(issued, ensure_ascii=False), encoding="utf-8")
+
     payload = lic.verify_license(product, output_path)
     assert payload["license_id"] == "LIC-CLI-ROUNDTRIP"
     assert payload["product"] == product
@@ -103,22 +139,38 @@ def test_issue_license_cli_roundtrip_with_ephemeral_test_key(tmp_path, monkeypat
     assert payload["expires_at"] == "2099-12-31"
 
 
-def test_issue_license_cli_rejects_malformed_device_code(tmp_path):
-    import subprocess
-    import sys
-
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from cryptography.hazmat.primitives import serialization
-
+def test_issue_license_cli_rejects_mismatched_seller_key(tmp_path):
     private = Ed25519PrivateKey.generate()
     private_path = tmp_path / "temporary-test-only.pem"
-    private_path.write_bytes(
-        private.private_bytes(
-            serialization.Encoding.PEM,
-            serialization.PrivateFormat.PKCS8,
-            serialization.NoEncryption(),
-        )
+    _write_private_key(private_path, private)
+    output_path = tmp_path / "should-not-exist.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "tools/issue_license.py",
+            "--private-key", str(private_path),
+            "--product", "文件整理助手 Pro",
+            "--device-id", lic.device_id("文件整理助手 Pro"),
+            "--out", str(output_path),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
     )
+    assert result.returncode != 0
+    # ASCII marker is stable across Windows console encodings.
+    assert "LICENSE_KEY_MISMATCH" in result.stderr
+    assert "SHA256=" in result.stderr
+    assert not output_path.exists()
+
+
+def test_issue_license_cli_rejects_malformed_device_code(tmp_path):
+    private = Ed25519PrivateKey.generate()
+    private_path = tmp_path / "temporary-test-only.pem"
+    _write_private_key(private_path, private)
+    output_path = tmp_path / "should-not-exist.json"
+
     result = subprocess.run(
         [
             sys.executable,
@@ -126,7 +178,7 @@ def test_issue_license_cli_rejects_malformed_device_code(tmp_path):
             "--private-key", str(private_path),
             "--product", "demo-product",
             "--device-id", "NOT-A-DEVICE-CODE",
-            "--out", str(tmp_path / "should-not-exist.json"),
+            "--out", str(output_path),
         ],
         check=False,
         capture_output=True,
@@ -134,21 +186,28 @@ def test_issue_license_cli_rejects_malformed_device_code(tmp_path):
     )
     assert result.returncode != 0
     assert "24-character hexadecimal device code" in result.stderr
-    assert not (tmp_path / "should-not-exist.json").exists()
+    assert not output_path.exists()
+
+
+def test_export_public_key_outputs_public_pem_and_der_fingerprint(tmp_path):
+    private = Ed25519PrivateKey.generate()
+    private_path = tmp_path / "seller-test-only.pem"
+    _write_private_key(private_path, private)
+
+    public_pem, fingerprint = export_public_key(private_path)
+    public_key = serialization.load_pem_public_key(public_pem.encode("ascii"))
+    der = public_key.public_bytes(
+        serialization.Encoding.DER,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    assert public_pem == _public_pem(private)
+    assert fingerprint == hashlib.sha256(der).hexdigest().upper()
+    assert "PRIVATE KEY" not in public_pem
+
 
 def test_expired_signed_license_is_rejected(tmp_path, monkeypatch):
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from cryptography.hazmat.primitives import serialization
-
     private = Ed25519PrivateKey.generate()
-    monkeypatch.setattr(
-        lic,
-        "PUBLIC_KEY_PEM",
-        private.public_key().public_bytes(
-            serialization.Encoding.PEM,
-            serialization.PublicFormat.SubjectPublicKeyInfo,
-        ).decode("ascii"),
-    )
+    monkeypatch.setattr(lic, "PUBLIC_KEY_PEM", _public_pem(private))
     product = "demo-product"
     payload = {
         "license_id": "LIC-EXPIRED",
@@ -160,7 +219,10 @@ def test_expired_signed_license_is_rejected(tmp_path, monkeypatch):
     }
     signature = base64.b64encode(private.sign(lic._canonical(payload))).decode("ascii")
     path = tmp_path / "expired.json"
-    path.write_text(json.dumps({"payload": payload, "signature": signature}), encoding="utf-8")
+    path.write_text(
+        json.dumps({"payload": payload, "signature": signature}),
+        encoding="utf-8",
+    )
     try:
         lic.verify_license(product, path)
     except lic.LicenseError as exc:
@@ -170,18 +232,8 @@ def test_expired_signed_license_is_rejected(tmp_path, monkeypatch):
 
 
 def test_tampered_signature_is_rejected(tmp_path, monkeypatch):
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from cryptography.hazmat.primitives import serialization
-
     private = Ed25519PrivateKey.generate()
-    monkeypatch.setattr(
-        lic,
-        "PUBLIC_KEY_PEM",
-        private.public_key().public_bytes(
-            serialization.Encoding.PEM,
-            serialization.PublicFormat.SubjectPublicKeyInfo,
-        ).decode("ascii"),
-    )
+    monkeypatch.setattr(lic, "PUBLIC_KEY_PEM", _public_pem(private))
     product = "demo-product"
     payload = {
         "license_id": "LIC-TAMPER",
@@ -195,7 +247,9 @@ def test_tampered_signature_is_rejected(tmp_path, monkeypatch):
     signature[0] ^= 0x01
     path = tmp_path / "tampered.json"
     path.write_text(
-        json.dumps({"payload": payload, "signature": base64.b64encode(signature).decode("ascii")}),
+        json.dumps(
+            {"payload": payload, "signature": base64.b64encode(signature).decode("ascii")}
+        ),
         encoding="utf-8",
     )
     try:

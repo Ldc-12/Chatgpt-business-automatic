@@ -52,9 +52,11 @@ class App:
  def stats(self):
   inc=sum(num(r.get("金额")) for r in self.rows if r.get("类型")=="收入");out=sum(num(r.get("金额")) for r in self.rows if r.get("类型")=="支出");ar=sum(num(r.get("金额")) for r in self.rows if r.get("类型")=="应收" and r.get("状态")!="已完成");ap=sum(num(r.get("金额")) for r in self.rows if r.get("类型")=="应付" and r.get("状态")!="已完成")
   messagebox.showinfo("经营统计",f"收入：￥{inc:,.2f}\n支出：￥{out:,.2f}\n经营结余：￥{inc-out:,.2f}\n未收：￥{ar:,.2f}\n未付：￥{ap:,.2f}")
-def self_test():assert num("￥1,200")==1200 and "金额" in FIELDS;print("SELF_TEST_OK")
+def self_test():
+    assert num("￥1,200")==1200 and "金额" in FIELDS
+    if sys.stdout is not None: if sys.stdout is not None: print("SELF_TEST_OK")
 if __name__ == "__main__":
-    if "--self-test" in sys.argv:
+    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
         self_test()
         os._exit(0)
     else:

@@ -27,7 +27,7 @@ def self_test():
     with tempfile.TemporaryDirectory() as d:
         p=Path(d); src=p/"a.png"; Image.new("RGB",(3000,1000),"white").save(src); dst=process(src,p/"out",800,80,"JPEG"); assert dst.exists() and Image.open(dst).width<=800
         dst2=process(src,p/"out",800,80,"JPEG"); assert dst2.name!="a.jpg"
-    print("SELF-TEST OK")
+    if sys.stdout is not None: print("SELF-TEST OK")
 class App(tk.Tk):
     def __init__(self):
         super().__init__(); self.title(APP); self.geometry("820x580"); self.folder=tk.StringVar(); self.width=tk.IntVar(value=1920); self.quality=tk.IntVar(value=85); self.fmt=tk.StringVar(value="JPEG"); self.ui()
@@ -59,7 +59,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.license import require_license
 
 if __name__=="__main__":
-    if "--self-test" in sys.argv:self_test()
+    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1" or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
+        self_test()
+        os._exit(0)
     else:
         require_license("图片批量处理助手 Pro")
         App().mainloop()

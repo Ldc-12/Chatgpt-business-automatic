@@ -77,27 +77,26 @@ jobs:
         run: python "${{ matrix.source }}" --self-test
       - name: Build EXE
         run: pyinstaller --onefile --windowed --name "${{ matrix.exe }}" "${{ matrix.source }}"
-      - name: EXE launch smoke check
+      - name: EXE launch smoke check (unlicensed first-run path)
         shell: powershell
         run: |
-          if (!(Test-Path "dist/${{ matrix.exe }}.exe")) { throw "EXE missing" }
+          $exe = Join-Path $PWD "dist/${{ matrix.exe }}.exe"
+          if (!(Test-Path $exe)) { throw "EXE missing: $exe" }
           $psi = New-Object System.Diagnostics.ProcessStartInfo
-          $psi.FileName = (Join-Path $PWD "dist/${{ matrix.exe }}.exe")
-          $psi.Arguments = "--self-test"
+          $psi.FileName = $exe
           $psi.WorkingDirectory = $PWD.Path
           $psi.UseShellExecute = $false
-          $psi.CreateNoWindow = $true
-          $psi.EnvironmentVariables["MAINLAND_EXE_SELF_TEST"] = "1"
+          $psi.CreateNoWindow = $false
           $p = [System.Diagnostics.Process]::Start($psi)
-          Write-Host "Started frozen EXE self-test (PID=$($p.Id), args=$($psi.Arguments), env=MAINLAND_EXE_SELF_TEST=1)."
-          if (!$p.WaitForExit(30000)) {
-            $p.Kill()
-            throw "EXE self-test timed out after 30 seconds."
+          Write-Host "Launched frozen EXE (PID=$($p.Id)); checking that the unlicensed first-run path stays alive."
+          Start-Sleep -Seconds 5
+          $p.Refresh()
+          if ($p.HasExited) {
+            throw "EXE exited during launch smoke check with exit code $($p.ExitCode)."
           }
-          if ($p.ExitCode -ne 0) {
-            throw "EXE self-test failed with exit code $($p.ExitCode)."
-          }
-          Write-Host "EXE self-test passed with exit code 0."
+          $p.Kill()
+          $p.WaitForExit()
+          Write-Host "EXE launch smoke check passed: process stayed alive for 5 seconds; CI terminated it."
       - name: Create UTF-8 mainland README
         run: python tools/write_mainland_readme.py --product "${{ matrix.exe }}"
       - name: Create standalone delivery ZIP

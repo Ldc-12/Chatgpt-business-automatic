@@ -159,7 +159,8 @@ def test_issue_license_cli_rejects_mismatched_seller_key(tmp_path):
         text=True,
     )
     assert result.returncode != 0
-    assert "不匹配" in result.stderr
+    # ASCII marker is stable across Windows console encodings.
+    assert "LICENSE_KEY_MISMATCH" in result.stderr
     assert "SHA256=" in result.stderr
     assert not output_path.exists()
 

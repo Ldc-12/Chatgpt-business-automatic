@@ -10,6 +10,8 @@ on:
       - "tests/test_mainland_*.py"
       - "src/**.py"
       - "tools/issue_license.py"
+      - "tools/write_mainland_readme.py"
+      - "tests/test_mainland_packaging.py"
       - ".github/workflows/mainland-exe.yml"
       - "docs/manuals/**"
 permissions:
@@ -70,36 +72,35 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt pyinstaller
       - name: Automated regression tests
-        run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py
+        run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py
       - name: Source self-test
         run: python "${{ matrix.source }}" --self-test
       - name: Build EXE
         run: pyinstaller --onefile --windowed --name "${{ matrix.exe }}" "${{ matrix.source }}"
-      - name: EXE launch smoke check
+      - name: EXE launch smoke check (unlicensed first-run path)
         shell: powershell
         run: |
-          if (!(Test-Path "dist/${{ matrix.exe }}.exe")) { throw "EXE missing" }
-          $p = Start-Process -FilePath "dist/${{ matrix.exe }}.exe" -ArgumentList "--self-test" -PassThru
-          Start-Sleep -Seconds 8
-          if (!$p.HasExited) {
-            Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
-            Write-Host "EXE launched successfully; stopped after 8s smoke window."
-          } else {
-            Write-Host "EXE self-test exited with code $($p.ExitCode)."
+          $exe = Join-Path $PWD "dist/${{ matrix.exe }}.exe"
+          if (!(Test-Path $exe)) { throw "EXE missing: $exe" }
+          $psi = New-Object System.Diagnostics.ProcessStartInfo
+          $psi.FileName = $exe
+          $psi.WorkingDirectory = $PWD.Path
+          $psi.UseShellExecute = $false
+          $psi.CreateNoWindow = $false
+          $p = [System.Diagnostics.Process]::Start($psi)
+          Write-Host "Launched frozen EXE (PID=$($p.Id)); checking that the unlicensed first-run path stays alive."
+          Start-Sleep -Seconds 5
+          $p.Refresh()
+          if ($p.HasExited) {
+            throw "EXE exited during launch smoke check with exit code $($p.ExitCode)."
           }
+          $p.Kill()
+          $p.WaitForExit()
+          Write-Host "EXE launch smoke check passed: process stayed alive for 5 seconds; CI terminated it."
+      - name: Create UTF-8 mainland README
+        run: python tools/write_mainland_readme.py --product "${{ matrix.exe }}"
       - name: Create standalone delivery ZIP
-        shell: powershell
-        run: |
-          $readme = @"
-          ${{ matrix.exe }}
-          Windows 单机版｜大陆版
-
-          首次启动会显示本机设备码，需由卖家签发该产品专属授权后才能使用。请把授权文件放入 %LOCALAPPDATA%\\MainlandBusinessTools\\licenses\\产品名.json。数据默认保存在当前用户的 %LOCALAPPDATA%\\MainlandBusinessTools 目录。
-          本工具无需 ChatGPT、VPN 或外部 AI 服务。
-          首次使用建议：先添加一条测试数据，确认保存、编辑、删除和 CSV 导出正常，再录入正式数据。
-          "@
-          Set-Content -Path "dist/README-mainland.txt" -Value $readme -Encoding UTF8
-          python -c "import zipfile; z=zipfile.ZipFile('dist/${{ matrix.exe }}-mainland.zip','w',zipfile.ZIP_DEFLATED); z.write('dist/${{ matrix.exe }}.exe','${{ matrix.exe }}.exe'); z.write('dist/README-mainland.txt','README-mainland.txt'); z.close()"
+        run: python -c "import zipfile; z=zipfile.ZipFile('dist/${{ matrix.exe }}-mainland.zip','w',zipfile.ZIP_DEFLATED); z.write('dist/${{ matrix.exe }}.exe','${{ matrix.exe }}.exe'); z.write('dist/README-mainland.txt','README-mainland.txt'); z.close()"
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-${{ matrix.key }}-windows
@@ -155,6 +156,73 @@ jobs:
           path: |
             release/Phase1-Mainland-Windows-Tools.zip
             release/README-大陆版.md
+      - name: Create bounded download chunks and checksum manifest
+        shell: bash
+        run: |
+          package="release/Phase1-Mainland-Windows-Tools.zip"
+          sha256sum "$package" > release/Phase1-Mainland-Windows-Tools.zip.sha256
+          bytes=$(stat -c '%s' "$package")
+          printf '%s\n' "$bytes" > release/Phase1-Mainland-Windows-Tools.zip.bytes
+          split -b 20m -d -a 2 "$package" "release/Phase1-Mainland-Windows-Tools.zip.part-"
+          parts=(release/Phase1-Mainland-Windows-Tools.zip.part-*)
+          if [ "${#parts[@]}" -gt 7 ]; then
+            echo "Package exceeds the supported 7 x 20 MiB chunk size."
+            exit 1
+          fi
+          for part in 00 01 02 03 04 05 06; do
+            file="release/Phase1-Mainland-Windows-Tools.zip.part-$part"
+            if [ ! -f "$file" ]; then : > "$file"; fi
+          done
+          printf 'file=Phase1-Mainland-Windows-Tools.zip\nbytes=%s\nsha256=%s\nparts=7\npart_size=20MiB\n' "$bytes" "$(cut -d' ' -f1 release/Phase1-Mainland-Windows-Tools.zip.sha256)" > release/Phase1-Mainland-Windows-Tools.manifest.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-manifest
+          path: |
+            release/Phase1-Mainland-Windows-Tools.zip.sha256
+            release/Phase1-Mainland-Windows-Tools.zip.bytes
+            release/Phase1-Mainland-Windows-Tools.manifest.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-00
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-00
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-01
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-01
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-02
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-02
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-03
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-03
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-04
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-04
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-05
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-05
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-06
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-06
+          if-no-files-found: error
+          compression-level: 0
 
 # release-trigger
 

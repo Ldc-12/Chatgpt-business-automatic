@@ -65,7 +65,7 @@ def self_test():
         p=Path(d); (p/"a.jpg").write_bytes(b"x"); (p/"a.pdf").write_bytes(b"x")
         r=organize(p); assert len(r)==2 and (p/"图片/a.jpg").exists()
         assert undo(p)==2 and (p/"a.jpg").exists()
-    print("SELF-TEST OK")
+    if sys.stdout is not None: print("SELF-TEST OK")
 
 class App(tk.Tk):
     def __init__(self):
@@ -110,7 +110,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.license import require_license
 
 if __name__=="__main__":
-    if "--self-test" in sys.argv:self_test()
+    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
+        self_test()
+        os._exit(0)
     else:
         require_license("文件整理助手 Pro")
         App().mainloop()

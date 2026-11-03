@@ -48,9 +48,11 @@ class App:
  def stats(self):
   total=len(self.rows);done=sum(r.get("状态")=="已完成" for r in self.rows);block=sum(r.get("状态")=="阻塞" for r in self.rows);rate=done/total*100 if total else 0
   messagebox.showinfo("SOP统计",f"步骤：{total}\n已完成：{done}\n阻塞：{block}\n完成率：{rate:.1f}%")
-def self_test():assert "SOP名称" in FIELDS and len(ST)==4;print("SELF_TEST_OK")
+def self_test():
+    assert "SOP名称" in FIELDS and len(ST)==4
+    if sys.stdout is not None: print("SELF_TEST_OK")
 if __name__ == "__main__":
-    if "--self-test" in sys.argv:
+    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
         self_test()
         os._exit(0)
     else:

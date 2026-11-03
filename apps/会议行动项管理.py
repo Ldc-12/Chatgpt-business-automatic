@@ -53,9 +53,11 @@ class App:
   overdue=sum(1 for r in self.rows if r.get("状态")!="已完成" and (days(r.get("截止日期")) is not None and days(r.get("截止日期"))<0));open_n=sum(r.get("状态")!="已完成" for r in self.rows)
   messagebox.showinfo("执行统计",f"行动项：{len(self.rows)}\n未完成：{open_n}\n已完成：{len(self.rows)-open_n}\n已逾期：{overdue}")
  def script(self):messagebox.showinfo("提醒话术","您好，提醒一下会议行动项【行动项】，截止日期为【截止日期】，请更新当前进度；如有困难请及时反馈，谢谢。")
-def self_test():assert days(today())==0 and "负责人" in FIELDS;print("SELF_TEST_OK")
+def self_test():
+    assert days(today())==0 and "负责人" in FIELDS
+    if sys.stdout is not None: print("SELF_TEST_OK")
 if __name__ == "__main__":
-    if "--self-test" in sys.argv:
+    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
         self_test()
         os._exit(0)
     else:

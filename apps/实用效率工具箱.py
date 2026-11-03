@@ -23,7 +23,7 @@ def self_test():
     assert len(set(names)) == len(names)
     assert len(set(exes)) == len(exes)
     assert all(exe.lower().endswith(".exe") for exe in exes)
-    print("SELF_TEST_OK")
+    if sys.stdout is not None: print("SELF_TEST_OK")
 
 class App(tk.Tk):
     def __init__(self):
@@ -41,7 +41,8 @@ class App(tk.Tk):
         else: os.startfile(str(p))
 
 if __name__=="__main__":
-    if "--self-test" in sys.argv:
+    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
         self_test()
+        os._exit(0)
     else:
         App().mainloop()

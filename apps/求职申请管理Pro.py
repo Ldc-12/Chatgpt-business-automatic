@@ -57,9 +57,11 @@ class App:
  def stats(self):messagebox.showinfo("求职统计",f"总申请：{len(self.rows)}\n已获Offer：{sum(r.get('阶段')=='Offer' for r in self.rows)}\n面试中：{sum(r.get('阶段') in ('一面','二面','笔试') for r in self.rows)}\n待处理：{sum(r.get('阶段') in ('待申请','已申请') for r in self.rows)}")
  def script(self):
   messagebox.showinfo("面试/跟进话术","您好，我是XXX，应聘【职位】。想确认一下目前招聘进度及后续安排，如需补充材料我可以随时提供，谢谢！")
-def self_test(): assert "公司" in FIELDS and num("￥12,000")==12000 and due(today())==0;print("SELF_TEST_OK")
+def self_test():
+    assert "公司" in FIELDS and num("￥12,000")==12000 and due(today())==0
+    if sys.stdout is not None: print("SELF_TEST_OK")
 if __name__ == "__main__":
-    if "--self-test" in sys.argv:
+    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
         self_test()
         os._exit(0)
     else:

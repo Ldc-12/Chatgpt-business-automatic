@@ -50,7 +50,7 @@ class App:
   messagebox.showinfo("SOP统计",f"步骤：{total}\n已完成：{done}\n阻塞：{block}\n完成率：{rate:.1f}%")
 def self_test():
     assert "SOP名称" in FIELDS and len(ST)==4
-    if sys.stdout is not None: if sys.stdout is not None: print("SELF_TEST_OK")
+    if sys.stdout is not None: print("SELF_TEST_OK")
 if __name__ == "__main__":
     if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
         self_test()

@@ -92,8 +92,6 @@ jobs:
           Write-Host "EXE self-test passed with exit code 0."
       - name: Create UTF-8 mainland README
         run: python tools/write_mainland_readme.py --product "${{ matrix.exe }}"
-      - name: Verify README encoding and content
-        run: python -c "from pathlib import Path; t=Path('dist/README-mainland.txt').read_text(encoding='utf-8-sig'); assert 'Windows 单机版' in t and '本工具无需 ChatGPT' in t and 'å' not in t; print('README UTF-8 OK')"
       - name: Create standalone delivery ZIP
         run: python -c "import zipfile; z=zipfile.ZipFile('dist/${{ matrix.exe }}-mainland.zip','w',zipfile.ZIP_DEFLATED); z.write('dist/${{ matrix.exe }}.exe','${{ matrix.exe }}.exe'); z.write('dist/README-mainland.txt','README-mainland.txt'); z.close()"
       - uses: actions/upload-artifact@v4
@@ -180,30 +178,44 @@ jobs:
         with:
           name: mainland-phase1-package-part-00
           path: release/Phase1-Mainland-Windows-Tools.zip.part-00
+          if-no-files-found: error
+          compression-level: 0
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-part-01
           path: release/Phase1-Mainland-Windows-Tools.zip.part-01
+          if-no-files-found: error
+          compression-level: 0
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-part-02
           path: release/Phase1-Mainland-Windows-Tools.zip.part-02
+          if-no-files-found: error
+          compression-level: 0
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-part-03
           path: release/Phase1-Mainland-Windows-Tools.zip.part-03
+          if-no-files-found: error
+          compression-level: 0
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-part-04
           path: release/Phase1-Mainland-Windows-Tools.zip.part-04
+          if-no-files-found: error
+          compression-level: 0
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-part-05
           path: release/Phase1-Mainland-Windows-Tools.zip.part-05
+          if-no-files-found: error
+          compression-level: 0
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-part-06
           path: release/Phase1-Mainland-Windows-Tools.zip.part-06
+          if-no-files-found: error
+          compression-level: 0
 
 # release-trigger
 

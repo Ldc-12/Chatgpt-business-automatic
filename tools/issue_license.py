@@ -83,7 +83,7 @@ def issue_license(private_key_path, product, device_id, customer="", license_id=
     seller_fingerprint = public_key_fingerprint(seller_public_key)
     if public_key_der(client_public_key) != public_key_der(seller_public_key):
         raise ValueError(
-            "卖家私钥与客户端内嵌公钥不匹配，已拒绝签发。"
+            "LICENSE_KEY_MISMATCH: 卖家私钥与客户端内嵌公钥不匹配，已拒绝签发。"
             f"卖家公钥 SHA256={seller_fingerprint}；"
             f"客户端公钥 SHA256={client_fingerprint}。"
             "请勿替换客户端公钥，也不要上传或发送私钥。"

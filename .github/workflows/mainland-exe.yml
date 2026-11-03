@@ -81,11 +81,17 @@ jobs:
         shell: powershell
         run: |
           if (!(Test-Path "dist/${{ matrix.exe }}.exe")) { throw "EXE missing" }
-          $env:MAINLAND_EXE_SELF_TEST = "1"
-          $p = Start-Process -FilePath "dist/${{ matrix.exe }}.exe" -ArgumentList @("--self-test") -PassThru
-          Write-Host "Started frozen EXE self-test (PID=$($p.Id)) with MAINLAND_EXE_SELF_TEST=1."
+          $psi = New-Object System.Diagnostics.ProcessStartInfo
+          $psi.FileName = (Join-Path $PWD "dist/${{ matrix.exe }}.exe")
+          $psi.Arguments = "--self-test"
+          $psi.WorkingDirectory = $PWD.Path
+          $psi.UseShellExecute = $false
+          $psi.CreateNoWindow = $true
+          $psi.EnvironmentVariables["MAINLAND_EXE_SELF_TEST"] = "1"
+          $p = [System.Diagnostics.Process]::Start($psi)
+          Write-Host "Started frozen EXE self-test (PID=$($p.Id), args=$($psi.Arguments), env=MAINLAND_EXE_SELF_TEST=1)."
           if (!$p.WaitForExit(30000)) {
-            Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+            $p.Kill()
             throw "EXE self-test timed out after 30 seconds."
           }
           if ($p.ExitCode -ne 0) {

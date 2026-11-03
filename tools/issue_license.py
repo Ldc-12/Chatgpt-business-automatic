@@ -2,15 +2,22 @@
 
 The seller private key must remain on the seller's trusted machine. This tool
 never writes or uploads the private key; it only reads the path supplied by
-the seller and emits a signed JSON license.
+the seller and emits a signed JSON license. Before signing, it verifies that
+the private key matches the public key embedded in the client.
 """
 import argparse
 import base64
 import datetime as dt
+import hashlib
 import json
 import re
+import sys
 import uuid
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -20,6 +27,17 @@ def canonical(payload):
     return json.dumps(
         payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
+
+
+def public_key_der(public_key):
+    return public_key.public_bytes(
+        serialization.Encoding.DER,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+
+
+def public_key_fingerprint(public_key):
+    return hashlib.sha256(public_key_der(public_key)).hexdigest().upper()
 
 
 def build_payload(product, device_id, customer="", license_id="", expires="2099-12-31"):
@@ -51,7 +69,26 @@ def issue_license(private_key_path, product, device_id, customer="", license_id=
     if not isinstance(private_key, Ed25519PrivateKey):
         raise ValueError("private key must be an Ed25519 PEM key")
 
+    # Validate the request first, then fail closed if the seller key cannot
+    # produce signatures accepted by the shipped client.
     payload = build_payload(product, device_id, customer, license_id, expires)
+
+    from src import license as client_license
+
+    client_public_key = serialization.load_pem_public_key(
+        client_license.PUBLIC_KEY_PEM.encode("ascii")
+    )
+    seller_public_key = private_key.public_key()
+    client_fingerprint = public_key_fingerprint(client_public_key)
+    seller_fingerprint = public_key_fingerprint(seller_public_key)
+    if public_key_der(client_public_key) != public_key_der(seller_public_key):
+        raise ValueError(
+            "卖家私钥与客户端内嵌公钥不匹配，已拒绝签发。"
+            f"卖家公钥 SHA256={seller_fingerprint}；"
+            f"客户端公钥 SHA256={client_fingerprint}。"
+            "请勿替换客户端公钥，也不要上传或发送私钥。"
+        )
+
     signature = private_key.sign(canonical(payload))
     return {
         "payload": payload,

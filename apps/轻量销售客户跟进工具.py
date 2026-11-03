@@ -91,7 +91,14 @@ class App(tk.Tk):
             self.rows = []
             self.load_error = str(exc)
     def save(self):
+        if self.load_error:
+            raise RuntimeError("本机数据文件读取失败，请先使用 JSON恢复，避免覆盖原文件。")
         save_rows(self.path, self.rows)
+    def ensure_writable(self):
+        if self.load_error:
+            messagebox.showerror("暂不可修改", "当前数据文件读取失败。请先使用“JSON恢复”载入有效备份；原始文件目前仍被保留。", parent=self)
+            return False
+        return True
     def refresh(self):
         for i in self.tree.get_children():self.tree.delete(i)
         q=self.q.get().strip().lower(); f=self.f.get(); n=0
@@ -125,19 +132,23 @@ class App(tk.Tk):
             if [r.get(x,"") for x in FIELDS]==vals:return i
         return None
     def add(self):
+        if not self.ensure_writable(): return
         d=self.dialog({"阶段":"新线索","下次跟进":today()})
         if d:self.rows.append(d);self.save();self.refresh()
     def edit(self):
+        if not self.ensure_writable(): return
         i=self.index()
         if i is None:messagebox.showinfo("提示","请先选择客户");return
         d=self.dialog(self.rows[i])
         if d:self.rows[i]=d;self.save();self.refresh()
     def delete(self):
+        if not self.ensure_writable(): return
         s=self.tree.selection()
         if not s:return
         vals=[list(self.tree.item(x,"values")) for x in s]
         self.rows=[r for r in self.rows if [r.get(x,"") for x in FIELDS] not in vals];self.save();self.refresh()
     def imp(self):
+        if not self.ensure_writable(): return
         p=filedialog.askopenfilename(filetypes=[("CSV","*.csv")])
         if not p:return
         try:
@@ -162,9 +173,15 @@ class App(tk.Tk):
         )
         if not path:
             return
+        if os.path.abspath(path) == os.path.abspath(self.path):
+            messagebox.showerror("备份失败", "请选择与当前数据文件不同的位置，避免把备份保存到原文件。", parent=self)
+            return
+        if self.load_error:
+            messagebox.showerror("备份失败", "当前数据文件读取失败。请先使用“JSON恢复”；原始文件仍保留。", parent=self)
+            return
         try:
             save_rows(path, self.rows)
-            messagebox.showinfo("备份完成", "已保存完整 JSON 备份：\\n" + path, parent=self)
+            messagebox.showinfo("备份完成", "已保存完整 JSON 备份：\n" + path, parent=self)
         except Exception as exc:
             messagebox.showerror("备份失败", str(exc), parent=self)
 
@@ -178,7 +195,7 @@ class App(tk.Tk):
         try:
             restored = load_rows(path)
         except Exception as exc:
-            messagebox.showerror("恢复失败", "备份文件无效，当前数据未改变。\\n\\n" + str(exc), parent=self)
+            messagebox.showerror("恢复失败", "备份文件无效，当前数据未改变。\n\n" + str(exc), parent=self)
             return
         if not messagebox.askyesno("确认恢复", f"备份包含 {len(restored)} 条客户记录。恢复会替换当前列表，是否继续？", parent=self):
             return
@@ -192,9 +209,9 @@ class App(tk.Tk):
             self.rows = restored
             self.load_error = None
             self.refresh()
-            messagebox.showinfo("恢复完成", f"已恢复 {len(restored)} 条记录。\\n恢复前数据备份：{backup_path}", parent=self)
+            messagebox.showinfo("恢复完成", f"已恢复 {len(restored)} 条记录。\n恢复前数据备份：{backup_path}", parent=self)
         except Exception as exc:
-            messagebox.showerror("恢复失败", f"未能完成恢复：{exc}\\n恢复前备份（如已创建）：{backup_path}", parent=self)
+            messagebox.showerror("恢复失败", f"未能完成恢复：{exc}\n恢复前备份（如已创建）：{backup_path}", parent=self)
 
     def stats(self):
         total=sum(num(r.get("预计金额","")) for r in self.rows); won=sum(num(r.get("预计金额","")) for r in self.rows if r.get("阶段")=="成交")

@@ -54,7 +54,7 @@ class App:
   messagebox.showinfo("经营统计",f"收入：￥{inc:,.2f}\n支出：￥{out:,.2f}\n经营结余：￥{inc-out:,.2f}\n未收：￥{ar:,.2f}\n未付：￥{ap:,.2f}")
 def self_test():
     assert num("￥1,200")==1200 and "金额" in FIELDS
-    if sys.stdout is not None: if sys.stdout is not None: print("SELF_TEST_OK")
+    if sys.stdout is not None: print("SELF_TEST_OK")
 if __name__ == "__main__":
     if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
         self_test()

@@ -4,6 +4,18 @@ concurrency:
   cancel-in-progress: true
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "apps/**.py"
+      - "tests/test_mainland_*.py"
+      - "src/**.py"
+      - "tools/issue_license.py"
+      - "tools/export_license_public_key.py"
+      - "tools/write_mainland_readme.py"
+      - "tests/test_mainland_packaging.py"
+      - ".github/workflows/mainland-exe.yml"
+      - "docs/manuals/**"
+      - "docs/RELEASE_STATUS.md"
   push:
     paths:
       - "apps/**.py"
@@ -15,6 +27,7 @@ on:
       - "tests/test_mainland_packaging.py"
       - ".github/workflows/mainland-exe.yml"
       - "docs/manuals/**"
+      - "docs/RELEASE_STATUS.md"
 permissions:
   contents: read
   actions: read
@@ -27,45 +40,60 @@ jobs:
       matrix:
         include:
           - key: freelancer
+            product: "自由职业催款管理工具"
             source: apps/自由职业催款管理工具.py
             test: tests/test_mainland_freelancer_tool.py
             exe: MainlandFreelancerTool
           - key: sales
+            product: "轻量销售客户跟进工具"
             source: apps/轻量销售客户跟进工具.py
             test: tests/test_mainland_sales_tool.py
             exe: MainlandSalesFollowupTool
           - key: jobs
+            product: "求职申请管理Pro"
             source: apps/求职申请管理Pro.py
             test: tests/test_mainland_jobs.py
             exe: MainlandJobTrackerPro
           - key: finance
+            product: "小微企业经营收支管理"
             source: apps/小微企业经营收支管理.py
             test: tests/test_mainland_finance.py
             exe: MainlandSmallBusinessFinance
           - key: meetings
+            product: "会议行动项管理"
             source: apps/会议行动项管理.py
             test: tests/test_mainland_meetings.py
             exe: MainlandMeetingActions
           - key: sop
+            product: "SOP项目执行管理"
             source: apps/SOP项目执行管理.py
             test: tests/test_mainland_sop.py
             exe: MainlandSOPManager
           - key: launcher
+            product: "实用效率工具箱"
             source: apps/实用效率工具箱.py
             test: tests/test_mainland_launcher.py
             exe: MainlandEfficiencyToolbox
           - key: file-organizer
+            product: "文件整理助手 Pro"
             source: apps/文件整理助手Pro.py
             test: tests/test_mainland_file_organizer.py
             exe: MainlandFileOrganizerPro
           - key: image-tool
+            product: "图片批量处理助手 Pro"
             source: apps/图片批量处理助手Pro.py
             test: tests/test_mainland_image_tool.py
             exe: MainlandImageToolPro
           - key: pdf-tool
+            product: "PDF批量工具 Pro"
             source: apps/PDF批量工具Pro.py
             test: tests/test_mainland_pdf_tool.py
             exe: MainlandPDFToolPro
+          - key: inventory
+            product: "小店库存盘点助手"
+            source: apps/小店库存盘点助手.py
+            test: tests/test_mainland_inventory.py
+            exe: MainlandInventoryAssistant
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -77,8 +105,8 @@ jobs:
       - name: Source self-test
         run: python "${{ matrix.source }}" --self-test
       - name: Build EXE
-        run: pyinstaller --onefile --windowed --name "${{ matrix.exe }}" "${{ matrix.source }}"
-      - name: EXE launch smoke check (unlicensed first-run path)
+        run: pyinstaller --onefile --windowed --paths . --hidden-import src.license --name "${{ matrix.exe }}" "${{ matrix.source }}"
+      - name: Frozen EXE self-test (must exit successfully)
         shell: powershell
         run: |
           $exe = Join-Path $PWD "dist/${{ matrix.exe }}.exe"
@@ -87,19 +115,20 @@ jobs:
           $psi.FileName = $exe
           $psi.WorkingDirectory = $PWD.Path
           $psi.UseShellExecute = $false
-          $psi.CreateNoWindow = $false
+          $psi.CreateNoWindow = $true
+          $psi.EnvironmentVariables["MAINLAND_EXE_SELF_TEST"] = "1"
           $p = [System.Diagnostics.Process]::Start($psi)
-          Write-Host "Launched frozen EXE (PID=$($p.Id)); checking that the unlicensed first-run path stays alive."
-          Start-Sleep -Seconds 5
-          $p.Refresh()
-          if ($p.HasExited) {
-            throw "EXE exited during launch smoke check with exit code $($p.ExitCode)."
+          if (!$p.WaitForExit(30000)) {
+            $p.Kill()
+            $p.WaitForExit()
+            throw "Frozen EXE self-test timed out after 30 seconds."
           }
-          $p.Kill()
-          $p.WaitForExit()
-          Write-Host "EXE launch smoke check passed: process stayed alive for 5 seconds; CI terminated it."
+          if ($p.ExitCode -ne 0) {
+            throw "Frozen EXE self-test failed with exit code $($p.ExitCode)."
+          }
+          Write-Host "FROZEN_EXE_SELF_TEST_OK: process exited with code 0."
       - name: Create UTF-8 mainland README
-        run: python tools/write_mainland_readme.py --product "${{ matrix.exe }}"
+        run: python tools/write_mainland_readme.py --product "${{ matrix.product }}"
       - name: Create standalone delivery ZIP
         run: python -c "import zipfile; z=zipfile.ZipFile('dist/${{ matrix.exe }}-mainland.zip','w',zipfile.ZIP_DEFLATED); z.write('dist/${{ matrix.exe }}.exe','${{ matrix.exe }}.exe'); z.write('dist/README-mainland.txt','README-mainland.txt'); z.close()"
       - uses: actions/upload-artifact@v4
@@ -126,11 +155,11 @@ jobs:
           cat > release/README-大陆版.md <<'EOF'
           # 第一阶段 Windows 工具包
 
-          本包包含 10 款 Windows EXE（含工具箱启动器）。
+          本包包含 11 款 Windows EXE（10 款业务工具及工具箱启动器）。
           使用方式：双击对应 EXE 即可运行。
           数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
           工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。
-          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“文件整理助手 Pro.json”）。每款产品的授权文件分开保存。
+          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“小店库存盘点助手.json”）。每款产品的授权文件分开保存。
           EOF
           mkdir -p release/package
           mkdir -p release/package/说明书
@@ -143,7 +172,7 @@ jobs:
           套餐 A + 催款 + 客户跟进 + 求职管理
 
           套餐 C｜全能工作效率工具箱｜建议售价 39.9 元
-          全部 9 款实用工具 + 工具箱启动器
+          全部 10 款业务工具 + 工具箱启动器（含小店库存盘点助手）
 
           建议：低价单品用于引流，套餐用于提高客单价；具体售价上线后根据咨询和成交数据调整。
           EOF
@@ -166,15 +195,15 @@ jobs:
           printf '%s\n' "$bytes" > release/Phase1-Mainland-Windows-Tools.zip.bytes
           split -b 20m -d -a 2 "$package" "release/Phase1-Mainland-Windows-Tools.zip.part-"
           parts=(release/Phase1-Mainland-Windows-Tools.zip.part-*)
-          if [ "${#parts[@]}" -gt 7 ]; then
-            echo "Package exceeds the supported 7 x 20 MiB chunk size."
+          if [ "${#parts[@]}" -gt 9 ]; then
+            echo "Package exceeds the supported 9 x 20 MiB chunk size."
             exit 1
           fi
-          for part in 00 01 02 03 04 05 06; do
+          for part in 00 01 02 03 04 05 06 07 08; do
             file="release/Phase1-Mainland-Windows-Tools.zip.part-$part"
             if [ ! -f "$file" ]; then : > "$file"; fi
           done
-          printf 'file=Phase1-Mainland-Windows-Tools.zip\nbytes=%s\nsha256=%s\nparts=7\npart_size=20MiB\n' "$bytes" "$(cut -d' ' -f1 release/Phase1-Mainland-Windows-Tools.zip.sha256)" > release/Phase1-Mainland-Windows-Tools.manifest.txt
+          printf 'file=Phase1-Mainland-Windows-Tools.zip\nbytes=%s\nsha256=%s\nparts=9\npart_size=20MiB\n' "$bytes" "$(cut -d' ' -f1 release/Phase1-Mainland-Windows-Tools.zip.sha256)" > release/Phase1-Mainland-Windows-Tools.manifest.txt
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-manifest
@@ -225,6 +254,20 @@ jobs:
           if-no-files-found: error
           compression-level: 0
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-07
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-07
+          if-no-files-found: error
+          compression-level: 0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-08
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-08
+          if-no-files-found: error
+          compression-level: 0
+
 # release-trigger
 
-# delivery-build-trigger-v7
+# delivery-build-trigger-v8

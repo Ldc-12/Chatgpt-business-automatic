@@ -26,6 +26,7 @@ APP_ENTRYPOINTS = [
     "会议行动项管理.py",
     "SOP项目执行管理.py",
     "实用效率工具箱.py",
+    "小店库存盘点助手.py",
 ]
 
 
@@ -36,3 +37,21 @@ def test_all_frozen_apps_support_noninteractive_exe_smoke_mode():
         entrypoint = source.rsplit('if __name__', 1)[-1]
         assert 'MAINLAND_EXE_SELF_TEST' in entrypoint, filename
         assert 'os._exit(0)' in entrypoint, filename
+
+
+def test_frozen_exe_build_includes_license_module_and_checks_real_exit_code():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    assert "--paths ." in workflow
+    assert "--hidden-import src.license" in workflow
+    assert 'EnvironmentVariables["MAINLAND_EXE_SELF_TEST"] = "1"' in workflow
+    assert "WaitForExit(30000)" in workflow
+    assert "$p.ExitCode -ne 0" in workflow
+    assert "FROZEN_EXE_SELF_TEST_OK" in workflow
+
+
+def test_package_chunking_supports_nine_parts():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    assert '"${#parts[@]}" -gt 9' in workflow
+    assert "parts=9" in workflow
+    assert "mainland-phase1-package-part-07" in workflow
+    assert "mainland-phase1-package-part-08" in workflow

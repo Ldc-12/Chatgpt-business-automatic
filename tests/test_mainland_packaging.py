@@ -27,6 +27,7 @@ APP_ENTRYPOINTS = [
     "SOP项目执行管理.py",
     "实用效率工具箱.py",
     "小店库存盘点助手.py",
+    "供应商采购比价助手.py",
 ]
 
 
@@ -49,9 +50,12 @@ def test_frozen_exe_build_includes_license_module_and_checks_real_exit_code():
     assert "FROZEN_EXE_SELF_TEST_OK" in workflow
 
 
-def test_package_chunking_supports_nine_parts():
+def test_package_chunking_supports_twelve_parts():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
-    assert '"${#parts[@]}" -gt 9' in workflow
-    assert "parts=9" in workflow
+    assert '"${#parts[@]}" -gt 12' in workflow
+    assert "parts=12" in workflow
     assert "mainland-phase1-package-part-07" in workflow
     assert "mainland-phase1-package-part-08" in workflow
+    assert "mainland-phase1-package-part-09" in workflow
+    assert "mainland-phase1-package-part-10" in workflow
+    assert "mainland-phase1-package-part-11" in workflow

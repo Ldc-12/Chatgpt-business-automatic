@@ -139,3 +139,14 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - manifest artifact `mainland-phase1-package-manifest` ID `13318790929` 已实际下载，声明 bytes `191564121`、SHA256 `3f5bd56739c9957b3c39f4fdf14d32ae46ef70b70567d879b3ce363886ce7c71`、parts `12`；与实际内层 ZIP 字节数和 SHA256 完全一致。
 - 12 个分片 artifact 已上传：00 `13319215248`、01 `13317324002`、02 `13317473666`、03 `13317309033`、04 `13317684342`、05 `13317789292`、06 `13318511454`、07 `13317694413`、08 `13318815914`、09 `13317358968`、10 `13317784389`、11 `13317598466`。10、11 为补齐固定 12 段格式的空分片（仅 ZIP 封装开销），有效数据已包含在 00–09。
 - **交付状态：** 供应商采购比价助手已通过 GitHub Windows 源码测试、PyInstaller 构建、冻结 EXE 非交互启动/退出码检查，以及客户套餐 ZIP/manifest 下载核验；代码与构建层面可交付。整个产品线仍标记“待最终验收”：真实卖家私钥指纹匹配、真实 Windows 授权签发/激活/重启测试尚未完成，不能称为正式授权销售版。
+
+
+## 2026-11-04 PR #11 合并后 main 验收记录
+
+- PR #11 已在 PR run #188 完成 12/12 Windows EXE 构建、12/12 产品回归测试、12/12 冻结 EXE 自测及客户套餐 job；PR run：[#41825269055](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41825269055)，结论 success。
+- PR #11 已 squash 合并至 main，合并提交：`a8dc205e3f231e10b2545df80bb116e915613196`。合并后开放 PR 数为 0。
+- run #188 客户包 artifact ID `13319735280` 已下载核验：外层 ZIP 191,622,642 bytes，SHA256 `84e2dea108ffb6c12bcdd257f2412fa45eea58962d2e31a53e98aa8d2190e8eb`；内层 ZIP 191,568,534 bytes，SHA256 `73c48b0a9d9a4ebecfe27ff349bcced679ce88a215c2939d619c094b262769dc`。外层和内层 CRC 均通过，内层 29 个条目（27 文件、2 目录），包含 12 个 EXE、12 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明；新增比价助手 EXE 和说明书均在包内。ZIP 时间戳 2026-11-04 20:01:16（中国标准时间）。
+- run #188 manifest artifact ID `13319455772`，声明 bytes `191568534`、SHA256 `73c48b0a9d9a4ebecfe27ff349bcced679ce88a215c2939d619c094b262769dc`、parts `12`，与实际内层 ZIP 完全一致。
+- run #188 的 12/12 Windows build jobs 和 package job 均 success；新产品测试 `25 passed`，冻结 EXE 自测退出码 0。
+- 当前最新主线合并提交为 `a8dc205e3f231e10b2545df80bb116e915613196`。此文档更新将触发 main push 的独立构建；最终 main 客户包应以该 main push run 的 artifact 为准，而非 PR artifact。
+- **授权最终验收仍未完成：** 两份仓库公钥指纹仍不同；卖家私钥不得上传。真实卖家公钥匹配和 Windows 授权激活/重启测试待用户本地公钥指纹确认。

@@ -147,3 +147,18 @@ def test_validation_rejects_bad_tax_quantity_dates_and_duplicate_ids(tmp_path):
         assert "已存在" in str(exc)
     else:
         raise AssertionError("duplicate quote ID accepted")
+
+
+def test_malformed_backup_shapes_are_rejected_without_data_loss(tmp_path):
+    store = module.PurchaseStore(tmp_path / "quotes.json")
+    store.add(quote())
+    for payload in [[], {"format": module.BACKUP_FORMAT, "version": 1, "quotes": [None]}]:
+        bad = tmp_path / "malformed.json"
+        bad.write_text(json.dumps(payload), encoding="utf-8")
+        try:
+            store.restore(bad)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("malformed backup accepted")
+        assert len(module.PurchaseStore(tmp_path / "quotes.json").quotes) == 1

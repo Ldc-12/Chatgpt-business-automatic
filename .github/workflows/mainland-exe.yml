@@ -4,6 +4,17 @@ concurrency:
   cancel-in-progress: true
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "apps/**.py"
+      - "tests/test_mainland_*.py"
+      - "src/**.py"
+      - "tools/issue_license.py"
+      - "tools/export_license_public_key.py"
+      - "tools/write_mainland_readme.py"
+      - "tests/test_mainland_packaging.py"
+      - ".github/workflows/mainland-exe.yml"
+      - "docs/manuals/**"
   push:
     paths:
       - "apps/**.py"

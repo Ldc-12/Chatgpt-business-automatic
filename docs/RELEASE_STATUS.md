@@ -103,3 +103,13 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 合并前 PR head 的 Mainland Windows EXE run #170：[#41821090496](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821090496)，11/11 个 Windows build job 与客户套餐 job 全部 success；每款冻结 EXE 自测退出码为 0。客户包 artifact ID `13317706559`，manifest artifact ID `13317191946`。
 - 合并触发的 main push run #169 被 PR synchronize 事件 run #170 的共享 concurrency group 取消；run #170 验证的是相同的已合并源码树。文档提交后将再触发 main push 构建，单独确认 main 分支。
 - Autonomous Business Engine run #356：[#41821071255](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821071255)，main 合并提交上 build/deploy 均 success；完整测试 `45 passed`，product_factory 生成 12 个产品页面，xianyu_factory 执行成功；Pages artifact ID `13317615142`，48,830 bytes。
+
+
+## 2026-11-04 main 分支最终复核：run #171
+
+- main commit：`cb50ad35f2dc76e0e70de85a8e5881dee4f89688`；Mainland Windows EXE run #171：[#41821589374](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821589374)，整体 success，11/11 Windows build jobs 与客户套餐 job 全部 success。
+- 11 款冻结 EXE 均通过非交互自测（退出码 0），11 份产品回归测试全部通过；各 job 测试数：jobs 15、SOP 15、PDF 15、sales 19、launcher 15、file organizer 18、meetings 15、inventory 20、finance 15、freelancer 17、image 15。
+- main 客户套餐 artifact ID `13317801473`，外层 ZIP 176,862,637 bytes，SHA256 `50fd5d3a0b9a2af2bab4fd35c91947666b931937a62b99a27acb3996783fc7dd`；内层 ZIP 176,812,698 bytes，SHA256 `6e77236f61acbff1db5204c622cc5cc5ace0c26ec9685457c4fa2bbdfd73a104`。已下载，CRC 完整；27 个条目、25 个文件：11 EXE、11 产品说明书、1 说明书索引、1 大陆版 README、1 套餐说明。套餐说明时间戳：2026-11-04 19:33:00（中国标准时间）。
+- manifest artifact ID `13317012167`，SHA256 与实际内层 ZIP 一致，字节数 176,812,698，分片数 9。9 个分片 artifact 全部上传成功。
+- 最新 Autonomous Business Engine run #357：[#41821589355](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821589355)，build/deploy success，`45 passed`，生成 12 个产品页面；Pages artifact ID `13317861698`，48,821 bytes。
+- **发布状态仍为待最终验收：** 以上证明 11 款 EXE 的构建、冻结模块导入自测和套餐内容通过 CI；未完成卖家私钥指纹匹配及真实 Windows 设备的授权签发、激活、重启验证，不能标记为可直接销售的正式授权版。

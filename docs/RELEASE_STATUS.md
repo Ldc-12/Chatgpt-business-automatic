@@ -113,3 +113,29 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - manifest artifact ID `13317012167`，SHA256 与实际内层 ZIP 一致，字节数 176,812,698，分片数 9。9 个分片 artifact 全部上传成功。
 - 最新 Autonomous Business Engine run #357：[#41821589355](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821589355)，build/deploy success，`45 passed`，生成 12 个产品页面；Pages artifact ID `13317861698`，48,821 bytes。
 - **发布状态仍为待最终验收：** 以上证明 11 款 EXE 的构建、冻结模块导入自测和套餐内容通过 CI；未完成卖家私钥指纹匹配及真实 Windows 设备的授权签发、激活、重启验证，不能标记为可直接销售的正式授权版。
+
+
+## 2026-11-04 本轮复验与第三阶段产品开发
+
+- 本轮重新检查 main 最新提交 `6b74b803012cd40fadf05b0f984a0c02875209b0`、开放 PR（0 个），并复核 Mainland Windows EXE run #171：[#41821589374](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821589374)。
+- 11/11 Windows build jobs、套餐 job 全部 success。小店库存盘点助手 job #126545796209：`20 passed`，冻结 EXE 日志出现 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`，artifact `mainland-inventory-windows` ID `13317751830`。
+- Autonomous Business Engine run #357：[#41821589355](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821589355)，build/deploy success；测试 `45 passed`，product_factory 生成 12 个产品页面，xianyu_factory 执行成功；Pages artifact ID `13317861698`。
+- 本轮实际下载客户包 artifact ID `13317801473`（外层 176,862,637 bytes，SHA256 `50fd5d3a0b9a2af2bab4fd35c91947666b931937a62b99a27acb3996783fc7dd`），解出内层 ZIP 176,812,698 bytes，SHA256 `6e77236f61acbff1db5204c622cc5cc5ace0c26ec9685457c4fa2bbdfd73a104`。`ZipFile.testzip() = None`；27 个条目，11 个 EXE、11 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。套餐说明时间戳 2026-11-04 19:33:00（中国标准时间）。
+- manifest artifact ID `13317012167` 已下载，记录字节数 `176812698`、SHA256 `6e77236f61acbff1db5204c622cc5cc5ace0c26ec9685457c4fa2bbdfd73a104`、分片数 9，与实际内层 ZIP 完全一致。
+- 新增开发产品：`供应商采购比价助手`，源码 `apps/供应商采购比价助手.py`，测试 `tests/test_mainland_purchase_compare.py`，中文说明书 `docs/manuals/11-供应商采购比价助手-用户说明书.md`。采用 Decimal 计算含税到货单位成本，过期报价不参与推荐；支持供应商多报价、搜索、CSV 原子追加导入/导出、JSON 备份恢复和本地持久化。
+- 已将新产品加入独立授权路径回归测试、冻结 EXE 自测矩阵、套餐和说明书索引；客户 ZIP 分片上限从 9 提升到 12 × 20 MiB，以覆盖新增 EXE 后的包体增长。
+- 当前新产品分支：`feat/purchase-price-comparison-assistant`。只有 PR 的 Windows Actions、冻结 EXE 自测及客户套餐下载核验全部通过后，才可标记为可交付。
+- 授权阻塞未改变：两份仓库公钥指纹不同，卖家私钥不在仓库（且不应上传）；真实卖家公钥匹配及真实 Windows 授权激活/重启测试仍待最终验收。
+
+
+## 2026-11-04 PR #11 供应商采购比价助手：Windows 构建与客户包验收通过
+
+- PR #11：[#Add offline supplier purchase price comparison assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/11)，分支 `feat/purchase-price-comparison-assistant`。
+- Mainland Windows EXE run #186：[#41824361112](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41824361112)，PR head `fc0f40a871f388b24cf3b2871dfa2a77101fff7b`，结论 `success`。12/12 Windows build jobs 与客户套餐 job 全部 success。
+- 12 个产品 pytest 结果：jobs 15、freelancer 17、inventory 20、finance 15、purchase-compare 25、PDF 15、file-organizer 18、image-tool 15、meetings 15、launcher 15、SOP 15、sales 19；所有冻结 EXE 均通过 `FROZEN_EXE_SELF_TEST_OK`，退出码 0。日志未发现失败、Traceback 或 `ModuleNotFoundError`。
+- 新产品 purchase-compare job ID `126555587234`，`25 passed in 0.78s`；EXE `MainlandPurchaseCompare.exe` 构建成功，冻结 EXE 自测通过；单品 artifact `mainland-purchase-compare-windows` ID `13318034217`，29,520,205 bytes。
+- 客户套餐 artifact `mainland-phase1-customer-package` ID `13317478725`，外层 ZIP 191,618,390 bytes，SHA256 `3f7816d588696f29da2669543d37b62baeeb5eae6a008b9ee9f1ae7c3781ed24`。已实际下载并解出内层客户 ZIP：191,564,121 bytes，SHA256 `3f5bd56739c9957b3c39f4fdf14d32ae46ef70b70567d879b3ce363886ce7c71`；外层、内层 `ZipFile.testzip() = None`。
+- 内层 ZIP 共 29 个条目（27 个文件、2 个目录）：12 个 EXE、12 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT。新增文件 `MainlandPurchaseCompare.exe` 和 `11-供应商采购比价助手-用户说明书.md` 均存在。套餐说明时间戳 2026-11-04 19:54:00（中国标准时间）。
+- manifest artifact `mainland-phase1-package-manifest` ID `13318790929` 已实际下载，声明 bytes `191564121`、SHA256 `3f5bd56739c9957b3c39f4fdf14d32ae46ef70b70567d879b3ce363886ce7c71`、parts `12`；与实际内层 ZIP 字节数和 SHA256 完全一致。
+- 12 个分片 artifact 已上传：00 `13319215248`、01 `13317324002`、02 `13317473666`、03 `13317309033`、04 `13317684342`、05 `13317789292`、06 `13318511454`、07 `13317694413`、08 `13318815914`、09 `13317358968`、10 `13317784389`、11 `13317598466`。10、11 为补齐固定 12 段格式的空分片（仅 ZIP 封装开销），有效数据已包含在 00–09。
+- **交付状态：** 供应商采购比价助手已通过 GitHub Windows 源码测试、PyInstaller 构建、冻结 EXE 非交互启动/退出码检查，以及客户套餐 ZIP/manifest 下载核验；代码与构建层面可交付。整个产品线仍标记“待最终验收”：真实卖家私钥指纹匹配、真实 Windows 授权签发/激活/重启测试尚未完成，不能称为正式授权销售版。

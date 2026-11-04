@@ -105,6 +105,7 @@ def test_default_license_paths_match_all_protected_product_ids():
         "会议行动项管理",
         "SOP项目执行管理",
         "小店库存盘点助手",
+        "供应商采购比价助手",
     ]
     paths = [lic.default_license_path(product) for product in products]
     assert len(set(paths)) == len(products)

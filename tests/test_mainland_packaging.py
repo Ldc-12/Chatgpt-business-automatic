@@ -53,7 +53,7 @@ def test_frozen_exe_build_includes_license_module_and_checks_real_exit_code():
 
 def test_package_chunking_uses_real_part_count_and_supports_twelve_parts():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
-    assert '"${#parts[@]}" -gt 12' in workflow
+    assert 'if [ "$parts_count" -gt 12 ]; then' in workflow
     assert "split -b 18m" in workflow
     assert "parts_count=${#parts[@]}" in workflow
     assert "parts=%s" in workflow

@@ -167,3 +167,14 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - Autonomous Business Engine run #360：[#41826304325](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41826304325)，同一 main commit，build/deploy 两个 job 均 success；Pages artifact ID `13319018081`。
 
 **当前交付判断：** 12 款 EXE 已在 GitHub Windows runner 上完成回归测试、PyInstaller 构建及非交互冻结 EXE 退出码自测；最新客户 ZIP 已实际下载、校验 CRC、条目数量及 manifest SHA256。它仍不是完成真实 Windows GUI 使用与卖家授权激活验收的正式销售版。卖家私钥不在仓库，`src/license.py` 内嵌公钥与 config 公钥指纹不同；不得猜测或更换密钥。必须由卖家在可信 Windows 电脑本地导出公钥 SHA256 指纹后比对，随后进行真实签发、设备绑定、到期日、签名、激活与重启测试。
+
+
+## 第二阶段产品：报价单生成器（PR 开发中，待 Windows CI）
+
+- 分支：`feat/local-quotation-generator`；新增 `apps/报价单生成器.py`，授权产品 ID：`报价单生成器`。
+- 功能：客户与报价信息管理、多行报价明细、数量×单价自动计算、税率与含税总计、中文 PDF 报价单、CSV 多明细分组导入/导出、本地 JSON 持久化、备份与恢复。
+- PDF 使用 ReportLab 内置 STSong-Light 中文 CID 字体；依赖已加入 requirements。冻结 EXE 自测会实际生成 PDF，避免只验证导入模块；仅报价单 EXE 收集 ReportLab 子模块，避免给其他产品增加体积。
+- CSV 导入遇到重复报价单号、缺字段、非法数量/日期或同一报价单元数据不一致时整批拒绝；备份恢复先验证格式和全部记录，再写入。
+- 新增回归测试覆盖金额/税额、日期/数量验证、持久化、重复编号、CSV 多行分组与原子拒绝、备份恢复、报价单号生成及 PDF 生成。
+- 已加入 13 款 Windows 构建矩阵、独立授权路径测试、客户套餐与中文说明书索引；分片改为 18 MiB 并在 manifest 记录实际分片数。产品尚未通过 Windows CI 和冻结 EXE PDF 自测，不得作为交付成品。
+- 本分支不修改任何生产公钥或卖家私钥。真实卖家密钥匹配和 Windows 授权激活仍待最终验收。

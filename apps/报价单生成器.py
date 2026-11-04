@@ -3,6 +3,7 @@ import csv
 import json
 import os
 import sys
+import tempfile
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
@@ -530,6 +531,10 @@ def self_test():
     })
     assert calculate_totals(sample)["total"] == Decimal("226.00")
     assert PRODUCT == "报价单生成器"
+    with tempfile.TemporaryDirectory() as directory:
+        output = Path(directory) / "self-test.pdf"
+        export_quote_pdf(sample, output)
+        assert output.read_bytes().startswith(b"%PDF-")
     print("SELF_TEST_OK")
 
 

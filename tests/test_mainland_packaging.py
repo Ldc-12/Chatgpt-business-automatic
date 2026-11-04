@@ -47,3 +47,11 @@ def test_frozen_exe_build_includes_license_module_and_checks_real_exit_code():
     assert "WaitForExit(30000)" in workflow
     assert "$p.ExitCode -ne 0" in workflow
     assert "FROZEN_EXE_SELF_TEST_OK" in workflow
+
+
+def test_package_chunking_supports_nine_parts():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    assert '"${#parts[@]}" -gt 9' in workflow
+    assert "parts=9" in workflow
+    assert "mainland-phase1-package-part-07" in workflow
+    assert "mainland-phase1-package-part-08" in workflow

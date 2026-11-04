@@ -75,3 +75,12 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 最新 scheduled run #355：[#41785613998](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41785613998)，main 提交仍为 `b7d8ba8557326d0dcc7c50d42004651f93b98b32`，结论 success。
 - build/deploy 两个 job 均 success；测试日志显示 `37 passed`，product_factory 生成 12 个产品页面，xianyu_factory 执行成功。
 - Pages artifact ID：`13301385443`，48,842 bytes。该工作流成功不代表 Windows EXE 已通过实际启动验收。
+
+
+## 2026-11-04 冻结 EXE 修复后套餐分片失败与修复
+
+- Mainland Windows EXE run #164：[#41819541286](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41819541286)。11/11 个 Windows build job 全部 success；冻结 EXE 自测均在 30 秒内退出且退出码为 0。inventory/job/finance/sales 日志明确出现 `FROZEN_EXE_SELF_TEST_OK`，对应 pytest 分别为 19、14、14、18 项通过。
+- 客户套餐 job 在最后的分片数量限制处失败：`Package exceeds the supported 7 x 20 MiB chunk size.`，不是 EXE 编译或自测失败。
+- 客户包 artifact ID：`13316700617`。已下载核验：外层 ZIP 176,860,994 bytes，SHA256 `e3e1c1acd723881dc80086125e71a792ceba71e862de37663109fed4dd0355ed`；内层客户 ZIP 176,810,956 bytes，SHA256 `46b5725a3466ce183ddf0325a9354f78526119367d3ea72a7fd51129b9be64f7`。CRC 完整，27 个条目（25 个文件、2 个目录），包含 11 个 EXE、11 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明；ZIP 文件时间戳为 2026-11-04 19:15:50（中国标准时间）。
+- 已把分片容量提高到 9 × 20 MiB，并新增第 07、08 分片上传步骤及回归测试。下一次 CI 必须验证完整 package job 和 9 个分片 artifact，不能把 run #164 的失败状态改写成成功。
+- **run #164 的 ZIP 结构完整，但工作流整体失败；仍不是正式发布包。** 授权私钥匹配与真实 Windows 授权激活继续待最终验收。

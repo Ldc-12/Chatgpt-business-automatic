@@ -84,3 +84,14 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 客户包 artifact ID：`13316700617`。已下载核验：外层 ZIP 176,860,994 bytes，SHA256 `e3e1c1acd723881dc80086125e71a792ceba71e862de37663109fed4dd0355ed`；内层客户 ZIP 176,810,956 bytes，SHA256 `46b5725a3466ce183ddf0325a9354f78526119367d3ea72a7fd51129b9be64f7`。CRC 完整，27 个条目（25 个文件、2 个目录），包含 11 个 EXE、11 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明；ZIP 文件时间戳为 2026-11-04 19:15:50（中国标准时间）。
 - 已把分片容量提高到 9 × 20 MiB，并新增第 07、08 分片上传步骤及回归测试。下一次 CI 必须验证完整 package job 和 9 个分片 artifact，不能把 run #164 的失败状态改写成成功。
 - **run #164 的 ZIP 结构完整，但工作流整体失败；仍不是正式发布包。** 授权私钥匹配与真实 Windows 授权激活继续待最终验收。
+
+
+## 2026-11-04 PR #10 修复后成功构建与客户包验收（run #167）
+
+- Mainland Windows EXE run #167：[#41820028863](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41820028863)，提交 `ad10090eda883b88cbd85db79e454b31746cc2c7`，结论 success。
+- 11/11 个 Windows build job 全部 success，客户套餐 job success；13/13 check runs success，无失败项。
+- 每款产品的回归测试均通过：finance 15、file organizer 18、meetings 15、PDF 15、jobs 15、launcher 15、inventory 20、SOP 15、image 15、sales 19、freelancer 17。11/11 个冻结 EXE 的日志均有 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`，无 `ModuleNotFoundError` 或 traceback。
+- 客户套餐 artifact：`mainland-phase1-customer-package`，ID `13316323052`，外层 artifact ZIP 176,855,187 bytes，SHA256 `72c10fecebbbc76f7d837de449bb54188d6a06da1b3af4de82c1a8169f8896dd`。
+- 已实际下载并检查内层 `Phase1-Mainland-Windows-Tools.zip`：176,805,147 bytes，SHA256 `8f4da15af5a45b6d34ef747864f0bfc8316460ba3dacf15b1d1c34329ead0e7a`；`ZipFile.testzip() = None`。共 27 个条目（25 文件、2 目录）：11 个 EXE、11 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT。套餐说明文件时间戳：2026-11-04 19:22:28（中国标准时间）。
+- manifest artifact ID `13316627154`，记录的 ZIP 字节数和 SHA256 与实际下载内层 ZIP 完全一致，`parts=9`。9 个分片 artifact：00 `13316771754`、01 `13317805361`、02 `13317925288`、03 `13316442708`、04 `13316188755`、05 `13317940298`、06 `13316821742`、07 `13316677163`、08 `13317380068`。
+- **结论：** 新版 11 款 Windows EXE 已通过 CI 冻结模块导入与非交互退出码自测，客户 ZIP 和 manifest 已下载核验；仍未完成卖家私钥匹配及真实 Windows 授权签发/激活/重启验收，故标记为“待最终验收”，不是已可正式销售。

@@ -47,3 +47,14 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 ## 当前结论
 
 第一阶段 10 款 Windows EXE 已通过 GitHub Actions 的 10/10 矩阵构建与 ZIP 内容验收，最新客户包可供下载并进行后续终端验收。**这仍是待最终验收版本，不是已完成真实授权激活、可直接对外销售的正式成品。**
+
+
+## 第二阶段新增产品：小店库存盘点助手（开发中，待 CI 验收）
+
+- 新增源码：`apps/小店库存盘点助手.py`，产品授权 ID：`小店库存盘点助手`。
+- 功能：本地商品台账、商品编码唯一性检查、库存数量/预警下限、关键词搜索、CSV 追加导入/导出、JSON 备份与恢复。
+- 数据保存在 `%LOCALAPPDATA%\\MainlandBusinessTools\\inventory.json`；无需 VPN、ChatGPT、云端 AI 或外部 API。
+- CSV 导入遇到重复编码、缺字段或非法数字时整批拒绝，不覆盖现有数据。
+- 新增回归测试：保存重载、编辑、CSV 往返、重复导入原子拒绝、错误 CSV 保留原数据、备份恢复及错误备份拒绝。
+- 已加入 Mainland Windows EXE 矩阵及客户套餐，新增中文说明书，并把授权路径加入独立产品 ID 测试。
+- 当前分支：`feat/inventory-counting-assistant`。此版本尚未通过 GitHub Actions Windows 构建与实际 Windows GUI 验收，不能作为可交付成品；卖家私钥匹配阻塞仍保持独立。

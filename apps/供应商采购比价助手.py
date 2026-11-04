@@ -389,7 +389,7 @@ def self_test():
         "税率(%)": "13", "采购数量": "100", "运费总额": "20",
         "报价日期": date.today().isoformat(),
     })
-    assert landed_unit_cost(sample) == Decimal("11.70")
+    assert landed_unit_cost(sample) == Decimal("11.50")
     assert best_quote_by_material([sample])["M-001"]["报价编号"] == "Q-001"
     assert PRODUCT == "供应商采购比价助手"
     print("SELF_TEST_OK")

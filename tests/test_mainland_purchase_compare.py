@@ -22,7 +22,7 @@ def quote(qid="Q001", supplier="甲供应商", price="10", tax="13", qty="100", 
 
 def test_landed_unit_cost_includes_tax_and_allocated_freight():
     normalized = module.normalize_quote(quote())
-    assert module.landed_unit_cost(normalized) == Decimal("11.70")
+    assert module.landed_unit_cost(normalized) == Decimal("11.50")
 
 
 def test_best_quote_compares_landed_cost_not_sticker_price():

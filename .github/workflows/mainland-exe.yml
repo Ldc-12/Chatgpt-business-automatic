@@ -16,6 +16,7 @@ on:
       - ".github/workflows/mainland-exe.yml"
       - "docs/manuals/**"
       - "docs/RELEASE_STATUS.md"
+      - "requirements.txt"
   push:
     paths:
       - "apps/**.py"
@@ -28,6 +29,7 @@ on:
       - ".github/workflows/mainland-exe.yml"
       - "docs/manuals/**"
       - "docs/RELEASE_STATUS.md"
+      - "requirements.txt"
 permissions:
   contents: read
   actions: read
@@ -114,8 +116,12 @@ jobs:
         run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py
       - name: Source self-test
         run: python "${{ matrix.source }}" --self-test
-      - name: Build EXE
+      - name: Build EXE with ReportLab support
+        if: matrix.key == 'quotation'
         run: pyinstaller --onefile --windowed --paths . --hidden-import src.license --collect-submodules reportlab --name "${{ matrix.exe }}" "${{ matrix.source }}"
+      - name: Build standard EXE
+        if: matrix.key != 'quotation'
+        run: pyinstaller --onefile --windowed --paths . --hidden-import src.license --name "${{ matrix.exe }}" "${{ matrix.source }}"
       - name: Frozen EXE self-test (must exit successfully)
         shell: powershell
         run: |

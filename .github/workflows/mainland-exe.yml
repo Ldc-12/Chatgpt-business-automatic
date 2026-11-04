@@ -66,6 +66,10 @@ jobs:
             source: apps/PDF批量工具Pro.py
             test: tests/test_mainland_pdf_tool.py
             exe: MainlandPDFToolPro
+          - key: inventory
+            source: apps/小店库存盘点助手.py
+            test: tests/test_mainland_inventory.py
+            exe: MainlandInventoryAssistant
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -126,11 +130,11 @@ jobs:
           cat > release/README-大陆版.md <<'EOF'
           # 第一阶段 Windows 工具包
 
-          本包包含 10 款 Windows EXE（含工具箱启动器）。
+          本包包含 11 款 Windows EXE（10 款业务工具及工具箱启动器）。
           使用方式：双击对应 EXE 即可运行。
           数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
           工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。
-          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“文件整理助手 Pro.json”）。每款产品的授权文件分开保存。
+          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“小店库存盘点助手.json”）。每款产品的授权文件分开保存。
           EOF
           mkdir -p release/package
           mkdir -p release/package/说明书
@@ -143,7 +147,7 @@ jobs:
           套餐 A + 催款 + 客户跟进 + 求职管理
 
           套餐 C｜全能工作效率工具箱｜建议售价 39.9 元
-          全部 9 款实用工具 + 工具箱启动器
+          全部 10 款业务工具 + 工具箱启动器（含小店库存盘点助手）
 
           建议：低价单品用于引流，套餐用于提高客单价；具体售价上线后根据咨询和成交数据调整。
           EOF
@@ -227,4 +231,4 @@ jobs:
 
 # release-trigger
 
-# delivery-build-trigger-v7
+# delivery-build-trigger-v8

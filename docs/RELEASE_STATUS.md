@@ -5,7 +5,7 @@
 - 主分支构建提交：`58016ae270f00dc9a488d5edfc5fbd81393395f9`（PR #9 合并提交）。
 - 授权防错 PR：[#9 Guard license issuance with embedded-key match and add public-key export](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/9)，已合并。
 - Mainland Windows EXE Actions：[#151](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41638303845)，结论：`success`。
-- 10/10 个 Windows 矩阵任务全部成功：自动回归测试、源码自测、PyInstaller EXE 构建、首次启动冒烟检查、UTF-8 中文 README 和单品 ZIP 均通过。
+- 10/10 个 Windows 矩阵任务的 job 结论均为 success；但 2026-11-04 对冻结 EXE 日志复核发现旧冒烟检查存在假阳性（见下方更正），不能据此认定 EXE 可运行。
 - 总套餐打包 job：成功；Autonomous Business Engine：[#346](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41638303726)，build/deploy 均成功。
 - 客户套餐 artifact：`mainland-phase1-customer-package`，ID：`13231977373`，artifact 大小：129,594,654 bytes。
 - 下载后外层 artifact ZIP 包含最终客户 ZIP 和大陆版 README；内层客户 ZIP：129,558,555 bytes。
@@ -16,7 +16,7 @@
 
 ## 冒烟检查范围
 
-CI 会启动每个冻结 EXE，确认进程至少存活 5 秒，再由 CI 主动终止。它证明 EXE 可启动，不代表 GUI 每个页面、真实用户交互、数据迁移或授权激活已经完整验收。源码自测和自动回归测试另行通过。
+旧版 CI 只检查 PyInstaller one-file 父进程存活 5 秒，未验证子进程启动是否成功；该检查已证明存在假阳性，不能作为 EXE 可启动证据。修复后将用 MAINLAND_EXE_SELF_TEST 环境变量启动冻结程序，等待其在 30 秒内真实退出，并要求退出码为 0。即使新检查通过，也不等于所有 GUI 页面和真实授权激活均已验收。
 
 ## 授权系统状态：代码侧已加防错，真实卖家密钥仍待确认
 
@@ -46,7 +46,7 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 
 ## 当前结论
 
-第一阶段 10 款 Windows EXE 已通过 GitHub Actions 的 10/10 矩阵构建与 ZIP 内容验收，最新客户包可供下载并进行后续终端验收。**这仍是待最终验收版本，不是已完成真实授权激活、可直接对外销售的正式成品。**
+此前 10 款 Windows EXE 的 CI 构建与 ZIP 结构检查曾通过，但冻结程序的实际启动检查存在假阳性。**旧版客户包不能作为已验证可运行的软件交付；须先通过修复后的冻结 EXE 自测，再重新下载验收。真实授权激活也仍待最终验收。**
 
 
 ## 第二阶段新增产品：小店库存盘点助手（开发中，待 CI 验收）
@@ -58,3 +58,20 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 新增回归测试：保存重载、编辑、CSV 往返、重复导入原子拒绝、错误 CSV 保留原数据、备份恢复及错误备份拒绝。
 - 已加入 Mainland Windows EXE 矩阵及客户套餐，新增中文说明书，并把授权路径加入独立产品 ID 测试。
 - 当前分支：`feat/inventory-counting-assistant`。此版本尚未通过 GitHub Actions Windows 构建与实际 Windows GUI 验收，不能作为可交付成品；卖家私钥匹配阻塞仍保持独立。
+
+
+## 2026-11-04 CI 复核更正：冻结 EXE 曾因缺少 src.license 而启动失败
+
+- PR #10 Windows 工作流 run #160：[#41749730335](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41749730335)，head：`91f9c41947b8055dec6e31d9c89db125cc162149`。
+- 该 run 的 11 个 Windows build job 与客户套餐 job 全部显示 success；13 个 check run（含安全扫描）全部 success。
+- inventory job #126311803673、jobs #126311803038、finance #126311803471、sales #126311804421 的实际日志均出现 `ModuleNotFoundError: No module named 'src'`。旧 PowerShell 检查只看 one-file 父进程 5 秒仍存活，错误地判为成功。
+- 根因：PyInstaller 命令未显式将仓库根目录加入分析路径，也未显式收集 `src.license`；one-file 父进程的存活不代表子进程成功。
+- 已在 PR #10 分支修复：构建增加 `--paths . --hidden-import src.license`；冻结 EXE 自测通过 `MAINLAND_EXE_SELF_TEST=1` 触发，并要求 30 秒内退出且退出码必须为 0；增加回归测试防止该假阳性再次出现。
+- PR #10 run #160 的客户套餐 artifact ID：`13285216933`。已实际下载并检查：外层 artifact 140,742,092 bytes；内层 ZIP 140,702,964 bytes，SHA256 `899bcba088d002b710b73c0d32ffb0bb632dae87dc20f77ccea0e283fe73026c`；ZIP CRC 完整，27 个条目，其中 11 个 EXE、11 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。ZIP 时间戳为 2026-11-04 08:51:58（中国标准时间）。
+- **该 artifact 结构完整但 EXE 启动缺陷尚未修复，因此明确不作为客户交付包。** 修复后的 PR 构建与 artifact 尚待重新验收；不得用该包或旧 run #151 包上架。
+
+## 2026-11-04 Autonomous Business Engine 最新检查
+
+- 最新 scheduled run #355：[#41785613998](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41785613998)，main 提交仍为 `b7d8ba8557326d0dcc7c50d42004651f93b98b32`，结论 success。
+- build/deploy 两个 job 均 success；测试日志显示 `37 passed`，product_factory 生成 12 个产品页面，xianyu_factory 执行成功。
+- Pages artifact ID：`13301385443`，48,842 bytes。该工作流成功不代表 Windows EXE 已通过实际启动验收。

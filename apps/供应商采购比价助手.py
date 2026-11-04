@@ -44,6 +44,8 @@ def decimal_text(value):
 
 
 def normalize_quote(row):
+    if not isinstance(row, dict):
+        raise ValueError("报价记录格式错误")
     result = {field: str(row.get(field, "")).strip() for field in FIELDS}
     required = ("报价编号", "物料编码", "物料名称", "供应商", "单位")
     missing = [field for field in required if not result[field]]
@@ -117,9 +119,14 @@ class PurchaseStore:
             return
         try:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
-            if payload.get("format") != BACKUP_FORMAT or payload.get("version") != BACKUP_VERSION:
+            if (
+                not isinstance(payload, dict)
+                or payload.get("format") != BACKUP_FORMAT
+                or payload.get("version") != BACKUP_VERSION
+                or not isinstance(payload.get("quotes"), list)
+            ):
                 raise ValueError("采购报价数据格式或版本不受支持")
-            quotes = [normalize_quote(item) for item in payload.get("quotes", [])]
+            quotes = [normalize_quote(item) for item in payload["quotes"]]
             self.validate_unique(quotes)
             self.quotes = quotes
         except (OSError, json.JSONDecodeError, AttributeError, TypeError, ValueError) as exc:
@@ -207,9 +214,14 @@ class PurchaseStore:
 
     def restore(self, path):
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
-        if payload.get("format") != BACKUP_FORMAT or payload.get("version") != BACKUP_VERSION:
+        if (
+            not isinstance(payload, dict)
+            or payload.get("format") != BACKUP_FORMAT
+            or payload.get("version") != BACKUP_VERSION
+            or not isinstance(payload.get("quotes"), list)
+        ):
             raise ValueError("备份文件格式或版本不受支持")
-        quotes = [normalize_quote(item) for item in payload.get("quotes", [])]
+        quotes = [normalize_quote(item) for item in payload["quotes"]]
         self.validate_unique(quotes)
         self.save(quotes)
         self.quotes = quotes

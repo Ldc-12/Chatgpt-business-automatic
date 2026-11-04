@@ -195,15 +195,15 @@ jobs:
           printf '%s\n' "$bytes" > release/Phase1-Mainland-Windows-Tools.zip.bytes
           split -b 20m -d -a 2 "$package" "release/Phase1-Mainland-Windows-Tools.zip.part-"
           parts=(release/Phase1-Mainland-Windows-Tools.zip.part-*)
-          if [ "${#parts[@]}" -gt 7 ]; then
-            echo "Package exceeds the supported 7 x 20 MiB chunk size."
+          if [ "${#parts[@]}" -gt 9 ]; then
+            echo "Package exceeds the supported 9 x 20 MiB chunk size."
             exit 1
           fi
-          for part in 00 01 02 03 04 05 06; do
+          for part in 00 01 02 03 04 05 06 07 08; do
             file="release/Phase1-Mainland-Windows-Tools.zip.part-$part"
             if [ ! -f "$file" ]; then : > "$file"; fi
           done
-          printf 'file=Phase1-Mainland-Windows-Tools.zip\nbytes=%s\nsha256=%s\nparts=7\npart_size=20MiB\n' "$bytes" "$(cut -d' ' -f1 release/Phase1-Mainland-Windows-Tools.zip.sha256)" > release/Phase1-Mainland-Windows-Tools.manifest.txt
+          printf 'file=Phase1-Mainland-Windows-Tools.zip\nbytes=%s\nsha256=%s\nparts=9\npart_size=20MiB\n' "$bytes" "$(cut -d' ' -f1 release/Phase1-Mainland-Windows-Tools.zip.sha256)" > release/Phase1-Mainland-Windows-Tools.manifest.txt
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-manifest
@@ -251,6 +251,20 @@ jobs:
         with:
           name: mainland-phase1-package-part-06
           path: release/Phase1-Mainland-Windows-Tools.zip.part-06
+          if-no-files-found: error
+          compression-level: 0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-07
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-07
+          if-no-files-found: error
+          compression-level: 0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-08
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-08
           if-no-files-found: error
           compression-level: 0
 

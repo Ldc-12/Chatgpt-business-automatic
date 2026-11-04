@@ -103,9 +103,9 @@ def test_csv_invalid_row_rejects_whole_batch(tmp_path):
     with source.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=module.CSV_FIELDS)
         writer.writeheader()
-        good = {field: "" for field in module.CSV_FIELDS}
-        good.update(quote("BJ-20261104-002"))
-        good.update(quote()["明细"][0])
+        source_quote = quote("BJ-20261104-002")
+        good = {field: source_quote[field] for field in module.QUOTE_FIELDS}
+        good.update(source_quote["明细"][0])
         writer.writerow(good)
         bad = dict(good)
         bad["报价单号"] = "BJ-20261104-003"

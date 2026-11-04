@@ -15,6 +15,7 @@ on:
       - "tests/test_mainland_packaging.py"
       - ".github/workflows/mainland-exe.yml"
       - "docs/manuals/**"
+      - "docs/RELEASE_STATUS.md"
   push:
     paths:
       - "apps/**.py"
@@ -26,6 +27,7 @@ on:
       - "tests/test_mainland_packaging.py"
       - ".github/workflows/mainland-exe.yml"
       - "docs/manuals/**"
+      - "docs/RELEASE_STATUS.md"
 permissions:
   contents: read
   actions: read

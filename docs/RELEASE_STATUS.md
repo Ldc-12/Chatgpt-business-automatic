@@ -150,3 +150,20 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - run #188 的 12/12 Windows build jobs 和 package job 均 success；新产品测试 `25 passed`，冻结 EXE 自测退出码 0。
 - 当前最新主线合并提交为 `a8dc205e3f231e10b2545df80bb116e915613196`。此文档更新将触发 main push 的独立构建；最终 main 客户包应以该 main push run 的 artifact 为准，而非 PR artifact。
 - **授权最终验收仍未完成：** 两份仓库公钥指纹仍不同；卖家私钥不得上传。真实卖家公钥匹配和 Windows 授权激活/重启测试待用户本地公钥指纹确认。
+
+
+## 2026-11-04 main 最新发布复核：Mainland Windows EXE run #190
+
+- 本轮检查时 main 最新提交：`968b0e9377285b5e2782208147da8e66b4c03053`（提交信息：Record merged purchase comparison release and PR validation）。PR #10（小店库存盘点助手）与 PR #11（供应商采购比价助手）均已合并；当前 open PR 查询无未完成 PR。
+- PR #11 合并产品提交：`a8dc205e3f231e10b2545df80bb116e915613196`；PR #10 产品提交：`ee9164a6c4bede161834d1d51a31f3015f48e2d9`。
+- Mainland Windows EXE run #190：[#41826304168](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41826304168)，main commit `968b0e9377285b5e2782208147da8e66b4c03053`，结论 success。12/12 个 Windows build matrix jobs 与 Phase 1 customer delivery package job 全部 success。
+- 供应商采购比价助手 job #126562100511：25 passed；PyInstaller EXE build success；冻结 EXE self-test 日志出现 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`；单品 artifact ID `13318549486`。
+- 小店库存盘点助手 job #126562100330：20 passed；PyInstaller EXE build success；冻结 EXE self-test 日志出现 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`；单品 artifact ID `13319257929`。
+- 总套餐打包 job #126562675814：success，创建 12 个 20 MiB 分片位及 SHA256 manifest。客户套餐 artifact ID `13319502172`（artifact 大小 191,620,629 bytes）；manifest artifact ID `13319791615`。
+- 已实际下载 artifact `13319502172` 与 manifest `13319791615`。外层 artifact ZIP 完整，含内层客户 ZIP 和大陆版 README。内层 `Phase1-Mainland-Windows-Tools.zip`：191,566,548 bytes，SHA256 `1552614666657163397921944fe2168435674cedae1b1ca7507d182786a97ef7`；与 manifest 中字节数、SHA256 完全一致；`ZipFile.testzip() = None`。
+- 内层客户 ZIP 共 29 个条目（27 个文件、2 个目录）：12 个 EXE、12 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT。套餐说明与 README 的文件时间戳为 2026-11-04 12:07 UTC（中国标准时间 20:07）；工作流于 12:08:19 UTC（20:08:19）完成。
+- 分片 artifact 00–09 为有效数据分片；part-10 与 part-11 是空分片（artifact ZIP 各 196 bytes），拼接时不影响原文件，但后续应优化分片脚本，按实际 split 结果上传而不是固定上传空分片。
+- 最近 100 条 Actions runs 中发现的非 success 项均为并发更新触发的 cancelled，另有 Mainland run #164 package job failure。#164 失败日志已复核：失败步骤为 chunk 数量限制（旧逻辑限制 7×20MiB），不是 EXE 构建；后续已扩容分片并在 #190 完成套餐构建。run #189 因新 push 的 concurrency cancel-in-progress 被取消，最终 run #190 成功。
+- Autonomous Business Engine run #360：[#41826304325](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41826304325)，同一 main commit，build/deploy 两个 job 均 success；Pages artifact ID `13319018081`。
+
+**当前交付判断：** 12 款 EXE 已在 GitHub Windows runner 上完成回归测试、PyInstaller 构建及非交互冻结 EXE 退出码自测；最新客户 ZIP 已实际下载、校验 CRC、条目数量及 manifest SHA256。它仍不是完成真实 Windows GUI 使用与卖家授权激活验收的正式销售版。卖家私钥不在仓库，`src/license.py` 内嵌公钥与 config 公钥指纹不同；不得猜测或更换密钥。必须由卖家在可信 Windows 电脑本地导出公钥 SHA256 指纹后比对，随后进行真实签发、设备绑定、到期日、签名、激活与重启测试。

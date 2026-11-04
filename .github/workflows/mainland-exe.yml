@@ -16,6 +16,7 @@ on:
       - ".github/workflows/mainland-exe.yml"
       - "docs/manuals/**"
       - "docs/RELEASE_STATUS.md"
+      - "requirements.txt"
   push:
     paths:
       - "apps/**.py"
@@ -28,6 +29,7 @@ on:
       - ".github/workflows/mainland-exe.yml"
       - "docs/manuals/**"
       - "docs/RELEASE_STATUS.md"
+      - "requirements.txt"
 permissions:
   contents: read
   actions: read
@@ -99,6 +101,11 @@ jobs:
             source: apps/供应商采购比价助手.py
             test: tests/test_mainland_purchase_compare.py
             exe: MainlandPurchaseCompare
+          - key: quotation
+            product: "报价单生成器"
+            source: apps/报价单生成器.py
+            test: tests/test_mainland_quotation.py
+            exe: MainlandQuotationGenerator
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -109,7 +116,11 @@ jobs:
         run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py
       - name: Source self-test
         run: python "${{ matrix.source }}" --self-test
-      - name: Build EXE
+      - name: Build EXE with ReportLab support
+        if: matrix.key == 'quotation'
+        run: pyinstaller --onefile --windowed --paths . --hidden-import src.license --collect-submodules reportlab --name "${{ matrix.exe }}" "${{ matrix.source }}"
+      - name: Build standard EXE
+        if: matrix.key != 'quotation'
         run: pyinstaller --onefile --windowed --paths . --hidden-import src.license --name "${{ matrix.exe }}" "${{ matrix.source }}"
       - name: Frozen EXE self-test (must exit successfully)
         shell: powershell
@@ -160,11 +171,11 @@ jobs:
           cat > release/README-大陆版.md <<'EOF'
           # 第一阶段 Windows 工具包
 
-          本包包含 12 款 Windows EXE（11 款业务工具及工具箱启动器）。
+          本包包含 13 款 Windows EXE（12 款业务工具及工具箱启动器）。
           使用方式：双击对应 EXE 即可运行。
           数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
           工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。
-          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“小店库存盘点助手.json”“供应商采购比价助手.json”）。每款产品的授权文件分开保存。
+          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“小店库存盘点助手.json”“供应商采购比价助手.json”“报价单生成器.json”）。每款产品的授权文件分开保存。
           EOF
           mkdir -p release/package
           mkdir -p release/package/说明书
@@ -177,7 +188,7 @@ jobs:
           套餐 A + 催款 + 客户跟进 + 求职管理
 
           套餐 C｜全能工作效率工具箱｜建议售价 39.9 元
-          全部 11 款业务工具 + 工具箱启动器（含小店库存盘点助手、供应商采购比价助手）
+          全部 12 款业务工具 + 工具箱启动器（含小店库存盘点助手、供应商采购比价助手、报价单生成器）
 
           建议：低价单品用于引流，套餐用于提高客单价；具体售价上线后根据咨询和成交数据调整。
           EOF
@@ -198,17 +209,18 @@ jobs:
           sha256sum "$package" > release/Phase1-Mainland-Windows-Tools.zip.sha256
           bytes=$(stat -c '%s' "$package")
           printf '%s\n' "$bytes" > release/Phase1-Mainland-Windows-Tools.zip.bytes
-          split -b 20m -d -a 2 "$package" "release/Phase1-Mainland-Windows-Tools.zip.part-"
+          split -b 18m -d -a 2 "$package" "release/Phase1-Mainland-Windows-Tools.zip.part-"
           parts=(release/Phase1-Mainland-Windows-Tools.zip.part-*)
-          if [ "${#parts[@]}" -gt 12 ]; then
-            echo "Package exceeds the supported 12 x 20 MiB chunk size."
+          parts_count=${#parts[@]}
+          if [ "$parts_count" -gt 12 ]; then
+            echo "Package exceeds the supported 12 x 18 MiB chunk size."
             exit 1
           fi
           for part in 00 01 02 03 04 05 06 07 08 09 10 11; do
             file="release/Phase1-Mainland-Windows-Tools.zip.part-$part"
             if [ ! -f "$file" ]; then : > "$file"; fi
           done
-          printf 'file=Phase1-Mainland-Windows-Tools.zip\nbytes=%s\nsha256=%s\nparts=12\npart_size=20MiB\n' "$bytes" "$(cut -d' ' -f1 release/Phase1-Mainland-Windows-Tools.zip.sha256)" > release/Phase1-Mainland-Windows-Tools.manifest.txt
+          printf 'file=Phase1-Mainland-Windows-Tools.zip\nbytes=%s\nsha256=%s\nparts=%s\npart_size=18MiB\n' "$bytes" "$(cut -d' ' -f1 release/Phase1-Mainland-Windows-Tools.zip.sha256)" "$parts_count" > release/Phase1-Mainland-Windows-Tools.manifest.txt
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-manifest

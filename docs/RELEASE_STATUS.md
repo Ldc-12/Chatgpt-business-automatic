@@ -169,12 +169,26 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 **当前交付判断：** 12 款 EXE 已在 GitHub Windows runner 上完成回归测试、PyInstaller 构建及非交互冻结 EXE 退出码自测；最新客户 ZIP 已实际下载、校验 CRC、条目数量及 manifest SHA256。它仍不是完成真实 Windows GUI 使用与卖家授权激活验收的正式销售版。卖家私钥不在仓库，`src/license.py` 内嵌公钥与 config 公钥指纹不同；不得猜测或更换密钥。必须由卖家在可信 Windows 电脑本地导出公钥 SHA256 指纹后比对，随后进行真实签发、设备绑定、到期日、签名、激活与重启测试。
 
 
-## 第二阶段产品：报价单生成器（PR 开发中，待 Windows CI）
+## 第二阶段产品：报价单生成器（PR #12 已合并，Windows CI 通过，待终端授权验收）
 
 - 分支：`feat/local-quotation-generator`；新增 `apps/报价单生成器.py`，授权产品 ID：`报价单生成器`。
 - 功能：客户与报价信息管理、多行报价明细、数量×单价自动计算、税率与含税总计、中文 PDF 报价单、CSV 多明细分组导入/导出、本地 JSON 持久化、备份与恢复。
 - PDF 使用 ReportLab 内置 STSong-Light 中文 CID 字体；依赖已加入 requirements。冻结 EXE 自测会实际生成 PDF，避免只验证导入模块；仅报价单 EXE 收集 ReportLab 子模块，避免给其他产品增加体积。
 - CSV 导入遇到重复报价单号、缺字段、非法数量/日期或同一报价单元数据不一致时整批拒绝；备份恢复先验证格式和全部记录，再写入。
 - 新增回归测试覆盖金额/税额、日期/数量验证、持久化、重复编号、CSV 多行分组与原子拒绝、备份恢复、报价单号生成及 PDF 生成。
-- 已加入 13 款 Windows 构建矩阵、独立授权路径测试、客户套餐与中文说明书索引；分片改为 18 MiB 并在 manifest 记录实际分片数。产品尚未通过 Windows CI 和冻结 EXE PDF 自测，不得作为交付成品。
+- 已加入 13 款 Windows 构建矩阵、独立授权路径测试、客户套餐与中文说明书索引；分片改为 18 MiB 并在 manifest 记录实际分片数。PR #12 的 13/13 Windows job、报价单 25 项回归测试、源代码自测、冻结 EXE PDF 生成自测及套餐打包均通过；主线 run #206 再次通过。代码与构建层面已进入待终端验收状态。
 - 本分支不修改任何生产公钥或卖家私钥。真实卖家密钥匹配和 Windows 授权激活仍待最终验收。
+
+
+## 2026-11-04 PR #12 合并及 main run #206 客户包验收
+
+- PR #12：[#12 Add offline Chinese quotation generator with PDF export](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/12)，已 squash 合并；合并提交：`9f2d98f29f4efec6abdd61e974b20f46ff71848d`。合并前 head：`12ed8fe6fc5aca9152013a9be74f021ff05d5d6e`。当前 open PR 查询为 0。
+- PR #12 的最终 Mainland Windows EXE run #205：[#41831072576](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41831072576)，13/13 Windows build jobs 与 package job success；code scanning run #51 success。早期 run #203 曾因 packaging 回归测试仍断言旧的 `parts[@]` 条件而失败（13 个 job 都在测试阶段失败，24/25 或 15/16 passed）；已修正测试断言匹配 `parts_count` 后 run #205 全绿。run #204 是 push/PR 双触发竞争中的取消项，不代表最终失败。
+- 报价单生成器 job #126578729258：25 passed；source self-test success；ReportLab 专用 PyInstaller build success；冻结 EXE self-test 生成中文 PDF 后在 30 秒内以退出码 0 结束；产品 artifact ID `13322133686`。PR 客户套餐 artifact ID `13321529563`，manifest artifact ID `13321704461`。PR 包已实际下载检查：13 个 EXE、13 份产品说明书、说明书索引、README 和套餐说明均存在，ZIP CRC 与 manifest SHA256 一致。
+- 合并后 main 最新提交：`9f2d98f29f4efec6abdd61e974b20f46ff71848d`。Mainland Windows EXE run #206：[#41831887166](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41831887166)，13/13 Windows build jobs 与 customer package job 全部 success。报价单生成器 main job #126580865534：25 passed；冻结 EXE self-test 日志有 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`；main 单品 artifact ID `13322374488`。
+- main 客户套餐 artifact `mainland-phase1-customer-package` ID：`13323183619`，大小 219,317,595 bytes；manifest artifact ID `13322093954`。已实际下载：外层 artifact ZIP CRC 完整，包含内层 ZIP 和 README；内层客户 ZIP 219,255,426 bytes，SHA256 `f63cf9cea9e80d594e7f765f2b3ac0d984a8ab3193b986fef7a90c92e209e1ab`，与 manifest 的 bytes、SHA256 完全一致；`ZipFile.testzip() = None`。
+- 内层 ZIP 共 31 个条目（29 个文件、2 个目录）：13 个 EXE、13 份产品用户说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT；报价单生成器 EXE 与 `12-报价单生成器-用户说明书.md` 均已纳入。README/套餐说明文件时间戳：2026-11-04 12:46:18 UTC（中国标准时间 20:46:18）。
+- manifest 声明 `parts=12`、`part_size=18MiB`；12 个分片 artifact 均为非空数据块，最后一块 11,635,735 bytes，其余每块 18,874,564 bytes。该版不再出现空分片。
+- Autonomous Business Engine run #362：[#41831887218](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41831887218)，main commit 同上，build/deploy success；Pages artifact ID `13322828940`（48,833 bytes）。
+
+**当前交付判断：** 13 款 Windows EXE 已通过 GitHub Windows runner 回归测试、PyInstaller 编译及冻结 EXE 非交互自测；报价单生成器还通过了真实 PDF 文件生成自测。最新 main 客户 ZIP 已下载并核验文件数量、CRC、manifest SHA256 和版本时间。仍需真实 Windows 用户环境检查 GUI 与实际业务流程；更关键的是卖家私钥尚未确认与 `src/license.py` 内嵌公钥匹配，真实签发/设备绑定/激活/重启验收未完成。**所有产品继续标记为待最终验收，不能宣称已完成正式授权销售。**

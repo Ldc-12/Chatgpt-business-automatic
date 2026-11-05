@@ -15,7 +15,6 @@ on:
       - "tests/test_mainland_packaging.py"
       - ".github/workflows/mainland-exe.yml"
       - "docs/manuals/**"
-      - "docs/RELEASE_STATUS.md"
       - "requirements.txt"
   push:
     branches: [main]

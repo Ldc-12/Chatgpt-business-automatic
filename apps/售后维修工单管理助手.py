@@ -231,8 +231,13 @@ class WorkOrderStore:
 def filter_orders(rows, keyword="", month="", status="全部"):
     query = str(keyword or "").casefold().strip()
     month = str(month or "").strip()
-    if month and (len(month) != 7 or month[4] != "-" or not month[:4].isdigit() or not month[5:].isdigit()):
-        raise ValueError("月份筛选请使用 YYYY-MM 格式")
+    if month:
+        try:
+            parsed_month = datetime.strptime(month, "%Y-%m")
+        except ValueError as exc:
+            raise ValueError("月份筛选请使用有效的 YYYY-MM 格式") from exc
+        if parsed_month.strftime("%Y-%m") != month:
+            raise ValueError("月份筛选请使用有效的 YYYY-MM 格式")
     result = []
     for row in rows:
         if month and not row["登记日期"].startswith(month):

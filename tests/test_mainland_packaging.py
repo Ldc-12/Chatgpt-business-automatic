@@ -30,6 +30,7 @@ APP_ENTRYPOINTS = [
     "供应商采购比价助手.py",
     "报价单生成器.py",
     "费用报销管理助手.py",
+    "售后维修工单管理助手.py",
 ]
 
 
@@ -81,13 +82,13 @@ def test_expense_reimbursement_product_is_in_build_matrix_and_customer_package()
     assert 'product: "费用报销管理助手"' in workflow
     assert "tests/test_mainland_expense_reimbursement.py" in workflow
     assert "MainlandExpenseReimbursement" in workflow
-    assert "14 款 Windows EXE（13 款业务工具及工具箱启动器）" in workflow
+    assert "15 款 Windows EXE（14 款业务工具及工具箱启动器）" in workflow
     assert "费用报销管理助手.json" in workflow
 
 
 def test_mainland_windows_workflow_runs_push_builds_only_on_main():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
-    assert "push:\n    branches: [main]" in workflow
+    assert 'push:\n    branches: [main]' in workflow
     assert "pull_request:" in workflow
 
 
@@ -95,3 +96,22 @@ def test_internal_release_status_updates_do_not_trigger_windows_rebuilds():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
     triggers = workflow.split("jobs:", 1)[0]
     assert '"docs/RELEASE_STATUS.md"' not in triggers
+
+
+def test_repair_work_order_product_is_in_build_matrix_and_customer_package():
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    assert 'key: repair-work-order' in workflow
+    assert 'product: "售后维修工单管理助手"' in workflow
+    assert "tests/test_mainland_repair_work_orders.py" in workflow
+    assert "MainlandRepairWorkOrderManager" in workflow
+    assert "15 款 Windows EXE（14 款业务工具及工具箱启动器）" in workflow
+    assert "售后维修工单管理助手.json" in workflow
+    launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
+    assert "MainlandRepairWorkOrderManager.exe" in launcher
+    assert "assert len(TOOLS) == 14" in launcher
+
+
+def test_mainland_windows_build_concurrency_is_scoped_per_ref():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    assert "group: mainland-windows-exe-${{ github.ref }}" in workflow

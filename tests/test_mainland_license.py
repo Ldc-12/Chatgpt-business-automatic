@@ -108,6 +108,7 @@ def test_default_license_paths_match_all_protected_product_ids():
         "供应商采购比价助手",
         "报价单生成器",
         "费用报销管理助手",
+        "售后维修工单管理助手",
     ]
     paths = [lic.default_license_path(product) for product in products]
     assert len(set(paths)) == len(products)

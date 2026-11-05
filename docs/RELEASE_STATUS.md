@@ -245,3 +245,23 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - **主线发布包状态：** PR 合并已完成，但本轮无法从当前可用的 Actions 记录接口确认 merge commit 对应的 main push Mainland Windows EXE run 与其 artifact；因此上述 run #232 包仍标记为“合并前 PR 验证包”，不能冒称为 merge commit 的 main 最新包。下一次复核应以 main push workflow 对应的 mainland-phase1-customer-package artifact 为准，并重新下载核验 ZIP/manifest。
 - Autonomous Business Engine 最近可直接复核的记录仍为 run #362（build/deploy success，67 passed，Pages artifact `13322828940`）。merge commit 之后的 push/scheduled run 本轮未能确认，不虚构 run 编号或结果。
 - 正式销售验收继续待真实 Windows GUI/业务流程、卖家私钥公钥指纹匹配，以及真实授权签发/设备绑定/激活/重启测试。
+
+
+## 2026-11-05 main 正式套餐 run #234 下载验收
+
+- 本轮检查 main 最新提交：`54ef3dd82e96e8a9706686003e478a988dec98dd`（发布状态文档更新）；当时 open PR 查询为 0。
+- 与 main 当前产品代码树对应的 Mainland Windows EXE run #234：[#42026812901](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42026812901)，构建代码提交 `128b3dde3b6ac76a0117c692d3bf38d038e862fb`。14/14 产品矩阵 job 与 customer package job 全部 success；14 个 EXE 均通过各自回归测试、源码自测和冻结 EXE self-test，customer package job 成功，无失败 job。
+- 最新 Autonomous Business Engine run #367：[#42026956213](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42026956213)，build/deploy 均 success；pytest、business_engine、product_factory、xianyu_factory 与 Pages 上传/部署步骤均成功。Pages artifact ID：`13414476929`。
+- 已下载 run #234 的客户套餐 artifact ID `13414696728`（234,072,962 bytes，外层 SHA256 `a7526bbeb92d6c4e5222bfa2b0bb31ae7135a86ba8249afecd928739e4ed5e3e`）、manifest artifact ID `13414292652`、分片 artifact ID `13414806378`。三个外层 ZIP 的 CRC 均通过。
+- 内层客户 ZIP：234,006,576 bytes，SHA256 `7ce567c8fbd0131fbdd67832ccb8ec6cb2fcb58c480ed4adff716bc044991555`，与 manifest 的 bytes/SHA256 完全一致，`ZipFile.testzip() = None`。共 33 个条目（31 文件、2 目录）：14 个 EXE、14 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。所有内层文件时间戳为 2026-11-05 12:26:38 UTC（中国标准时间 20:26:38）。
+- 分片 artifact 恰有 13 个非空分片（00–12），前 12 个各 18,874,368 bytes，最后一个 7,514,160 bytes；拼接后 SHA256 与内层 ZIP 一致。套餐建议价仍为 A 19.9 元、B 29.9 元、C 39.9 元。
+- 这是 main push run #234 的正式主线构建包，不是 PR 候选包。main HEAD `54ef3dd...` 仅更新发布记录，没有产品源码变更；对应产品代码树已由 run #234 构建。
+
+## 新增产品：售后维修工单管理助手（PR 开发中，待 Windows CI）
+
+- 新增本地 Windows/Tkinter 产品：`apps/售后维修工单管理助手.py`，产品 ID `售后维修工单管理助手`，数据保存于 `%LOCALAPPDATA%\\MainlandBusinessTools\\repair_orders.json`。
+- 功能：工单自动编号、客户/电话/设备/故障记录、待检测/待报价/维修中/待取件/已完成/已取消状态、预约取件与完工日期、预计费用与实收金额、月份/状态/关键词筛选、CSV UTF-8 BOM 导入导出、JSON 备份恢复。
+- CSV 使用严格字段校验和追加模式；重复工单号或任一无效记录会整批拒绝。金额使用 Decimal 精确到分，写盘失败回滚内存状态；完成状态必须填写完工日期。
+- 新增回归测试覆盖保存重载、自动编号、日期与金额校验、状态约束、重复 ID、编辑删除、CSV 往返/BOM/整批拒绝、备份恢复、筛选汇总和写盘失败回滚。
+- 已加入授权产品路径测试、工具箱启动器、Windows 构建矩阵、客户套餐、中文说明书索引。预计套餐调整为 15 个 EXE（14 款业务工具 + 启动器），仍需实际构建核对分片容量。
+- 当前分支：`feat/repair-work-order-manager`。PR Windows 构建、artifact 下载验收和真实 Windows GUI 测试尚未完成；不得标记为可交付。卖家私钥/内嵌公钥匹配及真实激活仍是独立待最终验收项。

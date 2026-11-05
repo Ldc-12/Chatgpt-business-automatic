@@ -21,6 +21,17 @@ TOOLS = [
 ]
 
 
+def application_directory():
+    """Return the directory containing the launcher and sibling EXEs.
+
+    PyInstaller one-file extracts __file__ into a temporary _MEIPASS folder.
+    The packaged sibling tools remain beside sys.executable, not in _MEIPASS.
+    """
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent
+
+
 def self_test():
     assert len(TOOLS) == 13
     names = [name for name, _ in TOOLS]
@@ -55,7 +66,7 @@ class App(tk.Tk):
             ttk.Button(row, text="启动", command=lambda e=exe: self.launch(e)).pack(side="right")
 
     def launch(self, exe):
-        path = Path(__file__).with_name(exe)
+        path = application_directory() / exe
         if not path.exists():
             messagebox.showwarning("未找到工具", f"当前套餐未包含：{exe}")
         else:

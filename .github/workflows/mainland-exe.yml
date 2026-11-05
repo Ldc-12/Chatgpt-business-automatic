@@ -219,7 +219,7 @@ jobs:
           parts=(release/Phase1-Mainland-Windows-Tools.zip.part-*)
           parts_count=${#parts[@]}
           if [ "$parts_count" -gt 15 ]; then
-            echo "Package exceeds the supported 12 x 18 MiB chunk size."
+            echo "Package exceeds the supported 15 x 18 MiB chunk size."
             exit 1
           fi
           for part in 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14; do
@@ -236,100 +236,8 @@ jobs:
             release/Phase1-Mainland-Windows-Tools.manifest.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: mainland-phase1-package-part-00
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-00
-          if-no-files-found: error
-          compression-level: 0
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-01
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-01
-          if-no-files-found: error
-          compression-level: 0
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-02
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-02
-          if-no-files-found: error
-          compression-level: 0
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-03
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-03
-          if-no-files-found: error
-          compression-level: 0
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-04
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-04
-          if-no-files-found: error
-          compression-level: 0
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-05
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-05
-          if-no-files-found: error
-          compression-level: 0
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-06
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-06
-          if-no-files-found: error
-          compression-level: 0
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-07
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-07
-          if-no-files-found: error
-          compression-level: 0
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-08
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-08
-          if-no-files-found: error
-          compression-level: 0
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-09
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-09
-          if-no-files-found: error
-          compression-level: 0
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-10
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-10
-          if-no-files-found: error
-          compression-level: 0
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-11
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-11
-          if-no-files-found: error
-          compression-level: 0
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-12
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-12
-          if-no-files-found: error
-          compression-level: 0
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-13
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-13
-          if-no-files-found: error
-          compression-level: 0
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mainland-phase1-package-part-14
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-14
+          name: mainland-phase1-package-parts
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-*
           if-no-files-found: error
           compression-level: 0
 

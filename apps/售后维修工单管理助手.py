@@ -46,7 +46,11 @@ def _money(value, field):
         raise ValueError(f"{field}必须是有效数字") from exc
     if not amount.is_finite() or amount < 0:
         raise ValueError(f"{field}不能为负数或非有限数")
-    try:\n        rounded = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)\n    except InvalidOperation as exc:\n        raise ValueError(f"{field}超出可处理金额范围") from exc\n    return format(rounded, "f")
+    try:
+        rounded = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    except InvalidOperation as exc:
+        raise ValueError(f"{field}超出可处理金额范围") from exc
+    return format(rounded, "f")
 
 
 def normalize_order(row):
@@ -309,7 +313,11 @@ class App:
 
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
-        rows = self.visible_rows()
+        try:
+            rows = self.visible_rows()
+        except ValueError as exc:
+            self.summary.set(str(exc))
+            return
         for row in rows:
             self.tree.insert("", "end", iid=row["工单号"], values=[row[field] for field in FIELDS])
         totals = summarize_orders(rows)
@@ -410,7 +418,7 @@ class App:
             try:
                 self.store.export_csv(path, self.visible_rows())
                 messagebox.showinfo("导出完成", "当前筛选结果已导出为 CSV")
-            except OSError as exc:
+            except (OSError, ValueError) as exc:
                 messagebox.showerror("导出失败", str(exc))
 
     def backup(self):

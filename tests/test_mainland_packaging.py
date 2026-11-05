@@ -110,3 +110,8 @@ def test_repair_work_order_product_is_in_build_matrix_and_customer_package():
     launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
     assert "MainlandRepairWorkOrderManager.exe" in launcher
     assert "assert len(TOOLS) == 14" in launcher
+
+
+def test_mainland_windows_build_concurrency_is_scoped_per_ref():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    assert "group: mainland-windows-exe-${{ github.ref }}" in workflow

@@ -1,6 +1,6 @@
 # Mainland Windows License System
 
-The nine standalone mainland Windows EXEs enforce a signed offline license tied to the Windows machine. The launcher is only a menu; each product EXE performs its own license check before opening.
+The thirteen standalone mainland Windows EXEs enforce a signed offline license tied to the Windows machine. The launcher is only a menu; each product EXE performs its own license check before opening.
 
 Protected products (the product name must match exactly when issuing a license):
 - 文件整理助手 Pro
@@ -12,6 +12,10 @@ Protected products (the product name must match exactly when issuing a license):
 - 小微企业经营收支管理
 - 会议行动项管理
 - SOP项目执行管理
+- 小店库存盘点助手
+- 供应商采购比价助手
+- 报价单生成器
+- 费用报销管理助手
 
 ## Customer flow
 

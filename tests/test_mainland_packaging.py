@@ -29,6 +29,7 @@ APP_ENTRYPOINTS = [
     "小店库存盘点助手.py",
     "供应商采购比价助手.py",
     "报价单生成器.py",
+    "费用报销管理助手.py",
 ]
 
 
@@ -51,17 +52,17 @@ def test_frozen_exe_build_includes_license_module_and_checks_real_exit_code():
     assert "FROZEN_EXE_SELF_TEST_OK" in workflow
 
 
-def test_package_chunking_uses_real_part_count_and_supports_twelve_parts():
+def test_package_chunking_uploads_only_actual_split_parts():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
-    assert 'if [ "$parts_count" -gt 12 ]; then' in workflow
+    assert 'if [ "$parts_count" -gt 15 ]; then' in workflow
+    assert "Package exceeds the supported 15 x 18 MiB chunk size." in workflow
     assert "split -b 18m" in workflow
     assert "parts_count=${#parts[@]}" in workflow
     assert "parts=%s" in workflow
-    assert "mainland-phase1-package-part-07" in workflow
-    assert "mainland-phase1-package-part-08" in workflow
-    assert "mainland-phase1-package-part-09" in workflow
-    assert "mainland-phase1-package-part-10" in workflow
-    assert "mainland-phase1-package-part-11" in workflow
+    assert "name: mainland-phase1-package-parts" in workflow
+    assert "path: release/Phase1-Mainland-Windows-Tools.zip.part-*" in workflow
+    assert "for part in 00 01 02" not in workflow
+    assert "mainland-phase1-package-part-14" not in workflow
 
 
 def test_quotation_product_is_in_build_matrix_and_reportlab_is_declared():
@@ -71,3 +72,26 @@ def test_quotation_product_is_in_build_matrix_and_reportlab_is_declared():
     assert "报价单生成器" in workflow
     assert "MainlandQuotationGenerator" in workflow
     assert "reportlab" in requirements
+
+
+def test_expense_reimbursement_product_is_in_build_matrix_and_customer_package():
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    assert 'key: expense-reimbursement' in workflow
+    assert 'product: "费用报销管理助手"' in workflow
+    assert "tests/test_mainland_expense_reimbursement.py" in workflow
+    assert "MainlandExpenseReimbursement" in workflow
+    assert "14 款 Windows EXE（13 款业务工具及工具箱启动器）" in workflow
+    assert "费用报销管理助手.json" in workflow
+
+
+def test_mainland_windows_workflow_runs_push_builds_only_on_main():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    assert "push:\n    branches: [main]" in workflow
+    assert "pull_request:" in workflow
+
+
+def test_internal_release_status_updates_do_not_trigger_windows_rebuilds():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    triggers = workflow.split("jobs:", 1)[0]
+    assert '"docs/RELEASE_STATUS.md"' not in triggers

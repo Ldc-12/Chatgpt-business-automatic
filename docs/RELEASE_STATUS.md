@@ -192,3 +192,47 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - Autonomous Business Engine run #362：[#41831887218](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41831887218)，main commit 同上，build/deploy success；Pages artifact ID `13322828940`（48,833 bytes）。
 
 **当前交付判断：** 13 款 Windows EXE 已通过 GitHub Windows runner 回归测试、PyInstaller 编译及冻结 EXE 非交互自测；报价单生成器还通过了真实 PDF 文件生成自测。最新 main 客户 ZIP 已下载并核验文件数量、CRC、manifest SHA256 和版本时间。仍需真实 Windows 用户环境检查 GUI 与实际业务流程；更关键的是卖家私钥尚未确认与 `src/license.py` 内嵌公钥匹配，真实签发/设备绑定/激活/重启验收未完成。**所有产品继续标记为待最终验收，不能宣称已完成正式授权销售。**
+
+
+## 2026-11-05 本轮基线复核与第四阶段产品开发
+
+- 本轮 main 最新提交检查：`cabab2e9a10ea84898be25557ec28526584c7dab`（记录 PR #12 合并与 main run #206 验收）；open PR 查询为 0。
+- 本轮可读取的最近 main Mainland Windows EXE run #206：[#41831887166](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41831887166)。14 个 job（13 个产品构建任务 + customer package）全部 success；未发现失败 job，因此没有失败日志需要修复。报价单 job #126580865534 与财务 job #126580865127 日志均显示冻结 EXE self-test 成功；套餐 job #126581570284 成功上传分片。
+- Autonomous Business Engine run #362：[#41831887218](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41831887218)，build/deploy 均 success；build 执行 pytest、business_engine、product_factory、xianyu_factory 并成功上传 Pages artifact。
+- 已实际下载 run #206 客户套餐 artifact `13323183619`（外层 ZIP 219,317,595 bytes，SHA256 `4caa80a04233a5bae130c3e54c97b1a8ae423daeb94773180d81e46f6ba4b660`）及 manifest artifact `13322093954`。外层 ZIP CRC 通过；内层客户 ZIP 219,255,426 bytes，SHA256 `f63cf9cea9e80d594e7f765f2b3ac0d984a8ab3193b986fef7a90c92e209e1ab`，与 manifest 声明字节数和 SHA256 完全一致，`ZipFile.testzip() = None`。
+- 内层包共 31 个条目（29 文件、2 目录）：13 个 EXE、13 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。套餐说明 ZIP 时间戳为 2026-11-04 20:46:18（中国标准时间）。这是 run #206 的真实下载验收结果，不代表其后 main docs commit 有新的 push run 已被本轮工具确认。
+- 新增产品：`费用报销管理助手`，分支 `feat/expense-reimbursement-manager`。支持报销单号自动生成、日期/金额校验、费用分类、发票与付款状态、月份/类别/状态/关键词筛选、Decimal 精确汇总、CSV UTF-8 BOM 导入导出、JSON 备份恢复及本地持久化。
+- CSV 导入采用严格表头、追加模式和整批校验；重复单号、非法日期/金额或无效状态会整批拒绝。写盘失败时回滚内存状态；新增回归测试覆盖数据重载、ID、金额四舍五入、状态规则、CSV 原子导入、备份恢复、筛选汇总和写盘失败回滚。
+- 同步修复工具箱只显示最初 9 款工具的问题：现将 13 款业务 EXE 全部列入启动器，并加入启动器数量/唯一性自测。
+- 新产品已加入授权产品 ID 路径测试、冻结 EXE 构建矩阵、中文说明书索引和套餐；客户包调整为 14 个 EXE，并把分片容量上限扩展到 15 × 18 MiB。
+- 当前分支的 Windows Actions 与客户包下载验收尚未完成；此新产品不得标记为可交付。卖家私钥仍未匹配，真实 Windows 授权激活仍待最终验收。
+
+
+## 2026-11-05 PR #13 费用报销管理助手：Windows 构建与套餐验收
+
+- PR #13：[#13 Add offline expense reimbursement manager for Windows](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/13)，分支 `feat/expense-reimbursement-manager`。本轮继续在该 PR 中修复工具箱冻结版定位路径，并优化分片 artifact 上传。
+- 费用报销管理助手功能：本地报销台账、自动编号、日期与 Decimal 金额校验、费用类别/发票/付款状态、月份/状态/类别/关键词筛选、精确汇总、CSV UTF-8 BOM 导入导出、JSON 备份恢复和原子写盘。数据位于 `%LOCALAPPDATA%\\MainlandBusinessTools\\reimbursements.json`。
+- 费用报销产品回归测试 38 passed；冻结 EXE self-test 生成临时数据、CSV 与备份文件，并在 30 秒内以退出码 0 退出。
+- 工具箱启动器修复：PyInstaller one-file 下 `__file__` 指向临时解包目录，原实现会到错误目录查找同套餐 EXE。现冻结模式改用 `Path(sys.executable).resolve().parent`，源码模式仍用源码目录；新增两种路径行为测试。工具箱回归测试 21 passed，冻结 EXE self-test 通过。工具箱中文说明书已更新为 13 款业务工具完整列表，并明确所有 EXE 应保持在同一目录。
+- 分片 artifact 修复：PR #13 首次构建 run #225 虽成功，但旧脚本上传了两个 196-byte 空分片（part-13、part-14）。run #228 的新增回归测试先捕获到未删除的填充循环，四个矩阵任务因此在测试阶段失败；已移除填充循环并改为单个通配符 artifact，仅上传 split 实际生成的分片。
+- 最终 PR Windows 构建 run #229：[#42024528968](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42024528968)，head `060cd733f17cd0cf05ee36b0cb8a9db8e8f10f8f`。14/14 Windows build matrix jobs 与 customer package job 全部 success；没有失败 job。费用报销测试 38 passed，工具箱测试 21 passed；两款冻结 EXE 均出现 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`。
+- PR #13 客户套餐 artifact `mainland-phase1-customer-package` ID：`13413526110`，234,078,771 bytes，artifact SHA256 `4e59dda08ce48f13b4385d0bab200453975ba0077a2e1b78205c043c769e68f1`；manifest artifact ID `13413526119`。已实际下载两个 artifact 并检查外层 ZIP CRC。
+- 内层客户 ZIP：234,012,455 bytes，SHA256 `00e847833c34a167a1e2fe057e1baad0e903fc1c343d2733d74dbb2266f9be39`，与 manifest 字节数和 SHA256 完全一致；`ZipFile.testzip() = None`。
+- 内层 ZIP 共 33 个条目（31 个文件、2 个目录）：14 个 EXE（13 款业务工具 + 工具箱）、14 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT。新 EXE `MainlandExpenseReimbursement.exe` 和说明书 `13-费用报销管理助手-用户说明书.md` 均存在。README 明确写明无需 ChatGPT/VPN/外部 AI；套餐说明为 A 19.9 元、B 29.9 元、C 39.9 元建议价。
+- 版本时间：内层 ZIP 所有文件时间戳为 2026-11-05 12:09:24 UTC（中国标准时间 20:09:24）。
+- 分片 artifact `mainland-phase1-package-parts` ID：`13413710796`，已实际下载检查，外层 CRC 完整，恰有 13 个非空分片（00–12），前 12 块各 18,874,368 bytes，最后一块 7,520,039 bytes；无空分片。manifest 记录 `parts=13`。
+- 费用报销 PR 的代码与 Windows runner 构建层面通过；PR 尚未合并，当前包是 PR 验证候选包，不是 main 正式发布包。真实 Windows GUI 业务验收、卖家私钥与客户端公钥匹配、真实签发/设备绑定/激活/重启测试仍待最终验收。没有修改或生成任何生产密钥。
+
+
+## 2026-11-05 PR #13 最终回归 run #232 与候选包复核
+
+- 为避免内部发布记录每次更新都重复执行 14 个 Windows EXE 构建，已从 Mainland Windows EXE 的 push/pull_request 路径过滤中移除 `docs/RELEASE_STATUS.md`；产品说明书、源码、测试和工作流仍会触发构建。新增回归测试验证此规则。
+- run #231 曾因首次只移除一个触发路径而被新增测试正确拦截：14 个矩阵 job 在 pytest 阶段失败，原因是 push 路径过滤中仍残留 `docs/RELEASE_STATUS.md`。已从两个路径过滤块全部移除，未改动产品测试断言。
+- 最终 Mainland Windows EXE run #232：[#42026125804](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42026125804)，head `b8d431f41043fc2eff1ad292cebc6467a498d71e`；14/14 Windows build job 与 customer package job 全部 success，无失败 job。
+- run #232 客户套餐 artifact ID：`13413104087`，234,077,783 bytes，外层 artifact SHA256 `8614282d7d795a01453962b5be9a07f614dee388147787f8fbcc7267f90a2f90`；manifest artifact ID：`13413064505`；分片 artifact ID：`13413628121`。
+- 已实际下载 run #232 的客户包、manifest 和分片 artifact。外层 ZIP CRC 全部通过；内层客户 ZIP 234,011,381 bytes，SHA256 `6f7cfbcbbaac135886d2210997d4f750adf0f302d5cb9054a832157aa51f8814`，与 manifest 中的 bytes、SHA256 完全一致，`ZipFile.testzip() = None`。
+- 内层 ZIP 仍为 33 个条目（31 文件、2 目录）：14 个 EXE、14 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。新费用报销 EXE、说明书和工具箱 13 款入口均存在；套餐建议价为 A 19.9 元、B 29.9 元、C 39.9 元。
+- 分片 artifact 恰有 13 个非空文件，前 12 块各 18,874,368 bytes，最后一块 7,518,965 bytes；无空分片。manifest 记录 `parts=13`。
+- 内层 ZIP 文件时间戳：2026-11-05 12:21:08 UTC（中国标准时间 20:21:08）。
+- PR #13 的代码、回归测试、Windows 冻结 EXE 自测与客户套餐结构均已通过 PR run #232。此包是 PR 验证候选包，PR 合并后的 main push 构建仍需单独记录；不得把 PR artifact 误称为 main 最新 artifact。
+- 最终终端验收仍未完成：未在真实用户 Windows 环境完成 GUI/业务流程测试，卖家私钥仍未与客户端内嵌公钥匹配确认，真实授权签发、设备绑定、激活和重启测试待用户本地公钥指纹比对。未更改、生成或索取任何生产私钥。

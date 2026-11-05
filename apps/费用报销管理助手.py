@@ -134,8 +134,13 @@ class ExpenseStore:
         item = normalize_record(row)
         if any(existing["报销单号"] == item["报销单号"] for existing in self.rows):
             raise ValueError("报销单号已存在")
-        self.rows.append(item)
-        self.save()
+        previous = self.rows
+        self.rows = previous + [item]
+        try:
+            self.save()
+        except Exception:
+            self.rows = previous
+            raise
         return item["报销单号"]
 
     def update(self, old_id, row):

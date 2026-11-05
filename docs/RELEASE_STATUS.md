@@ -206,3 +206,19 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 同步修复工具箱只显示最初 9 款工具的问题：现将 13 款业务 EXE 全部列入启动器，并加入启动器数量/唯一性自测。
 - 新产品已加入授权产品 ID 路径测试、冻结 EXE 构建矩阵、中文说明书索引和套餐；客户包调整为 14 个 EXE，并把分片容量上限扩展到 15 × 18 MiB。
 - 当前分支的 Windows Actions 与客户包下载验收尚未完成；此新产品不得标记为可交付。卖家私钥仍未匹配，真实 Windows 授权激活仍待最终验收。
+
+
+## 2026-11-05 PR #13 费用报销管理助手：Windows 构建与套餐验收
+
+- PR #13：[#13 Add offline expense reimbursement manager for Windows](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/13)，分支 `feat/expense-reimbursement-manager`。本轮继续在该 PR 中修复工具箱冻结版定位路径，并优化分片 artifact 上传。
+- 费用报销管理助手功能：本地报销台账、自动编号、日期与 Decimal 金额校验、费用类别/发票/付款状态、月份/状态/类别/关键词筛选、精确汇总、CSV UTF-8 BOM 导入导出、JSON 备份恢复和原子写盘。数据位于 `%LOCALAPPDATA%\\MainlandBusinessTools\\reimbursements.json`。
+- 费用报销产品回归测试 38 passed；冻结 EXE self-test 生成临时数据、CSV 与备份文件，并在 30 秒内以退出码 0 退出。
+- 工具箱启动器修复：PyInstaller one-file 下 `__file__` 指向临时解包目录，原实现会到错误目录查找同套餐 EXE。现冻结模式改用 `Path(sys.executable).resolve().parent`，源码模式仍用源码目录；新增两种路径行为测试。工具箱回归测试 21 passed，冻结 EXE self-test 通过。工具箱中文说明书已更新为 13 款业务工具完整列表，并明确所有 EXE 应保持在同一目录。
+- 分片 artifact 修复：PR #13 首次构建 run #225 虽成功，但旧脚本上传了两个 196-byte 空分片（part-13、part-14）。run #228 的新增回归测试先捕获到未删除的填充循环，四个矩阵任务因此在测试阶段失败；已移除填充循环并改为单个通配符 artifact，仅上传 split 实际生成的分片。
+- 最终 PR Windows 构建 run #229：[#42024528968](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42024528968)，head `060cd733f17cd0cf05ee36b0cb8a9db8e8f10f8f`。14/14 Windows build matrix jobs 与 customer package job 全部 success；没有失败 job。费用报销测试 38 passed，工具箱测试 21 passed；两款冻结 EXE 均出现 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`。
+- PR #13 客户套餐 artifact `mainland-phase1-customer-package` ID：`13413526110`，234,078,771 bytes，artifact SHA256 `4e59dda08ce48f13b4385d0bab200453975ba0077a2e1b78205c043c769e68f1`；manifest artifact ID `13413526119`。已实际下载两个 artifact 并检查外层 ZIP CRC。
+- 内层客户 ZIP：234,012,455 bytes，SHA256 `00e847833c34a167a1e2fe057e1baad0e903fc1c343d2733d74dbb2266f9be39`，与 manifest 字节数和 SHA256 完全一致；`ZipFile.testzip() = None`。
+- 内层 ZIP 共 33 个条目（31 个文件、2 个目录）：14 个 EXE（13 款业务工具 + 工具箱）、14 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT。新 EXE `MainlandExpenseReimbursement.exe` 和说明书 `13-费用报销管理助手-用户说明书.md` 均存在。README 明确写明无需 ChatGPT/VPN/外部 AI；套餐说明为 A 19.9 元、B 29.9 元、C 39.9 元建议价。
+- 版本时间：内层 ZIP 所有文件时间戳为 2026-11-05 12:09:24 UTC（中国标准时间 20:09:24）。
+- 分片 artifact `mainland-phase1-package-parts` ID：`13413710796`，已实际下载检查，外层 CRC 完整，恰有 13 个非空分片（00–12），前 12 块各 18,874,368 bytes，最后一块 7,520,039 bytes；无空分片。manifest 记录 `parts=13`。
+- 费用报销 PR 的代码与 Windows runner 构建层面通过；PR 尚未合并，当前包是 PR 验证候选包，不是 main 正式发布包。真实 Windows GUI 业务验收、卖家私钥与客户端公钥匹配、真实签发/设备绑定/激活/重启测试仍待最终验收。没有修改或生成任何生产密钥。

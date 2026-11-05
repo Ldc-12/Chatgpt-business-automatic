@@ -29,6 +29,7 @@ APP_ENTRYPOINTS = [
     "小店库存盘点助手.py",
     "供应商采购比价助手.py",
     "报价单生成器.py",
+    "费用报销管理助手.py",
 ]
 
 
@@ -51,9 +52,9 @@ def test_frozen_exe_build_includes_license_module_and_checks_real_exit_code():
     assert "FROZEN_EXE_SELF_TEST_OK" in workflow
 
 
-def test_package_chunking_uses_real_part_count_and_supports_twelve_parts():
+def test_package_chunking_uses_real_part_count_and_supports_fifteen_parts():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
-    assert 'if [ "$parts_count" -gt 12 ]; then' in workflow
+    assert 'if [ "$parts_count" -gt 15 ]; then' in workflow
     assert "split -b 18m" in workflow
     assert "parts_count=${#parts[@]}" in workflow
     assert "parts=%s" in workflow
@@ -62,6 +63,9 @@ def test_package_chunking_uses_real_part_count_and_supports_twelve_parts():
     assert "mainland-phase1-package-part-09" in workflow
     assert "mainland-phase1-package-part-10" in workflow
     assert "mainland-phase1-package-part-11" in workflow
+    assert "mainland-phase1-package-part-12" in workflow
+    assert "mainland-phase1-package-part-13" in workflow
+    assert "mainland-phase1-package-part-14" in workflow
 
 
 def test_quotation_product_is_in_build_matrix_and_reportlab_is_declared():

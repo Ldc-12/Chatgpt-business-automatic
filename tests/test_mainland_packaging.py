@@ -89,3 +89,9 @@ def test_mainland_windows_workflow_runs_push_builds_only_on_main():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
     assert "push:\n    branches: [main]" in workflow
     assert "pull_request:" in workflow
+
+
+def test_internal_release_status_updates_do_not_trigger_windows_rebuilds():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    triggers = workflow.split("jobs:", 1)[0]
+    assert '"docs/RELEASE_STATUS.md"' not in triggers

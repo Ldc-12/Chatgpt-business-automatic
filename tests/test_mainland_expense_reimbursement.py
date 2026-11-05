@@ -253,3 +253,18 @@ def test_default_path_uses_local_appdata(monkeypatch, tmp_path):
 
 def test_self_test_product_identity():
     assert module.PRODUCT == "费用报销管理助手"
+
+
+def test_add_rolls_back_memory_when_disk_write_fails(tmp_path, monkeypatch):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    def fail_write(*args, **kwargs):
+        raise OSError("simulated disk full")
+    monkeypatch.setattr(module, "atomic_write", fail_write)
+    try:
+        store.add(record(store))
+    except OSError as exc:
+        assert "disk full" in str(exc)
+    else:
+        raise AssertionError("simulated disk failure was ignored")
+    assert store.rows == []
+    assert not (tmp_path / "expenses.json").exists()

@@ -109,10 +109,11 @@ def test_duplicate_csv_import_is_atomic(tmp_path):
     store = module.WorkOrderStore(tmp_path / "orders.json")
     store.add(order(store))
     source = tmp_path / "duplicate.csv"
+    existing_id = store.rows[0]["工单号"]
     with source.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=module.FIELDS)
         writer.writeheader()
-        writer.writerow(order(store))
+        writer.writerow(order(store, existing_id))
     before = list(store.rows)
     try:
         store.import_csv(source)
@@ -192,12 +193,13 @@ def test_filter_and_summary(tmp_path):
 
 def test_invalid_month_filter_is_rejected(tmp_path):
     store = module.WorkOrderStore(tmp_path / "orders.json")
-    try:
-        module.filter_orders([], month="2026/02")
-    except ValueError as exc:
-        assert "YYYY-MM" in str(exc)
-    else:
-        raise AssertionError("invalid month filter accepted")
+    for invalid_month in ("2026/02", "2026-13"):
+        try:
+            module.filter_orders([], month=invalid_month)
+        except ValueError as exc:
+            assert "YYYY-MM" in str(exc)
+        else:
+            raise AssertionError(f"invalid month filter accepted: {invalid_month}")
 
 
 def test_failed_disk_write_rolls_back_memory(tmp_path, monkeypatch):

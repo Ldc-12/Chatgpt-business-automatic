@@ -29,7 +29,8 @@ APP_ENTRYPOINTS = [
     "小店库存盘点助手.py",
     "供应商采购比价助手.py",
     "报价单生成器.py",
-    "费用报销管理助手.py",\n    "售后维修工单管理助手.py",
+    "费用报销管理助手.py",
+    "售后维修工单管理助手.py",
 ]
 
 
@@ -81,7 +82,7 @@ def test_expense_reimbursement_product_is_in_build_matrix_and_customer_package()
     assert 'product: "费用报销管理助手"' in workflow
     assert "tests/test_mainland_expense_reimbursement.py" in workflow
     assert "MainlandExpenseReimbursement" in workflow
-    assert "14 款 Windows EXE（13 款业务工具及工具箱启动器）" in workflow
+    assert "15 款 Windows EXE（14 款业务工具及工具箱启动器）" in workflow
     assert "费用报销管理助手.json" in workflow
 
 

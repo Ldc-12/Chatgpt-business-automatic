@@ -76,8 +76,9 @@ def test_invalid_dates_and_negative_amounts_are_rejected(tmp_path):
 def test_duplicate_work_order_id_rejected(tmp_path):
     store = module.WorkOrderStore(tmp_path / "orders.json")
     store.add(order(store))
+    existing_id = store.rows[0]["工单号"]
     try:
-        store.add(order(store))
+        store.add(order(store, existing_id))
     except ValueError as exc:
         assert "已存在" in str(exc)
     else:

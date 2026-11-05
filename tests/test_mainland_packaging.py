@@ -75,3 +75,14 @@ def test_quotation_product_is_in_build_matrix_and_reportlab_is_declared():
     assert "报价单生成器" in workflow
     assert "MainlandQuotationGenerator" in workflow
     assert "reportlab" in requirements
+
+
+def test_expense_reimbursement_product_is_in_build_matrix_and_customer_package():
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    assert 'key: expense-reimbursement' in workflow
+    assert 'product: "费用报销管理助手"' in workflow
+    assert "tests/test_mainland_expense_reimbursement.py" in workflow
+    assert "MainlandExpenseReimbursement" in workflow
+    assert "14 款 Windows EXE（13 款业务工具及工具箱启动器）" in workflow
+    assert "费用报销管理助手.json" in workflow

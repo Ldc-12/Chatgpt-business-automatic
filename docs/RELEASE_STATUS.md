@@ -192,3 +192,17 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - Autonomous Business Engine run #362：[#41831887218](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41831887218)，main commit 同上，build/deploy success；Pages artifact ID `13322828940`（48,833 bytes）。
 
 **当前交付判断：** 13 款 Windows EXE 已通过 GitHub Windows runner 回归测试、PyInstaller 编译及冻结 EXE 非交互自测；报价单生成器还通过了真实 PDF 文件生成自测。最新 main 客户 ZIP 已下载并核验文件数量、CRC、manifest SHA256 和版本时间。仍需真实 Windows 用户环境检查 GUI 与实际业务流程；更关键的是卖家私钥尚未确认与 `src/license.py` 内嵌公钥匹配，真实签发/设备绑定/激活/重启验收未完成。**所有产品继续标记为待最终验收，不能宣称已完成正式授权销售。**
+
+
+## 2026-11-05 本轮基线复核与第四阶段产品开发
+
+- 本轮 main 最新提交检查：`cabab2e9a10ea84898be25557ec28526584c7dab`（记录 PR #12 合并与 main run #206 验收）；open PR 查询为 0。
+- 本轮可读取的最近 main Mainland Windows EXE run #206：[#41831887166](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41831887166)。14 个 job（13 个产品构建任务 + customer package）全部 success；未发现失败 job，因此没有失败日志需要修复。报价单 job #126580865534 与财务 job #126580865127 日志均显示冻结 EXE self-test 成功；套餐 job #126581570284 成功上传分片。
+- Autonomous Business Engine run #362：[#41831887218](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41831887218)，build/deploy 均 success；build 执行 pytest、business_engine、product_factory、xianyu_factory 并成功上传 Pages artifact。
+- 已实际下载 run #206 客户套餐 artifact `13323183619`（外层 ZIP 219,317,595 bytes，SHA256 `4caa80a04233a5bae130c3e54c97b1a8ae423daeb94773180d81e46f6ba4b660`）及 manifest artifact `13322093954`。外层 ZIP CRC 通过；内层客户 ZIP 219,255,426 bytes，SHA256 `f63cf9cea9e80d594e7f765f2b3ac0d984a8ab3193b986fef7a90c92e209e1ab`，与 manifest 声明字节数和 SHA256 完全一致，`ZipFile.testzip() = None`。
+- 内层包共 31 个条目（29 文件、2 目录）：13 个 EXE、13 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。套餐说明 ZIP 时间戳为 2026-11-04 20:46:18（中国标准时间）。这是 run #206 的真实下载验收结果，不代表其后 main docs commit 有新的 push run 已被本轮工具确认。
+- 新增产品：`费用报销管理助手`，分支 `feat/expense-reimbursement-manager`。支持报销单号自动生成、日期/金额校验、费用分类、发票与付款状态、月份/类别/状态/关键词筛选、Decimal 精确汇总、CSV UTF-8 BOM 导入导出、JSON 备份恢复及本地持久化。
+- CSV 导入采用严格表头、追加模式和整批校验；重复单号、非法日期/金额或无效状态会整批拒绝。写盘失败时回滚内存状态；新增回归测试覆盖数据重载、ID、金额四舍五入、状态规则、CSV 原子导入、备份恢复、筛选汇总和写盘失败回滚。
+- 同步修复工具箱只显示最初 9 款工具的问题：现将 13 款业务 EXE 全部列入启动器，并加入启动器数量/唯一性自测。
+- 新产品已加入授权产品 ID 路径测试、冻结 EXE 构建矩阵、中文说明书索引和套餐；客户包调整为 14 个 EXE，并把分片容量上限扩展到 15 × 18 MiB。
+- 当前分支的 Windows Actions 与客户包下载验收尚未完成；此新产品不得标记为可交付。卖家私钥仍未匹配，真实 Windows 授权激活仍待最终验收。

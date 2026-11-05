@@ -106,6 +106,11 @@ jobs:
             source: apps/报价单生成器.py
             test: tests/test_mainland_quotation.py
             exe: MainlandQuotationGenerator
+          - key: expense-reimbursement
+            product: "费用报销管理助手"
+            source: apps/费用报销管理助手.py
+            test: tests/test_mainland_expense_reimbursement.py
+            exe: MainlandExpenseReimbursement
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -171,11 +176,11 @@ jobs:
           cat > release/README-大陆版.md <<'EOF'
           # 第一阶段 Windows 工具包
 
-          本包包含 13 款 Windows EXE（12 款业务工具及工具箱启动器）。
+          本包包含 14 款 Windows EXE（13 款业务工具及工具箱启动器）。
           使用方式：双击对应 EXE 即可运行。
           数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
           工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。
-          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“小店库存盘点助手.json”“供应商采购比价助手.json”“报价单生成器.json”）。每款产品的授权文件分开保存。
+          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“小店库存盘点助手.json”“供应商采购比价助手.json”“报价单生成器.json”“费用报销管理助手.json”）。每款产品的授权文件分开保存。
           EOF
           mkdir -p release/package
           mkdir -p release/package/说明书
@@ -188,7 +193,7 @@ jobs:
           套餐 A + 催款 + 客户跟进 + 求职管理
 
           套餐 C｜全能工作效率工具箱｜建议售价 39.9 元
-          全部 12 款业务工具 + 工具箱启动器（含小店库存盘点助手、供应商采购比价助手、报价单生成器）
+          全部 13 款业务工具 + 工具箱启动器（含小店库存盘点助手、供应商采购比价助手、报价单生成器、费用报销管理助手）
 
           建议：低价单品用于引流，套餐用于提高客单价；具体售价上线后根据咨询和成交数据调整。
           EOF
@@ -212,11 +217,11 @@ jobs:
           split -b 18m -d -a 2 "$package" "release/Phase1-Mainland-Windows-Tools.zip.part-"
           parts=(release/Phase1-Mainland-Windows-Tools.zip.part-*)
           parts_count=${#parts[@]}
-          if [ "$parts_count" -gt 12 ]; then
+          if [ "$parts_count" -gt 15 ]; then
             echo "Package exceeds the supported 12 x 18 MiB chunk size."
             exit 1
           fi
-          for part in 00 01 02 03 04 05 06 07 08 09 10 11; do
+          for part in 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14; do
             file="release/Phase1-Mainland-Windows-Tools.zip.part-$part"
             if [ ! -f "$file" ]; then : > "$file"; fi
           done
@@ -303,6 +308,27 @@ jobs:
         with:
           name: mainland-phase1-package-part-11
           path: release/Phase1-Mainland-Windows-Tools.zip.part-11
+          if-no-files-found: error
+          compression-level: 0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-12
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-12
+          if-no-files-found: error
+          compression-level: 0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-13
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-13
+          if-no-files-found: error
+          compression-level: 0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-part-14
+          path: release/Phase1-Mainland-Windows-Tools.zip.part-14
           if-no-files-found: error
           compression-level: 0
 

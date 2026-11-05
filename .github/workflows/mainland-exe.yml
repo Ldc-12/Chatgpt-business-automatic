@@ -18,6 +18,7 @@ on:
       - "docs/RELEASE_STATUS.md"
       - "requirements.txt"
   push:
+    branches: [main]
     paths:
       - "apps/**.py"
       - "tests/test_mainland_*.py"

@@ -86,3 +86,9 @@ def test_expense_reimbursement_product_is_in_build_matrix_and_customer_package()
     assert "MainlandExpenseReimbursement" in workflow
     assert "14 款 Windows EXE（13 款业务工具及工具箱启动器）" in workflow
     assert "费用报销管理助手.json" in workflow
+
+
+def test_mainland_windows_workflow_runs_push_builds_only_on_main():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    assert "push:\n    branches: [main]" in workflow
+    assert "pull_request:" in workflow

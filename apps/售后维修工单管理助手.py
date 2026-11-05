@@ -46,7 +46,7 @@ def _money(value, field):
         raise ValueError(f"{field}必须是有效数字") from exc
     if not amount.is_finite() or amount < 0:
         raise ValueError(f"{field}不能为负数或非有限数")
-    return format(amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP), "f")
+    try:\n        rounded = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)\n    except InvalidOperation as exc:\n        raise ValueError(f"{field}超出可处理金额范围") from exc\n    return format(rounded, "f")
 
 
 def normalize_order(row):

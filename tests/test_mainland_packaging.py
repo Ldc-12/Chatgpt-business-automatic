@@ -86,7 +86,7 @@ def test_expense_reimbursement_product_is_in_build_matrix_and_customer_package()
     assert "费用报销管理助手.json" in workflow
 
 
-def test_mainland_windows_workflow_runs_push_builds_on_main_and_feature_branches():
+def test_mainland_windows_workflow_runs_push_builds_only_on_main():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
     assert 'push:\n    branches: [main, "feat/**"]' in workflow
     assert "pull_request:" in workflow

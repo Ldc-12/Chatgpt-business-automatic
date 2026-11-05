@@ -222,3 +222,17 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 版本时间：内层 ZIP 所有文件时间戳为 2026-11-05 12:09:24 UTC（中国标准时间 20:09:24）。
 - 分片 artifact `mainland-phase1-package-parts` ID：`13413710796`，已实际下载检查，外层 CRC 完整，恰有 13 个非空分片（00–12），前 12 块各 18,874,368 bytes，最后一块 7,520,039 bytes；无空分片。manifest 记录 `parts=13`。
 - 费用报销 PR 的代码与 Windows runner 构建层面通过；PR 尚未合并，当前包是 PR 验证候选包，不是 main 正式发布包。真实 Windows GUI 业务验收、卖家私钥与客户端公钥匹配、真实签发/设备绑定/激活/重启测试仍待最终验收。没有修改或生成任何生产密钥。
+
+
+## 2026-11-05 PR #13 最终回归 run #232 与候选包复核
+
+- 为避免内部发布记录每次更新都重复执行 14 个 Windows EXE 构建，已从 Mainland Windows EXE 的 push/pull_request 路径过滤中移除 `docs/RELEASE_STATUS.md`；产品说明书、源码、测试和工作流仍会触发构建。新增回归测试验证此规则。
+- run #231 曾因首次只移除一个触发路径而被新增测试正确拦截：14 个矩阵 job 在 pytest 阶段失败，原因是 push 路径过滤中仍残留 `docs/RELEASE_STATUS.md`。已从两个路径过滤块全部移除，未改动产品测试断言。
+- 最终 Mainland Windows EXE run #232：[#42026125804](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42026125804)，head `b8d431f41043fc2eff1ad292cebc6467a498d71e`；14/14 Windows build job 与 customer package job 全部 success，无失败 job。
+- run #232 客户套餐 artifact ID：`13413104087`，234,077,783 bytes，外层 artifact SHA256 `8614282d7d795a01453962b5be9a07f614dee388147787f8fbcc7267f90a2f90`；manifest artifact ID：`13413064505`；分片 artifact ID：`13413628121`。
+- 已实际下载 run #232 的客户包、manifest 和分片 artifact。外层 ZIP CRC 全部通过；内层客户 ZIP 234,011,381 bytes，SHA256 `6f7cfbcbbaac135886d2210997d4f750adf0f302d5cb9054a832157aa51f8814`，与 manifest 中的 bytes、SHA256 完全一致，`ZipFile.testzip() = None`。
+- 内层 ZIP 仍为 33 个条目（31 文件、2 目录）：14 个 EXE、14 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。新费用报销 EXE、说明书和工具箱 13 款入口均存在；套餐建议价为 A 19.9 元、B 29.9 元、C 39.9 元。
+- 分片 artifact 恰有 13 个非空文件，前 12 块各 18,874,368 bytes，最后一块 7,518,965 bytes；无空分片。manifest 记录 `parts=13`。
+- 内层 ZIP 文件时间戳：2026-11-05 12:21:08 UTC（中国标准时间 20:21:08）。
+- PR #13 的代码、回归测试、Windows 冻结 EXE 自测与客户套餐结构均已通过 PR run #232。此包是 PR 验证候选包，PR 合并后的 main push 构建仍需单独记录；不得把 PR artifact 误称为 main 最新 artifact。
+- 最终终端验收仍未完成：未在真实用户 Windows 环境完成 GUI/业务流程测试，卖家私钥仍未与客户端内嵌公钥匹配确认，真实授权签发、设备绑定、激活和重启测试待用户本地公钥指纹比对。未更改、生成或索取任何生产私钥。

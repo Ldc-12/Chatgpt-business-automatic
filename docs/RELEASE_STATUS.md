@@ -236,3 +236,12 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 内层 ZIP 文件时间戳：2026-11-05 12:21:08 UTC（中国标准时间 20:21:08）。
 - PR #13 的代码、回归测试、Windows 冻结 EXE 自测与客户套餐结构均已通过 PR run #232。此包是 PR 验证候选包，PR 合并后的 main push 构建仍需单独记录；不得把 PR artifact 误称为 main 最新 artifact。
 - 最终终端验收仍未完成：未在真实用户 Windows 环境完成 GUI/业务流程测试，卖家私钥仍未与客户端内嵌公钥匹配确认，真实授权签发、设备绑定、激活和重启测试待用户本地公钥指纹比对。未更改、生成或索取任何生产私钥。
+
+
+## 2026-11-05 PR #13 合并状态更正
+
+- PR #13 已于 2026-11-05 12:24:07 UTC squash 合并：https://github.com/Ldc-12/Chatgpt-business-automatic/pull/13；main 合并提交：`128b3dde3b6ac76a0117c692d3bf38d038e862fb`。本轮复核 main 最新提交为该 SHA，open PR 查询为 0。
+- PR run #232 已对合并前同一代码树完成 14/14 Windows 构建与客户套餐构建；真实下载验收的候选包 SHA256 为 `6f7cfbcbbaac135886d2210997d4f750adf0f302d5cb9054a832157aa51f8814`，artifact ID `13413104087`，manifest `13413064505`，分片 `13413628121`。
+- **主线发布包状态：** PR 合并已完成，但本轮无法从当前可用的 Actions 记录接口确认 merge commit 对应的 main push Mainland Windows EXE run 与其 artifact；因此上述 run #232 包仍标记为“合并前 PR 验证包”，不能冒称为 merge commit 的 main 最新包。下一次复核应以 main push workflow 对应的 mainland-phase1-customer-package artifact 为准，并重新下载核验 ZIP/manifest。
+- Autonomous Business Engine 最近可直接复核的记录仍为 run #362（build/deploy success，67 passed，Pages artifact `13322828940`）。merge commit 之后的 push/scheduled run 本轮未能确认，不虚构 run 编号或结果。
+- 正式销售验收继续待真实 Windows GUI/业务流程、卖家私钥公钥指纹匹配，以及真实授权签发/设备绑定/激活/重启测试。

@@ -123,7 +123,7 @@ def test_csv_duplicate_existing_id_is_atomic(tmp_path):
     with source.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=module.FIELDS)
         writer.writeheader()
-        writer.writerow(record(store))
+        writer.writerow(record(store, store.rows[0]["报销单号"]))
     before = list(store.rows)
     try:
         store.import_csv(source)

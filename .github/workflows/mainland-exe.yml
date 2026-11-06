@@ -115,6 +115,11 @@ jobs:
             source: apps/售后维修工单管理助手.py
             test: tests/test_mainland_repair_work_orders.py
             exe: MainlandRepairWorkOrderManager
+          - key: store-schedule
+            product: "门店排班考勤助手"
+            source: apps/门店排班考勤助手.py
+            test: tests/test_mainland_store_schedule.py
+            exe: MainlandStoreScheduleAssistant
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -180,7 +185,7 @@ jobs:
           cat > release/README-大陆版.md <<'EOF'
           # 第一阶段 Windows 工具包
 
-          本包包含 15 款 Windows EXE（14 款业务工具及工具箱启动器）。
+          本包包含 16 款 Windows EXE（15 款业务工具及工具箱启动器）。
           使用方式：双击对应 EXE 即可运行。
           数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
           工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。
@@ -197,7 +202,7 @@ jobs:
           套餐 A + 催款 + 客户跟进 + 求职管理
 
           套餐 C｜全能工作效率工具箱｜建议售价 39.9 元
-          全部 14 款业务工具 + 工具箱启动器（含小店库存盘点助手、供应商采购比价助手、报价单生成器、费用报销管理助手、售后维修工单管理助手）
+          全部 15 款业务工具 + 工具箱启动器（含小店库存盘点助手、供应商采购比价助手、报价单生成器、费用报销管理助手、售后维修工单管理助手、门店排班考勤助手）
 
           建议：低价单品用于引流，套餐用于提高客单价；具体售价上线后根据咨询和成交数据调整。
           EOF

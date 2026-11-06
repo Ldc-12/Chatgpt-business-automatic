@@ -106,11 +106,11 @@ def test_repair_work_order_product_is_in_build_matrix_and_customer_package():
     assert 'product: "售后维修工单管理助手"' in workflow
     assert "tests/test_mainland_repair_work_orders.py" in workflow
     assert "MainlandRepairWorkOrderManager" in workflow
-    assert "15 款 Windows EXE（14 款业务工具及工具箱启动器）" in workflow
+    assert "16 款 Windows EXE（15 款业务工具及工具箱启动器）" in workflow
     assert "售后维修工单管理助手.json" in workflow
     launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
     assert "MainlandRepairWorkOrderManager.exe" in launcher
-    assert "assert len(TOOLS) == 14" in launcher
+    assert "assert len(TOOLS) == 15" in launcher
 
 
 def test_mainland_windows_build_concurrency_is_scoped_per_ref():

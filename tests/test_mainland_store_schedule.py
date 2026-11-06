@@ -41,7 +41,8 @@ def test_invalid_time_duration_and_break_are_rejected():
         {"上班时间": "09:00", "下班时间": "09:00"},
         {"上班时间": "06:00", "下班时间": "23:00"},
         {"休息分钟": "-1"},
-        {"休息分钟": "480"},
+        {"休息分钟": "540"},
+        {"休息分钟": "721"},
     ]
     for changes in invalid:
         try:

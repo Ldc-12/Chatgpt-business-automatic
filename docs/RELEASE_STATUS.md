@@ -265,3 +265,26 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 新增回归测试覆盖保存重载、自动编号、日期与金额校验、状态约束、重复 ID、编辑删除、CSV 往返/BOM/整批拒绝、备份恢复、筛选汇总和写盘失败回滚。
 - 已加入授权产品路径测试、工具箱启动器、Windows 构建矩阵、客户套餐、中文说明书索引。预计套餐调整为 15 个 EXE（14 款业务工具 + 启动器），仍需实际构建核对分片容量。
 - 当前分支：`feat/repair-work-order-manager`。PR Windows 构建、artifact 下载验收和真实 Windows GUI 测试尚未完成；不得标记为可交付。卖家私钥/内嵌公钥匹配及真实激活仍是独立待最终验收项。
+
+
+## 2026-11-06 最新 main 套餐复核与第六阶段产品开发
+
+### 已验证的 main 发布包（2026-11-05 构建）
+
+- 本轮检查时 main 最新提交：`02ed7cf28199f1a1b160cb44e612cfc6f777c6a2`（Add offline repair work-order manager）；未完成 PR：0。
+- Mainland Windows EXE run #248：[#42030635353](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42030635353)，head 为上述 main commit，整体 `success`。15/15 个产品构建 job 与 Phase 1 customer delivery package job 全部 success；产品测试、源码自测、PyInstaller 构建和冻结 EXE 自测均通过。维修工单 job #127255885217：`36 passed`，冻结 EXE 日志出现 `FROZEN_EXE_SELF_TEST_OK`；报价单生成器 job #127255885411：`30 passed`，冻结 EXE 自测退出码 0。
+- 客户套餐 artifact：`mainland-phase1-customer-package`，ID `13415098998`，artifact 大小 248,828,480 bytes；创建时间 2026-11-05 12:53:04 UTC（北京时间 20:53:04）。已实际下载外层 artifact：SHA256 `6d9276746fa03752b34f4963412a365a83d6665c53e597c0f4fef9edde0838d2`，外层 CRC 检查通过。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：248,758,240 bytes，SHA256 `7ee643b172398502ea97e72e121bf94812512f1c0f4cc2c482d95e68f936f75d`；与 manifest artifact ID `13416680725` 的字节数和 SHA256 完全一致，manifest 声明 14 个分片。内层 `ZipFile.testzip() = None`。
+- 内层 ZIP 共 35 个条目（33 个文件、2 个目录）：15 个 EXE、15 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT。README 声明 15 款 Windows EXE（14 款业务工具及工具箱启动器）；套餐说明 C 也是全部 14 款业务工具 + 工具箱启动器，与该 run 的 15 个 EXE 数量一致。下一次加入门店排班考勤助手的构建将更新为 16 款 EXE（15 款业务工具及工具箱启动器）。所有文件时间戳为 2026-11-05 12:52:42 UTC（北京时间 20:52:42）。
+- 最新 Autonomous Business Engine scheduled run #372：[#42177016070](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42177016070)，build/deploy 均 success；测试 `112 passed`；Pages artifact ID `13483851199`，47,818 bytes。
+- 近期失败 PR 检查 run #246（[#42029549866](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42029549866)）失败于过时的 workflow-trigger 字符串断言；run #231（[#42025824630](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42025824630)）失败于过时的分片脚本断言。两者均为 PR 头部测试配置断言，后续 main run #248 已通过完整构建与打包；没有把这些失败记录改写为成功。
+
+### 新产品开发：门店排班考勤助手（待 PR/CI 验收）
+
+- 分支：`feat/store-scheduling-attendance-assistant`；基于 main commit `02ed7cf28199f1a1b160cb44e612cfc6f777c6a2`。
+- 新增源码：`apps/门店排班考勤助手.py`；产品授权 ID：`门店排班考勤助手`。
+- 功能：员工每日排班登记、出勤/休息/请假/缺勤状态、跨午夜班次、休息分钟扣除后的工时统计、同员工同日重复检查、跨日班次冲突检测、关键词/月度/状态筛选。
+- 支持 UTF-8 BOM CSV 追加导入/筛选结果导出，以及带版本标记的 JSON 备份/恢复；导入和恢复验证失败时保持原数据不变，磁盘写入失败时回滚内存状态。
+- 数据本地保存到 `%LOCALAPPDATA%\\MainlandBusinessTools\\store_schedule.json`；不连接云端，不依赖 VPN、ChatGPT 或外部 AI。
+- 已新增中文说明书、回归测试、独立授权路径测试，并集成工具箱启动器及 16 款 EXE 构建/客户套餐矩阵。未通过本轮 PR Actions 前不视为可交付。
+- 授权最终验收仍独立待办：两份仓库公钥指纹不同，卖家私钥不在仓库；不得上传私钥。需用户仅提供本地导出的公钥或 SHA256 指纹，之后再做真实 Windows 签发/激活/重启测试。

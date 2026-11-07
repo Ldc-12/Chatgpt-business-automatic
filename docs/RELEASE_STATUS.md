@@ -317,13 +317,14 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 
 ### 合并后的 main 正式构建与客户套餐
 
-- main 最新提交：`ffb6fb33ae0e89116aaf57ec650742f39fe7b16e`（PR #16 merge commit）；未完成 PR：0。
+- main 发布代码提交：`ffb6fb33ae0e89116aaf57ec650742f39fe7b16e`（PR #16 merge commit）；其后仅有本发布状态文档提交 `5a16f61f88d93f2979298ecc56a1b402f9eea0f9`，未改变产品代码；未完成 PR：0。
 - Mainland Windows EXE main run #256（[#42368069913](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42368069913)）：整体 success，18/18 jobs 成功（17 个产品/启动器构建 + 客户套餐 job）。合同台账 main job #128390264509：30 passed，冻结 EXE 自测输出 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`；启动器 job #128390264486：26 passed，冻结 EXE 自测退出码 0。
 - main 客户套餐 artifact `mainland-phase1-customer-package` ID `13572059403`，外层 278,350,620 bytes，SHA256 `62abdb8d6992101546eead1f3d549d9a26c5f3e4089f0a5086296e6c1ca5ae53`；已实际下载，外层 ZIP CRC 通过。
 - 内层 `Phase1-Mainland-Windows-Tools.zip`：278,271,976 bytes，SHA256 `95f5e61a4057b873bc44de559d39cbb0bcfb2d3161bfbc31bb0e2bb4889b5784`；manifest artifact ID `13572154354` 中的 bytes/SHA256 完全匹配；分片 artifact ID `13572159266`，manifest 记录 15 个 18 MiB 分片。内层 `ZipFile.testzip() = None`。
 - 内层 ZIP 共 39 个条目（37 个文件、2 个目录）：17 个 EXE（16 款业务工具 + 工具箱启动器）、17 份产品说明书（16 款业务工具 + 工具箱）、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT。README 数量、套餐 C 产品数量与 EXE 实数一致；套餐 C 是全部 16 款业务工具 + 启动器。包内文件时间戳为 2026-11-07 11:26:14 UTC（北京时间 19:26:14）。
 - 合同台账单品 artifact ID `13572935092` 已下载核验：外层 29,519,664 bytes，SHA256 `e00c33effa9d20538a78a9a23e60cd3e9be676124996b333c9a6bb6a24a1085d`；外层和嵌套 ZIP CRC 均通过；嵌套 ZIP 含 `MainlandContractLedgerAssistant.exe` 与 UTF-8 `README-mainland.txt`。
-- 最新 Autonomous Business Engine main run #377（[#42368069900](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42368069900)）：build/deploy 均 success，测试 `138 passed`；Pages artifact ID `13572204036`，47,771 bytes。
+- 合并代码后的 Autonomous Business Engine main run #377（[#42368069900](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42368069900)）：build/deploy 均 success，测试 `138 passed`；Pages artifact ID `13572204036`，47,771 bytes。
+- 本发布状态文档提交后的最新 Autonomous Business Engine main run #378（[#42368331248](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42368331248)）：build/deploy 均 success，测试 `138 passed`；Pages artifact ID `13572498649`，47,764 bytes。该次为文档变更触发，不改变 Mainland Windows EXE #256 的客户包内容。
 - 最新通用 Windows EXE Build main run #115（[#42368069937](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42368069937)）success。
 
 ### 最终验收阻塞

@@ -20,6 +20,7 @@ TOOLS = [
     ("费用报销管理助手", "MainlandExpenseReimbursement.exe"),
     ("售后维修工单管理助手", "MainlandRepairWorkOrderManager.exe"),
     ("门店排班考勤助手", "MainlandStoreScheduleAssistant.exe"),
+    ("合同台账与到期提醒助手", "MainlandContractLedgerAssistant.exe"),
 ]
 
 
@@ -35,7 +36,7 @@ def application_directory():
 
 
 def self_test():
-    assert len(TOOLS) == 15
+    assert len(TOOLS) == 16
     names = [name for name, _ in TOOLS]
     exes = [exe for _, exe in TOOLS]
     assert len(set(names)) == len(names)

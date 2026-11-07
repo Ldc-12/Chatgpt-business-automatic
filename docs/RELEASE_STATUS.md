@@ -303,12 +303,31 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - **交付状态：** 门店排班考勤助手已完成代码、回归测试、PyInstaller EXE、冻结 EXE 非交互自测、PR 构建、main 构建及客户套餐下载/manifest 核验；代码和 CI 构建层面可交付。整个产品线仍标记“待最终验收”：卖家真实私钥与客户端公钥匹配、真实 Windows 设备签发/激活/重启、真实 GUI 业务流程测试尚未完成；不得宣称已完成正式授权销售验收。
 
 
-## 新增产品候选：合同台账与到期提醒助手（PR #16 开发中，待 Windows CI）
+## 2026-11-07 PR #16 合并、17 款 EXE 主线构建与客户包核验
 
-- 开发分支：`feat/contract-expiry-ledger-assistant`，基于 main 初始提交 `8e1864008e1a930aa5d51d990dad897e4bfa7d7f`。
-- 新增源码：`apps/合同台账与到期提醒助手.py`；授权产品 ID：`合同台账与到期提醒助手`；本地数据：`%LOCALAPPDATA%\\MainlandBusinessTools\\contracts.json`。
-- 功能：合同编号与名称、甲乙方、签订/生效/到期日期、金额、负责人、联系方式、状态、提前续约提醒天数；到期/逾期计算、搜索筛选、只看待提醒合同、筛选结果 CSV 导出。
-- 支持 UTF-8 BOM CSV 追加导入、带版本标记 JSON 备份恢复、金额 Decimal 分精度、日期顺序校验、重复编号拒绝及写盘失败回滚。提醒为本地软件内筛选，不声称程序关闭后能推送通知。
-- 新增回归测试覆盖金额四舍五入与非法金额、日期边界、到期提醒边界、保存重载/编辑/删除、CSV 往返及整批拒绝、备份恢复和终止/续约提醒排除。
-- 已加入工具箱启动器、授权产品路径回归测试、Windows 构建矩阵、17 款 EXE 客户套餐和中文说明书索引。
-- 当前状态：代码和测试已提交至独立分支，等待 PR 检查。Windows Actions、冻结 EXE 自测和客户包下载核验未通过前，不标记为可交付。真实卖家密钥匹配与 Windows 授权激活仍待最终验收。
+### 合同台账与到期提醒助手
+
+- PR #16（[Add offline contract ledger and expiry reminder assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/16)）已 squash 合并；merge commit：`ffb6fb33ae0e89116aaf57ec650742f39fe7b16e`。合并后 open PR 查询为 0。
+- 新增源码：`apps/合同台账与到期提醒助手.py`；产品授权 ID：`合同台账与到期提醒助手`；数据保存在 `%LOCALAPPDATA%\\MainlandBusinessTools\\contracts.json`。
+- 主要功能：合同编号/名称、甲乙方、签订/生效/到期日期、金额、负责人、联系方式、状态、提前续约天数；到期/逾期状态、搜索筛选、待提醒筛选；UTF-8 BOM CSV 追加导入和筛选导出；版本化 JSON 备份与恢复。
+- 本轮代码加固：恢复前严格校验 JSON 根对象、整数版本号（拒绝布尔值）、contracts 数组和每条记录对象；损坏 JSON、缺少列表、错误类型或非法行均拒绝恢复，保留原内存和磁盘数据。新增回归测试覆盖这些异常输入。
+- PR Mainland Windows EXE run #252（[#42334422717](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42334422717)）曾失败：17 个 Windows 产品矩阵 job 的共同原因是 `tests/test_mainland_packaging.py` 仍断言旧的 16 EXE/15 业务工具数量；合同台账加入后实际应为 17 EXE/16 业务工具。日志显示每个产品的构建步骤在测试阶段即停止，未生成 PR 客户包。该失败没有被隐藏。
+- 修复包括更新套餐数量断言、把合同台账加入冻结 EXE 入口回归清单、更新启动器 EXE 列表断言和工具箱中文说明书（16 款业务工具）。PR Mainland Windows EXE run #255（[#42367823147](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42367823147)）最终 18/18 checks success；17 个产品/启动器构建 job + 1 个客户套餐 job 全部成功。合同台账 job：30 passed，冻结 EXE 自测退出码 0；启动器 job：26 passed，冻结 EXE 自测退出码 0。
+- PR 候选包 artifact ID `13572023880` 已下载核验：外层 278,345,652 bytes，SHA256 `30a8a7d399a65701121fa6165349ed363c4673ca2b513e038ac30be249853a8f`；内层 ZIP 278,267,126 bytes，SHA256 `40ecab061a92c26ff620a1e168145769116cf092cb3c0a27e5949bde25c5fbe7`；manifest artifact ID `13571864538` 的 bytes/SHA256 完全匹配，parts artifact ID `13572038893`。外层与内层 CRC 均通过。候选包有 17 EXE、17 份产品说明书、1 份说明书索引、README 和套餐说明。
+
+### 合并后的 main 正式构建与客户套餐
+
+- main 最新提交：`ffb6fb33ae0e89116aaf57ec650742f39fe7b16e`（PR #16 merge commit）；未完成 PR：0。
+- Mainland Windows EXE main run #256（[#42368069913](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42368069913)）：整体 success，18/18 jobs 成功（17 个产品/启动器构建 + 客户套餐 job）。合同台账 main job #128390264509：30 passed，冻结 EXE 自测输出 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`；启动器 job #128390264486：26 passed，冻结 EXE 自测退出码 0。
+- main 客户套餐 artifact `mainland-phase1-customer-package` ID `13572059403`，外层 278,350,620 bytes，SHA256 `62abdb8d6992101546eead1f3d549d9a26c5f3e4089f0a5086296e6c1ca5ae53`；已实际下载，外层 ZIP CRC 通过。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：278,271,976 bytes，SHA256 `95f5e61a4057b873bc44de559d39cbb0bcfb2d3161bfbc31bb0e2bb4889b5784`；manifest artifact ID `13572154354` 中的 bytes/SHA256 完全匹配；分片 artifact ID `13572159266`，manifest 记录 15 个 18 MiB 分片。内层 `ZipFile.testzip() = None`。
+- 内层 ZIP 共 39 个条目（37 个文件、2 个目录）：17 个 EXE（16 款业务工具 + 工具箱启动器）、17 份产品说明书（16 款业务工具 + 工具箱）、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT。README 数量、套餐 C 产品数量与 EXE 实数一致；套餐 C 是全部 16 款业务工具 + 启动器。包内文件时间戳为 2026-11-07 11:26:14 UTC（北京时间 19:26:14）。
+- 合同台账单品 artifact ID `13572935092` 已下载核验：外层 29,519,664 bytes，SHA256 `e00c33effa9d20538a78a9a23e60cd3e9be676124996b333c9a6bb6a24a1085d`；外层和嵌套 ZIP CRC 均通过；嵌套 ZIP 含 `MainlandContractLedgerAssistant.exe` 与 UTF-8 `README-mainland.txt`。
+- 最新 Autonomous Business Engine main run #377（[#42368069900](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42368069900)）：build/deploy 均 success，测试 `138 passed`；Pages artifact ID `13572204036`，47,771 bytes。
+- 最新通用 Windows EXE Build main run #115（[#42368069937](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42368069937)）success。
+
+### 最终验收阻塞
+
+- 仓库内嵌公钥指纹与配置公钥指纹仍不同：`src/license.py` 为 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` 为 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。
+- 卖家私钥不在仓库；未猜测、替换或新造私钥，也未要求上传私钥。代码/CI 和冻结 EXE 非交互自测通过，不等于真实授权激活通过。
+- **交付状态：** 合同台账与到期提醒助手已完成代码、回归测试、Windows EXE 构建、冻结 EXE 非交互自测、PR/main 构建及主线客户套餐下载与 manifest 核验；17 款 EXE 主线包在构建层面可交付。整个产品线仍为“待最终验收”：真实 Windows GUI 操作、卖家公钥匹配、签发/激活/重启测试未完成，不得宣称已经完成正式授权销售验收。

@@ -41,6 +41,8 @@ def iso_date(value, field):
 
 
 def normalize(row):
+    if not isinstance(row, dict):
+        raise ValueError("合同记录必须是对象")
     item = {f: str(row.get(f, "")).strip() for f in FIELDS}
     if not item["合同编号"] or not item["合同名称"]:
         raise ValueError("合同编号和合同名称不能为空")
@@ -188,10 +190,23 @@ class ContractStore:
         Path(path).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def restore(self, path):
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
-        if payload.get("format") != BACKUP_FORMAT or payload.get("version") != BACKUP_VERSION:
+        try:
+            payload = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"无法读取备份文件：{exc}") from exc
+        if not isinstance(payload, dict):
+            raise ValueError("备份文件内容必须是对象")
+        if payload.get("format") != BACKUP_FORMAT or type(payload.get("version")) is not int or payload.get("version") != BACKUP_VERSION:
             raise ValueError("备份文件格式或版本不受支持")
-        rows = [normalize(r) for r in payload.get("contracts", [])]
+        raw_rows = payload.get("contracts")
+        if not isinstance(raw_rows, list):
+            raise ValueError("备份文件缺少有效的合同记录列表")
+        rows = []
+        for index, raw in enumerate(raw_rows, 1):
+            try:
+                rows.append(normalize(raw))
+            except ValueError as exc:
+                raise ValueError(f"备份第 {index} 条合同记录无效：{exc}") from exc
         self.check_unique(rows)
         old = self.rows[:]
         self.rows = rows

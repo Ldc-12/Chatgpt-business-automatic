@@ -317,7 +317,7 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 
 ### 合并后的 main 正式构建与客户套餐
 
-- main 发布代码提交：`ffb6fb33ae0e89116aaf57ec650742f39fe7b16e`（PR #16 merge commit）；其后仅有本发布状态文档提交 `5a16f61f88d93f2979298ecc56a1b402f9eea0f9`，未改变产品代码；未完成 PR：0。
+- main 发布代码提交：`ffb6fb33ae0e89116aaf57ec650742f39fe7b16e`（PR #16 merge commit）；其后 main 提交均为发布状态文档记录，不改变产品代码；未完成 PR：0。
 - Mainland Windows EXE main run #256（[#42368069913](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42368069913)）：整体 success，18/18 jobs 成功（17 个产品/启动器构建 + 客户套餐 job）。合同台账 main job #128390264509：30 passed，冻结 EXE 自测输出 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`；启动器 job #128390264486：26 passed，冻结 EXE 自测退出码 0。
 - main 客户套餐 artifact `mainland-phase1-customer-package` ID `13572059403`，外层 278,350,620 bytes，SHA256 `62abdb8d6992101546eead1f3d549d9a26c5f3e4089f0a5086296e6c1ca5ae53`；已实际下载，外层 ZIP CRC 通过。
 - 内层 `Phase1-Mainland-Windows-Tools.zip`：278,271,976 bytes，SHA256 `95f5e61a4057b873bc44de559d39cbb0bcfb2d3161bfbc31bb0e2bb4889b5784`；manifest artifact ID `13572154354` 中的 bytes/SHA256 完全匹配；分片 artifact ID `13572159266`，manifest 记录 15 个 18 MiB 分片。内层 `ZipFile.testzip() = None`。

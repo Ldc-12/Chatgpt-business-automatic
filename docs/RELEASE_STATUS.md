@@ -301,3 +301,14 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 内层 ZIP 共 37 个条目（35 个文件、2 个目录）：16 个 EXE、16 份产品说明书（15 款业务工具 + 工具箱）、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT。新产品 EXE、说明书、授权文件名示例和工具箱入口均已存在；套餐 C 为全部 15 款业务工具 + 工具箱启动器。内层文件时间戳为 2026-11-06 12:05:28 UTC（北京时间 20:05:28）。
 - 最新 Autonomous Business Engine main run #373：[#42214811677](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42214811677)，build/deploy 均 success；完整测试 `129 passed`；Pages artifact ID `13499049754`，47,764 bytes。
 - **交付状态：** 门店排班考勤助手已完成代码、回归测试、PyInstaller EXE、冻结 EXE 非交互自测、PR 构建、main 构建及客户套餐下载/manifest 核验；代码和 CI 构建层面可交付。整个产品线仍标记“待最终验收”：卖家真实私钥与客户端公钥匹配、真实 Windows 设备签发/激活/重启、真实 GUI 业务流程测试尚未完成；不得宣称已完成正式授权销售验收。
+
+
+## 新增产品候选：合同台账与到期提醒助手（PR #16 开发中，待 Windows CI）
+
+- 开发分支：`feat/contract-expiry-ledger-assistant`，基于 main 初始提交 `8e1864008e1a930aa5d51d990dad897e4bfa7d7f`。
+- 新增源码：`apps/合同台账与到期提醒助手.py`；授权产品 ID：`合同台账与到期提醒助手`；本地数据：`%LOCALAPPDATA%\\MainlandBusinessTools\\contracts.json`。
+- 功能：合同编号与名称、甲乙方、签订/生效/到期日期、金额、负责人、联系方式、状态、提前续约提醒天数；到期/逾期计算、搜索筛选、只看待提醒合同、筛选结果 CSV 导出。
+- 支持 UTF-8 BOM CSV 追加导入、带版本标记 JSON 备份恢复、金额 Decimal 分精度、日期顺序校验、重复编号拒绝及写盘失败回滚。提醒为本地软件内筛选，不声称程序关闭后能推送通知。
+- 新增回归测试覆盖金额四舍五入与非法金额、日期边界、到期提醒边界、保存重载/编辑/删除、CSV 往返及整批拒绝、备份恢复和终止/续约提醒排除。
+- 已加入工具箱启动器、授权产品路径回归测试、Windows 构建矩阵、17 款 EXE 客户套餐和中文说明书索引。
+- 当前状态：代码和测试已提交至独立分支，等待 PR 检查。Windows Actions、冻结 EXE 自测和客户包下载核验未通过前，不标记为可交付。真实卖家密钥匹配与 Windows 授权激活仍待最终验收。

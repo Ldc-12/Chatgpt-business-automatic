@@ -85,3 +85,30 @@ def test_reminder_exclusions_for_renewed_or_terminated():
     assert module.reminder_state(item,date(2026,12,31))[0]=="无需提醒"
     item["状态"]="已终止"
     assert module.reminder_state(item,date(2026,12,31))[0]=="无需提醒"
+
+
+def test_restore_rejects_invalid_json_shapes_and_rows_atomically(tmp_path):
+    path = tmp_path / "contracts.json"
+    store = module.ContractStore(path)
+    store.add(row())
+    before = store.rows[:]
+    valid_header = {"format": module.BACKUP_FORMAT, "version": module.BACKUP_VERSION}
+    invalid_payloads = [
+        "[]",
+        '{"format":"mainland-contract-ledger","version":1}',
+        '{"format":"mainland-contract-ledger","version":1,"contracts":"not-a-list"}',
+        '{"format":"mainland-contract-ledger","version":1,"contracts":[null]}',
+        '{"format":"mainland-contract-ledger","version":true,"contracts":[]}',
+        "{not-json",
+    ]
+    for index, payload in enumerate(invalid_payloads):
+        backup = tmp_path / f"invalid-{index}.json"
+        backup.write_text(payload, encoding="utf-8")
+        try:
+            store.restore(backup)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"invalid backup accepted: {payload}")
+        assert store.rows == before
+        assert module.ContractStore(path).rows == before

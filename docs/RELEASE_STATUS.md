@@ -332,3 +332,33 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 仓库内嵌公钥指纹与配置公钥指纹仍不同：`src/license.py` 为 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` 为 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。
 - 卖家私钥不在仓库；未猜测、替换或新造私钥，也未要求上传私钥。代码/CI 和冻结 EXE 非交互自测通过，不等于真实授权激活通过。
 - **交付状态：** 合同台账与到期提醒助手已完成代码、回归测试、Windows EXE 构建、冻结 EXE 非交互自测、PR/main 构建及主线客户套餐下载与 manifest 核验；17 款 EXE 主线包在构建层面可交付。整个产品线仍为“待最终验收”：真实 Windows GUI 操作、卖家公钥匹配、签发/激活/重启测试未完成，不得宣称已经完成正式授权销售验收。
+
+
+## 2026-11-08 PR #17 合同履约工作流与风险规则增强
+
+### 产品增强与验证
+- PR #17（[Add contract fulfillment milestones and offline risk rules](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/17)）已于 2026-11-08 squash 合并；main 合并提交：\`8f0415ce670d3dcd2c83a2e917b6716d4f41e1c6\`。
+- 在现有“合同台账与到期提醒助手”上增加离线履约节点：付款、收款、交付、验收、保证金、续约和其他事项；节点支持新增/编辑/完成/删除、计划金额与日期、严格 CSV 导入导出。
+- 新增本地确定性风险规则：执行中合同过期、待办节点逾期/7 日内到期、履约节点日期超出合同期限、合同主体缺失、付款/收款计划合计超过合同金额、缺少履约计划和孤立节点。结果显示规则编号、风险等级与建议动作，不构成法律意见。
+- 新增合同与节点操作日志、待付款/待收款和已完成金额汇总；新版 v2 备份包含合同、节点和日志，恢复前校验结构、版本、重复编号和合同关联，并保留旧版 v1 合同备份兼容恢复。
+- 数据继续保存在本地：合同主表 \`%LOCALAPPDATA%\\MainlandBusinessTools\\contracts.json\`；履约节点和日志 \`%LOCALAPPDATA%\\MainlandBusinessTools\\contract_workflow.json\`。不调用 VPN、ChatGPT、外部 AI、云端或外部 API。
+- 中文说明书已同步更新，明确风险规则、CSV 字段、旧备份迁移行为及不读取 PDF/Word、不提供法律意见等边界。
+
+### PR Windows 验证
+- PR Mainland Windows EXE run #258：[#42440171201](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440171201)，head \`8c05b6fced63f249e163586dfb37453254d610a1\`，18/18 jobs success（17 个产品/启动器构建 + customer package）。
+- 合同台账 job #128607505911：\`36 passed\`；PyInstaller 标准 EXE 构建成功；冻结 EXE 自测输出 \`FROZEN_EXE_SELF_TEST_OK: process exited with code 0.\`。
+- PR 客户包 artifact ID \`13601412144\` 已下载核验；内层 ZIP 17 个 EXE、17 份产品说明书、说明书索引、README 与套餐说明；内层 CRC 通过，manifest 与 15 个分片拼接 SHA256 一致。
+- 首次 PR run #257（[#42440069079](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440069079)）曾因新测试未导出 workflow 常量、风险规则编号使用中文而失败（2 failed / 34 passed）；已修正并在 run #258 复验通过。该失败记录保留，未改写为成功。
+
+### 合并后 main 正式构建与客户包
+- main Mainland Windows EXE run #259：[#42440410231](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410231)，head \`8f0415ce670d3dcd2c83a2e917b6716d4f41e1c6\`，整体 success；18/18 jobs 全部 success（17 个产品/启动器 + Phase 1 customer delivery package）。
+- main 合同台账 job #128608232978：\`36 passed\`；冻结 EXE 自测退出码 0；单品 artifact ID \`13600599066\`。
+- main 客户包 artifact \`mainland-phase1-customer-package\` ID \`13601262927\`，278,393,605 bytes；外层 SHA256：\`74329d626f81429374f24b66ecc026dde5ca91f5522af77e07eb88c63ed5ea63\`。已实际下载，外层 ZIP CRC 检查通过。
+- 内层 \`Phase1-Mainland-Windows-Tools.zip\`：278,314,876 bytes；SHA256：\`9ae659441a1d63fa0da016f9e0e8db21c1db203a17611f8be77ffa0007797427\`。manifest artifact ID \`13601642030\` 中 bytes/SHA256 完全匹配；parts artifact ID \`13601587362\` 含 15 个分片（14 个 18 MiB，末片 14,073,724 bytes），拼接后 bytes/SHA256 与内层 ZIP 完全一致。外层、manifest、parts、内层 ZIP CRC 均通过。
+- 内层 ZIP 共 39 个条目（37 个文件、2 个目录）：17 个 EXE（16 款业务工具 + 工具箱启动器）、17 份说明书（16 款业务工具 + 工具箱）、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT。套餐 A/B/C 描述与既有 17 EXE 数量一致；套餐 C 为 16 款业务工具 + 启动器。内层文件时间戳为 2026-11-08 02:55:24 UTC（北京时间 10:55:24）。
+- main Autonomous Business Engine run #383：[#42440410278](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410278)，build/deploy 均 success；\`144 passed\`；GitHub Pages artifact ID \`13601382380\`（47,789 bytes）。
+
+### 最终销售验收仍未完成
+- 以上证明 PR 与 main 的代码测试、Windows PyInstaller 构建、冻结 EXE 非交互自测、17-EXE 客户包下载和 CRC/SHA256/manifest 核验通过；**不等于真实用户 Windows GUI 业务流程验收，也不等于授权激活验收**。
+- \`src/license.py\` 内嵌公钥与 \`config/mainland_license_public_key.pem\` 仍存在指纹不匹配。卖家私钥不在仓库；未请求、上传、生成、猜测或替换任何私钥。
+- 上架前仍须在真实 Windows 环境完成 GUI 业务流程测试，并由卖家在可信 Windows 电脑本地导出公钥或 SHA256 指纹（只提供公钥/指纹，绝不提供私钥）以核对客户端公钥；匹配后再进行真实签发、设备激活、关闭重启和再次验证。最终状态继续标记为“待最终验收”，不得宣称已可正式上架。

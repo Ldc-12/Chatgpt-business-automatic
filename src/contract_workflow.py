@@ -309,7 +309,8 @@ def risk_findings(contracts, milestones, today=None):
         contract_amount = Decimal(contract.get("合同金额", "0"))
         for kind, total in totals.items():
             if total > contract_amount:
-                add("高", f"{kind.upper()}_PLAN_EXCEEDS_AMOUNT", contract_id,
+                code_name = "PAYMENT" if kind == "付款" else "RECEIPT"
+                add("高", f"{code_name}_PLAN_EXCEEDS_AMOUNT", contract_id,
                     f"{kind}节点合计 {total:.2f}，超过合同金额 {contract_amount:.2f}", "核对节点金额、重复录入及合同变更")
 
     for milestone in milestones:

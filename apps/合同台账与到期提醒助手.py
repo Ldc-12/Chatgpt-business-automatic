@@ -13,7 +13,7 @@ from tkinter import ttk, filedialog, messagebox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
-from src.contract_workflow import (WorkflowStore, MILESTONE_FIELDS, MILESTONE_TYPES, MILESTONE_STATUSES, AUDIT_FIELDS, risk_findings, finance_summary)
+from src.contract_workflow import (WorkflowStore, MILESTONE_FIELDS, MILESTONE_TYPES, MILESTONE_STATUSES, AUDIT_FIELDS, WORKFLOW_FORMAT, WORKFLOW_VERSION, risk_findings, finance_summary)
 
 PRODUCT = "合同台账与到期提醒助手"
 FIELDS = ["合同编号", "合同名称", "甲方/客户", "乙方/供应商", "签订日期", "生效日期", "到期日期",

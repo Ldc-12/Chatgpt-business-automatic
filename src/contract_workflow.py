@@ -140,6 +140,15 @@ class WorkflowStore:
         })
         self.audit = self.audit[-5000:]
 
+    def record_action(self, contract_id, action, note=""):
+        old = self.audit[:]
+        self._append_audit(contract_id, "", action, note)
+        try:
+            self.save()
+        except Exception:
+            self.audit = old
+            raise
+
     def add(self, contract_id, row):
         item = dict(row)
         item["节点编号"] = item.get("节点编号") or uuid.uuid4().hex[:12].upper()
@@ -157,7 +166,7 @@ class WorkflowStore:
             raise
         return item
 
-    def update(self, milestone_id, row):
+    def update(self, milestone_id, row, action="修改节点"):
         index = next((i for i, item in enumerate(self.milestones) if item["节点编号"] == milestone_id), None)
         if index is None:
             raise ValueError("找不到履约节点")
@@ -167,7 +176,7 @@ class WorkflowStore:
         item["合同编号"] = old["合同编号"]
         item = normalize_milestone(item)
         self.milestones[index] = item
-        self._append_audit(item["合同编号"], milestone_id, "修改节点", item["节点名称"])
+        self._append_audit(item["合同编号"], milestone_id, action, item["节点名称"])
         try:
             self.save()
         except Exception:
@@ -185,7 +194,7 @@ class WorkflowStore:
         row = dict(old)
         row["状态"] = "已完成"
         row["完成日期"] = _iso_date(completed_date or date.today().isoformat(), "完成日期")
-        return self.update(milestone_id, row)
+        return self.update(milestone_id, row, action="标记完成")
 
     def delete(self, milestone_id):
         index = next((i for i, item in enumerate(self.milestones) if item["节点编号"] == milestone_id), None)

@@ -223,6 +223,9 @@ class ContractStore:
                 if workflow_data is None:
                     raise ValueError("新版备份缺少履约节点和操作记录")
             milestones, audit = workflow.validate_payload(workflow_data)
+            contract_ids = {item["合同编号"] for item in rows}
+            if any(item["合同编号"] not in contract_ids for item in milestones):
+                raise ValueError("备份包含关联不存在合同的履约节点")
         old_rows = self.rows[:]
         old_milestones = workflow.milestones[:] if workflow is not None else None
         old_audit = workflow.audit[:] if workflow is not None else None
@@ -326,8 +329,14 @@ class App:
         def save():
             try:
                 item = {f: values[f].get() for f in FIELDS}
-                if existing: self.store.update(existing["合同编号"], item)
-                else: self.store.add(item)
+                if existing:
+                    self.store.update(existing["合同编号"], item)
+                    try: self.workflow.record_action(existing["合同编号"], "修改合同", f"合同资料更新为 {item['合同编号']}")
+                    except OSError as exc: messagebox.showwarning("操作记录未保存", str(exc), parent=win)
+                else:
+                    self.store.add(item)
+                    try: self.workflow.record_action(item["合同编号"], "新增合同", item["合同名称"])
+                    except OSError as exc: messagebox.showwarning("操作记录未保存", str(exc), parent=win)
                 self.refresh(); win.destroy()
             except (ValueError, OSError) as exc:
                 messagebox.showerror("保存失败", str(exc), parent=win)
@@ -343,8 +352,16 @@ class App:
         if row: self.form(row)
     def delete(self):
         row = self.selected()
-        if row and messagebox.askyesno("确认删除", f"删除合同 {row['合同编号']}？"):
-            self.store.delete(row["合同编号"]); self.refresh()
+        if not row:
+            return
+        if any(item["合同编号"] == row["合同编号"] for item in self.workflow.milestones):
+            messagebox.showwarning("不能删除", "该合同仍有关联履约节点，请先处理或删除节点后再删除合同。", parent=self.root)
+            return
+        if messagebox.askyesno("确认删除", f"删除合同 {row['合同编号']}？"):
+            self.store.delete(row["合同编号"])
+            try: self.workflow.record_action(row["合同编号"], "删除合同", row["合同名称"])
+            except OSError as exc: messagebox.showwarning("操作记录未保存", str(exc), parent=self.root)
+            self.refresh()
     def import_csv(self):
         path = filedialog.askopenfilename(filetypes=[("CSV 文件", "*.csv")])
         if path:

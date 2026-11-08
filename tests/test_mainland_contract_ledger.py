@@ -265,7 +265,7 @@ def test_workflow_mutations_restore_full_audit_history_when_save_fails_at_limit(
         store.milestones = [module.normalize_milestone(milestone("M001"))]
         store.audit = [
             {
-                "时间": f"2026-01-01T00:{index // 60:02d}:{index % 60:02d}",
+                "时间": f"2026-01-01T00:00:{index % 60:02d}",
                 "合同编号": "C001",
                 "节点编号": "",
                 "操作": "历史操作",

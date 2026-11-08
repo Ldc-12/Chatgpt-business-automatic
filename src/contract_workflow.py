@@ -156,13 +156,14 @@ class WorkflowStore:
         item = normalize_milestone(item)
         if any(existing["节点编号"] == item["节点编号"] for existing in self.milestones):
             raise ValueError("履约节点编号已存在")
+        old_audit = self.audit[:]
         self.milestones.append(item)
         self._append_audit(contract_id, item["节点编号"], "新增节点", item["节点名称"])
         try:
             self.save()
         except Exception:
             self.milestones.pop()
-            self.audit.pop()
+            self.audit = old_audit
             raise
         return item
 
@@ -171,6 +172,7 @@ class WorkflowStore:
         if index is None:
             raise ValueError("找不到履约节点")
         old = self.milestones[index]
+        old_audit = self.audit[:]
         item = dict(row)
         item["节点编号"] = milestone_id
         item["合同编号"] = old["合同编号"]
@@ -181,7 +183,7 @@ class WorkflowStore:
             self.save()
         except Exception:
             self.milestones[index] = old
-            self.audit.pop()
+            self.audit = old_audit
             raise
         return item
 
@@ -200,13 +202,14 @@ class WorkflowStore:
         index = next((i for i, item in enumerate(self.milestones) if item["节点编号"] == milestone_id), None)
         if index is None:
             raise ValueError("找不到履约节点")
+        old_audit = self.audit[:]
         old = self.milestones.pop(index)
         self._append_audit(old["合同编号"], milestone_id, "删除节点", old["节点名称"])
         try:
             self.save()
         except Exception:
             self.milestones.insert(index, old)
-            self.audit.pop()
+            self.audit = old_audit
             raise
 
     def import_csv(self, path, contract_ids):

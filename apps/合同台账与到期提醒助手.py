@@ -13,13 +13,14 @@ from tkinter import ttk, filedialog, messagebox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
+from src.contract_workflow import (WorkflowStore, MILESTONE_FIELDS, MILESTONE_TYPES, MILESTONE_STATUSES, AUDIT_FIELDS, risk_findings, finance_summary)
 
 PRODUCT = "合同台账与到期提醒助手"
 FIELDS = ["合同编号", "合同名称", "甲方/客户", "乙方/供应商", "签订日期", "生效日期", "到期日期",
           "合同金额", "续约提醒提前天数", "状态", "负责人", "联系方式", "备注"]
 STATUSES = ["执行中", "待续约", "已续约", "已到期", "已终止"]
 BACKUP_FORMAT = "mainland-contract-ledger"
-BACKUP_VERSION = 1
+BACKUP_VERSION = 2
 
 
 def money(value):
@@ -184,19 +185,22 @@ class ContractStore:
             writer.writeheader()
             writer.writerows(self.rows if rows is None else rows)
 
-    def backup(self, path):
+    def backup(self, path, workflow=None):
         payload = {"format": BACKUP_FORMAT, "version": BACKUP_VERSION,
                    "created_at": datetime.now().isoformat(timespec="seconds"), "contracts": self.rows}
+        if workflow is not None:
+            payload["workflow"] = workflow.payload()
         Path(path).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def restore(self, path):
+    def restore(self, path, workflow=None):
         try:
             payload = json.loads(Path(path).read_text(encoding="utf-8-sig"))
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise ValueError(f"无法读取备份文件：{exc}") from exc
         if not isinstance(payload, dict):
             raise ValueError("备份文件内容必须是对象")
-        if payload.get("format") != BACKUP_FORMAT or type(payload.get("version")) is not int or payload.get("version") != BACKUP_VERSION:
+        version = payload.get("version")
+        if payload.get("format") != BACKUP_FORMAT or type(version) is not int or version not in (1, BACKUP_VERSION):
             raise ValueError("备份文件格式或版本不受支持")
         raw_rows = payload.get("contracts")
         if not isinstance(raw_rows, list):
@@ -208,12 +212,39 @@ class ContractStore:
             except ValueError as exc:
                 raise ValueError(f"备份第 {index} 条合同记录无效：{exc}") from exc
         self.check_unique(rows)
-        old = self.rows[:]
+
+        workflow_data = None
+        if workflow is not None:
+            if version == 1:
+                workflow_data = {"format": "mainland-contract-workflow", "version": 1,
+                                 "milestones": [], "audit": []}
+            else:
+                workflow_data = payload.get("workflow")
+                if workflow_data is None:
+                    raise ValueError("新版备份缺少履约节点和操作记录")
+            milestones, audit = workflow.validate_payload(workflow_data)
+        old_rows = self.rows[:]
+        old_milestones = workflow.milestones[:] if workflow is not None else None
+        old_audit = workflow.audit[:] if workflow is not None else None
         self.rows = rows
+        if workflow is not None:
+            workflow.milestones, workflow.audit = milestones, audit
         try:
             self.save()
+            if workflow is not None:
+                workflow.save()
         except Exception:
-            self.rows = old
+            self.rows = old_rows
+            if workflow is not None:
+                workflow.milestones, workflow.audit = old_milestones, old_audit
+                try:
+                    workflow.save()
+                except Exception:
+                    pass
+            try:
+                self.save()
+            except Exception:
+                pass
             raise
 
 
@@ -228,10 +259,13 @@ class App:
         root.title("合同台账与到期提醒助手｜大陆版")
         root.geometry("1320x700")
         self.store = ContractStore(data_path())
+        self.workflow = WorkflowStore(data_path().with_name("contract_workflow.json"))
         bar = ttk.Frame(root, padding=8); bar.pack(fill="x")
         for label, command in [("新增合同", self.add), ("编辑", self.edit), ("删除", self.delete),
-                               ("导入 CSV", self.import_csv), ("导出筛选结果", self.export_csv),
-                               ("备份", self.backup), ("恢复", self.restore)]:
+                               ("履约节点", self.manage_milestones), ("风险检查", self.show_risks),
+                               ("节点导入", self.import_milestones), ("节点导出", self.export_milestones),
+                               ("操作记录", self.show_audit), ("导入 CSV", self.import_csv),
+                               ("导出筛选结果", self.export_csv), ("备份", self.backup), ("恢复", self.restore)]:
             ttk.Button(bar, text=label, command=command).pack(side="left", padx=3)
         self.search = tk.StringVar()
         ttk.Label(bar, text="搜索").pack(side="left", padx=(12, 3))
@@ -265,7 +299,13 @@ class App:
         for row, state, left in items:
             self.tree.insert("", "end", iid=row["合同编号"], values=[row[f] for f in FIELDS] + [state, left])
         due = sum(1 for row in self.store.rows if reminder_state(row)[0] in ("即将到期", "已逾期"))
-        self.summary.set(f"合同总数：{len(self.store.rows)}    需要提醒：{due}    数据位置：{self.store.path}")
+        risks = risk_findings(self.store.rows, self.workflow.milestones)
+        finance = finance_summary(self.workflow.milestones)
+        self.summary.set(
+            f"合同总数：{len(self.store.rows)}    合同到期提醒：{due}    高/中/低风险："
+            f"{sum(x['等级']=='高' for x in risks)}/{sum(x['等级']=='中' for x in risks)}/{sum(x['等级']=='低' for x in risks)}"
+            f"    待付款：{finance['待付款']}    待收款：{finance['待收款']}    数据位置：{self.store.path}"
+        )
 
     def form(self, existing=None):
         win = tk.Toplevel(self.root); win.title("合同资料")
@@ -322,13 +362,167 @@ class App:
     def backup(self):
         path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON 备份", "*.json")])
         if path:
-            try: self.store.backup(path); messagebox.showinfo("备份完成", "备份文件已保存")
+            try: self.store.backup(path, self.workflow); messagebox.showinfo("备份完成", "合同、履约节点和操作记录已备份")
             except OSError as exc: messagebox.showerror("备份失败", str(exc))
     def restore(self):
         path = filedialog.askopenfilename(filetypes=[("JSON 备份", "*.json")])
         if path and messagebox.askyesno("确认恢复", "恢复将替换当前合同台账，建议先备份。继续？"):
-            try: self.store.restore(path); self.refresh(); messagebox.showinfo("恢复完成", "合同台账已恢复")
+            try: self.store.restore(path, self.workflow); self.refresh(); messagebox.showinfo("恢复完成", "合同、履约节点和操作记录已恢复")
             except (ValueError, OSError, json.JSONDecodeError) as exc: messagebox.showerror("恢复失败", str(exc))
+
+
+    def manage_milestones(self):
+        contract = self.selected()
+        if not contract:
+            messagebox.showinfo("履约节点", "请先在合同列表中选择一份合同。", parent=self.root)
+            return
+        contract_id = contract["合同编号"]
+        win = tk.Toplevel(self.root)
+        win.title(f"履约节点｜{contract_id}")
+        win.geometry("980x520")
+        columns = MILESTONE_FIELDS
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        widths = {"节点编号":110, "合同编号":100, "节点名称":170, "节点类型":85, "计划日期":100,
+                  "金额":100, "状态":85, "完成日期":100, "备注":180}
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=widths.get(col, 100), stretch=True)
+        tree.pack(fill="both", expand=True, padx=8, pady=8)
+
+        def refresh_nodes():
+            tree.delete(*tree.get_children())
+            for item in self.workflow.milestones:
+                if item["合同编号"] == contract_id:
+                    tree.insert("", "end", iid=item["节点编号"], values=[item[f] for f in columns])
+
+        def selected_node():
+            ids = tree.selection()
+            return next((item for item in self.workflow.milestones
+                         if ids and item["节点编号"] == ids[0]), None)
+
+        def form(existing=None):
+            dialog = tk.Toplevel(win)
+            dialog.title("编辑履约节点" if existing else "新增履约节点")
+            dialog.transient(win)
+            fields = ["节点名称", "节点类型", "计划日期", "金额", "状态", "完成日期", "备注"]
+            defaults = dict(existing or {})
+            defaults.setdefault("节点类型", "付款")
+            defaults.setdefault("计划日期", date.today().isoformat())
+            defaults.setdefault("金额", "0.00")
+            defaults.setdefault("状态", "待处理")
+            defaults.setdefault("完成日期", "")
+            values = {field: tk.StringVar(value=defaults.get(field, "")) for field in fields}
+            for index, field in enumerate(fields):
+                ttk.Label(dialog, text=field).grid(row=index, column=0, padx=8, pady=5, sticky="e")
+                if field == "节点类型":
+                    widget = ttk.Combobox(dialog, textvariable=values[field], values=MILESTONE_TYPES,
+                                          state="readonly", width=34)
+                elif field == "状态":
+                    widget = ttk.Combobox(dialog, textvariable=values[field], values=MILESTONE_STATUSES,
+                                          state="readonly", width=34)
+                else:
+                    widget = ttk.Entry(dialog, textvariable=values[field], width=38)
+                widget.grid(row=index, column=1, padx=8, pady=5, sticky="w")
+
+            def save_node():
+                try:
+                    row = {field: values[field].get() for field in fields}
+                    if row["状态"] == "已完成" and not row["完成日期"]:
+                        row["完成日期"] = date.today().isoformat()
+                    if row["状态"] != "已完成":
+                        row["完成日期"] = ""
+                    if existing:
+                        self.workflow.update(existing["节点编号"], row)
+                    else:
+                        self.workflow.add(contract_id, row)
+                    refresh_nodes()
+                    self.refresh()
+                    dialog.destroy()
+                except (ValueError, OSError) as exc:
+                    messagebox.showerror("保存失败", str(exc), parent=dialog)
+
+            ttk.Button(dialog, text="保存", command=save_node).grid(row=len(fields), column=0,
+                                                                    columnspan=2, pady=10)
+
+        def complete_node():
+            item = selected_node()
+            if not item:
+                return
+            try:
+                self.workflow.complete(item["节点编号"])
+                refresh_nodes()
+                self.refresh()
+            except (ValueError, OSError) as exc:
+                messagebox.showerror("操作失败", str(exc), parent=win)
+
+        def delete_node():
+            item = selected_node()
+            if item and messagebox.askyesno("确认删除", f"删除履约节点“{item['节点名称']}”？", parent=win):
+                try:
+                    self.workflow.delete(item["节点编号"])
+                    refresh_nodes()
+                    self.refresh()
+                except (ValueError, OSError) as exc:
+                    messagebox.showerror("删除失败", str(exc), parent=win)
+
+        buttons = ttk.Frame(win, padding=6)
+        buttons.pack(fill="x")
+        ttk.Button(buttons, text="新增节点", command=lambda: form()).pack(side="left", padx=4)
+        ttk.Button(buttons, text="编辑节点", command=lambda: form(selected_node()) if selected_node() else None).pack(side="left", padx=4)
+        ttk.Button(buttons, text="标记完成", command=complete_node).pack(side="left", padx=4)
+        ttk.Button(buttons, text="删除节点", command=delete_node).pack(side="left", padx=4)
+        refresh_nodes()
+
+    def show_risks(self):
+        findings = risk_findings(self.store.rows, self.workflow.milestones)
+        win = tk.Toplevel(self.root)
+        win.title("合同履约风险检查｜规则辅助结果")
+        win.geometry("1080x560")
+        columns = ["等级", "规则编号", "合同编号", "风险说明", "建议动作"]
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for col, width in zip(columns, [65, 190, 120, 330, 330]):
+            tree.heading(col, text=col)
+            tree.column(col, width=width, stretch=True)
+        tree.pack(fill="both", expand=True, padx=8, pady=8)
+        for index, item in enumerate(findings):
+            tree.insert("", "end", iid=str(index), values=[item[col] for col in columns])
+        high = sum(item["等级"] == "高" for item in findings)
+        medium = sum(item["等级"] == "中" for item in findings)
+        low = sum(item["等级"] == "低" for item in findings)
+        ttk.Label(win, text=f"规则检查：{len(findings)} 项｜高风险 {high}｜中风险 {medium}｜低风险 {low}。"
+                            "结果仅用于业务核对，不构成法律意见。", padding=8).pack(fill="x")
+
+    def import_milestones(self):
+        path = filedialog.askopenfilename(filetypes=[("CSV 文件", "*.csv")])
+        if path:
+            try:
+                count = self.workflow.import_csv(path, {row["合同编号"] for row in self.store.rows})
+                self.refresh()
+                messagebox.showinfo("导入完成", f"成功导入 {count} 个履约节点")
+            except (ValueError, OSError) as exc:
+                messagebox.showerror("导入失败", str(exc))
+
+    def export_milestones(self):
+        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV 文件", "*.csv")])
+        if path:
+            try:
+                self.workflow.export_csv(path)
+                messagebox.showinfo("导出完成", "履约节点已导出")
+            except OSError as exc:
+                messagebox.showerror("导出失败", str(exc))
+
+    def show_audit(self):
+        win = tk.Toplevel(self.root)
+        win.title("合同操作记录")
+        win.geometry("900x500")
+        columns = AUDIT_FIELDS
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for col, width in zip(columns, [160, 130, 120, 110, 350]):
+            tree.heading(col, text=col)
+            tree.column(col, width=width, stretch=True)
+        tree.pack(fill="both", expand=True, padx=8, pady=8)
+        for index, item in enumerate(reversed(self.workflow.audit[-500:])):
+            tree.insert("", "end", iid=str(index), values=[item[field] for field in columns])
 
 
 def self_test():

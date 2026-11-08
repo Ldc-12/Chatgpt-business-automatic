@@ -112,3 +112,148 @@ def test_restore_rejects_invalid_json_shapes_and_rows_atomically(tmp_path):
             raise AssertionError(f"invalid backup accepted: {payload}")
         assert store.rows == before
         assert module.ContractStore(path).rows == before
+
+
+def milestone(mid, cid="C001", kind="付款", due="2026-12-05", amount="50.00", status="待处理", completed=""):
+    return {
+        "节点编号": mid, "合同编号": cid, "节点名称": f"{kind}节点",
+        "节点类型": kind, "计划日期": due, "金额": amount,
+        "状态": status, "完成日期": completed, "备注": ""
+    }
+
+
+def test_workflow_store_add_complete_reload_and_audit(tmp_path):
+    workflow_path = tmp_path / "contract_workflow.json"
+    store = module.WorkflowStore(workflow_path)
+    item = store.add("C001", milestone("", due="2026-12-05"))
+    assert item["节点编号"]
+    assert item["合同编号"] == "C001"
+    assert len(store.audit) == 1
+    store.complete(item["节点编号"], "2026-12-04")
+    loaded = module.WorkflowStore(workflow_path)
+    assert loaded.milestones[0]["状态"] == "已完成"
+    assert loaded.milestones[0]["完成日期"] == "2026-12-04"
+    assert [event["操作"] for event in loaded.audit] == ["新增节点", "修改节点"]
+
+
+def test_workflow_csv_roundtrip_and_atomic_rejection(tmp_path):
+    store = module.WorkflowStore(tmp_path / "workflow.json")
+    valid = tmp_path / "valid.csv"
+    with valid.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=module.MILESTONE_FIELDS)
+        writer.writeheader()
+        writer.writerow(milestone("M001"))
+    assert store.import_csv(valid, {"C001"}) == 1
+    before = store.milestones[:]
+    duplicate = tmp_path / "duplicate.csv"
+    with duplicate.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=module.MILESTONE_FIELDS)
+        writer.writeheader()
+        writer.writerow(milestone("M001"))
+    try:
+        store.import_csv(duplicate, {"C001"})
+    except ValueError as exc:
+        assert "重复" in str(exc)
+    else:
+        raise AssertionError("duplicate milestone import accepted")
+    orphan = tmp_path / "orphan.csv"
+    with orphan.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=module.MILESTONE_FIELDS)
+        writer.writeheader()
+        writer.writerow(milestone("M002", cid="MISSING"))
+    try:
+        store.import_csv(orphan, {"C001"})
+    except ValueError as exc:
+        assert "找不到合同" in str(exc)
+    else:
+        raise AssertionError("orphan milestone import accepted")
+    assert store.milestones == before
+    exported = tmp_path / "export.csv"
+    store.export_csv(exported)
+    other = module.WorkflowStore(tmp_path / "other.json")
+    assert other.import_csv(exported, {"C001"}) == 1
+    assert other.milestones == store.milestones
+
+
+def test_workflow_rejects_invalid_status_dates_and_duplicate_ids(tmp_path):
+    path = tmp_path / "workflow.json"
+    payload = {
+        "format": module.WORKFLOW_FORMAT, "version": module.WORKFLOW_VERSION,
+        "milestones": [milestone("M001", status="已完成", completed="")], "audit": []
+    }
+    path.write_text(__import__("json").dumps(payload, ensure_ascii=False), encoding="utf-8")
+    try:
+        module.WorkflowStore(path)
+    except ValueError as exc:
+        assert "完成日期" in str(exc)
+    else:
+        raise AssertionError("completed milestone without completion date accepted")
+    payload["milestones"] = [milestone("M001"), milestone("M001")]
+    path.write_text(__import__("json").dumps(payload, ensure_ascii=False), encoding="utf-8")
+    try:
+        module.WorkflowStore(path)
+    except ValueError as exc:
+        assert "重复" in str(exc)
+    else:
+        raise AssertionError("duplicate milestone IDs accepted")
+
+
+def test_risk_engine_flags_overdue_soon_outside_term_and_excess_plan():
+    contract = row("C100", expiry="2026-12-31")
+    contract["合同金额"] = "120.00"
+    contract["乙方/供应商"] = ""
+    nodes = [
+        milestone("M1", "C100", "付款", "2026-11-30", "80.00"),
+        milestone("M2", "C100", "付款", "2026-12-05", "50.00"),
+        milestone("M3", "C100", "收款", "2027-01-01", "10.00"),
+    ]
+    findings = module.risk_findings([module.normalize(contract)], nodes, date(2026, 12, 1))
+    codes = {item["规则编号"] for item in findings}
+    assert {"PARTY_MISSING", "MILESTONE_OVERDUE", "MILESTONE_DUE_SOON",
+            "MILESTONE_OUTSIDE_TERM", "PAYMENT_PLAN_EXCEEDS_AMOUNT"}.issubset(codes)
+    assert findings[0]["等级"] == "高"
+
+
+def test_finance_summary_separates_pending_and_completed_amounts():
+    nodes = [
+        milestone("M1", kind="付款", amount="100.25"),
+        milestone("M2", kind="付款", amount="20.00", status="已完成", completed="2026-12-01"),
+        milestone("M3", kind="收款", amount="300.00"),
+        milestone("M4", kind="收款", amount="50.00", status="已取消"),
+    ]
+    assert module.finance_summary(nodes) == {
+        "待付款": "100.25", "待收款": "300.00",
+        "已完成付款": "20.00", "已完成收款": "0.00"
+    }
+
+
+def test_combined_backup_restores_contracts_milestones_and_audit_atomically(tmp_path):
+    contract_path = tmp_path / "contracts.json"
+    workflow_path = tmp_path / "contract_workflow.json"
+    store = module.ContractStore(contract_path)
+    workflow = module.WorkflowStore(workflow_path)
+    store.add(row("C001"))
+    workflow.add("C001", milestone("", cid="C001"))
+    backup = tmp_path / "workspace.json"
+    store.backup(backup, workflow)
+    store.add(row("C002"))
+    workflow.add("C002", milestone("", cid="C002", due="2026-12-06"))
+    store.restore(backup, workflow)
+    assert [item["合同编号"] for item in module.ContractStore(contract_path).rows] == ["C001"]
+    restored = module.WorkflowStore(workflow_path)
+    assert len(restored.milestones) == 1
+    assert len(restored.audit) == 1
+    bad = tmp_path / "bad-workspace.json"
+    payload = __import__("json").loads(backup.read_text(encoding="utf-8"))
+    payload["workflow"]["milestones"] = [milestone("M1", cid="UNKNOWN")]
+    bad.write_text(__import__("json").dumps(payload, ensure_ascii=False), encoding="utf-8")
+    before_contracts = store.rows[:]
+    before_nodes = workflow.milestones[:]
+    try:
+        store.restore(bad, workflow)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("invalid combined backup accepted")
+    assert store.rows == before_contracts
+    assert workflow.milestones == before_nodes

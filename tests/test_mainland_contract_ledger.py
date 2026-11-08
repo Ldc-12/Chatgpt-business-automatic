@@ -257,3 +257,47 @@ def test_combined_backup_restores_contracts_milestones_and_audit_atomically(tmp_
         raise AssertionError("invalid combined backup accepted")
     assert store.rows == before_contracts
     assert workflow.milestones == before_nodes
+
+
+def test_workflow_mutations_restore_full_audit_history_when_save_fails_at_limit(tmp_path):
+    def make_store():
+        store = module.WorkflowStore(tmp_path / "workflow.json")
+        store.milestones = [module.normalize_milestone(milestone("M001"))]
+        store.audit = [
+            {
+                "时间": f"2026-01-01T00:{index // 60:02d}:{index % 60:02d}",
+                "合同编号": "C001",
+                "节点编号": "",
+                "操作": "历史操作",
+                "说明": str(index),
+            }
+            for index in range(5000)
+        ]
+        return store
+
+    operations = [
+        lambda store: store.add("C001", milestone("M002")),
+        lambda store: store.update("M001", milestone("M001", amount="60.00")),
+        lambda store: store.delete("M001"),
+    ]
+    for operation in operations:
+        store = make_store()
+        before_milestones = store.milestones[:]
+        before_audit = store.audit[:]
+
+        def fail_save():
+            raise OSError("simulated disk write failure")
+
+        store.save = fail_save
+        try:
+            operation(store)
+        except OSError as exc:
+            assert "simulated disk write failure" in str(exc)
+        else:
+            raise AssertionError("write failure was not propagated")
+
+        assert store.milestones == before_milestones
+        assert store.audit == before_audit
+        assert len(store.audit) == 5000
+        assert store.audit[0]["说明"] == "0"
+        assert store.audit[-1]["说明"] == "4999"

@@ -262,7 +262,7 @@ def test_combined_backup_restores_contracts_milestones_and_audit_atomically(tmp_
 def test_workflow_mutations_restore_full_audit_history_when_save_fails_at_limit(tmp_path):
     def make_store():
         store = module.WorkflowStore(tmp_path / "workflow.json")
-        store.milestones = [module.normalize_milestone(milestone("M001"))]
+        store.milestones = [milestone("M001")]
         store.audit = [
             {
                 "时间": f"2026-01-01T00:00:{index % 60:02d}",

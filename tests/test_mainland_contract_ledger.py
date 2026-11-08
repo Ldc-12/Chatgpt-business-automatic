@@ -133,7 +133,7 @@ def test_workflow_store_add_complete_reload_and_audit(tmp_path):
     loaded = module.WorkflowStore(workflow_path)
     assert loaded.milestones[0]["状态"] == "已完成"
     assert loaded.milestones[0]["完成日期"] == "2026-12-04"
-    assert [event["操作"] for event in loaded.audit] == ["新增节点", "修改节点"]
+    assert [event["操作"] for event in loaded.audit] == ["新增节点", "标记完成"]
 
 
 def test_workflow_csv_roundtrip_and_atomic_rejection(tmp_path):

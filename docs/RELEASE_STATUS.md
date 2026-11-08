@@ -362,3 +362,31 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 以上证明 PR 与 main 的代码测试、Windows PyInstaller 构建、冻结 EXE 非交互自测、17-EXE 客户包下载和 CRC/SHA256/manifest 核验通过；**不等于真实用户 Windows GUI 业务流程验收，也不等于授权激活验收**。
 - \`src/license.py\` 内嵌公钥与 \`config/mainland_license_public_key.pem\` 仍存在指纹不匹配。卖家私钥不在仓库；未请求、上传、生成、猜测或替换任何私钥。
 - 上架前仍须在真实 Windows 环境完成 GUI 业务流程测试，并由卖家在可信 Windows 电脑本地导出公钥或 SHA256 指纹（只提供公钥/指纹，绝不提供私钥）以核对客户端公钥；匹配后再进行真实签发、设备激活、关闭重启和再次验证。最终状态继续标记为“待最终验收”，不得宣称已可正式上架。
+
+
+## 2026-11-08 PR #18 合同履约操作日志回滚修复
+
+### 代码修复
+- PR #18（[Preserve contract workflow audit history on failed writes](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/18)）已 squash 合并。
+- main 合并提交：`c4fa4a6b05c43e29cda0e47bf8e1a8ef19843fe4`。
+- 修复 `WorkflowStore.add/update/delete` 的失败回滚：当操作日志达到 5,000 条上限时，新增操作会先裁剪最早日志；如果随后磁盘写入失败，旧实现只删除新日志，无法恢复被裁剪的历史记录。现在在写入前快照完整日志，失败时恢复完整快照。
+- 新增回归测试覆盖 add/update/delete 三种操作在 5,000 条日志上限时模拟磁盘写入失败的回滚行为。
+- 未修改授权公钥、授权签名逻辑或卖家密钥。
+
+### PR Windows 构建与修复记录
+- PR run #260（[42478139913](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42478139913)）首次运行时合同台账 job 失败：测试夹具误引用应用模块未导出的 `normalize_milestone`，日志为 `AttributeError: module 'contract_ledger' has no attribute 'normalize_milestone'`。已修正测试夹具；未掩盖该失败。
+- PR run #261（[42478243727](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42478243727)）最终 18/18 jobs success。
+- 合同台账 job #128724369927：`37 passed in 0.76s`；PyInstaller one-file Windows EXE 构建成功；冻结 EXE 自测输出 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`。
+- PR #18 最终 head：`c1ce7f02bf7c50032c59312bd61a5fb74d7e3866`。合并后 main 的 `src/contract_workflow.py` 与 `tests/test_mainland_contract_ledger.py` blob SHA 分别与 PR head 完全相同，确认打包源文件内容与合并后的 main 一致。
+
+### 最新候选客户包核验（PR #18 run #261）
+- artifact：`mainland-phase1-customer-package`，ID `13616781099`，278,395,126 bytes；SHA256：`48fac5e0afecd63b799986dcdfe4c0febeacefec07badfdfbe8b35932d8343dc`。
+- 内层客户 ZIP：278,316,564 bytes；SHA256：`14fdfb837bc32892bd7983796fce1f3a8575779ad99ea8fa90671fbf6d495bb3`。
+- manifest artifact ID `13615929917`：bytes 与 SHA256 与内层 ZIP 完全一致；外层 ZIP、内层 ZIP、manifest ZIP 的 CRC 检查均通过。
+- 内层 ZIP 共 39 个条目（37 个文件、2 个目录）：17 个 EXE、17 份产品用户说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。
+- 套餐说明：A 电脑文件处理三件套建议 19.9 元；B 办公效率工具箱建议 29.9 元；C 全能工作效率工具箱建议 39.9 元（16 款业务工具 + 启动器）。建议价格不是平台成交保证，实际售价需根据上架表现调整。
+- 包内文件时间戳：2026-11-08 12:02:36 UTC。该包由 PR run #261 生成；其源代码文件已确认与合并后的 main 相同。合并后的 main push 工作流结果尚未通过当前 GitHub 连接器独立读取，故不把 PR run 冒充 main push run。
+
+### 工作流与授权状态
+- 最近可完整核验的 Autonomous Business Engine main run 仍为 #383（[42440410278](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410278)）：build/deploy success，144 passed，Pages artifact ID `13601382380`（47,789 bytes）。PR #18 合并后的 main push ABE run 尚未独立读取。
+- 授权公钥仍待卖家提供本地导出的公钥或 SHA256 指纹进行匹配；不要求、也不接收卖家私钥。真实 Windows GUI、签发、激活、重启验收仍未完成，产品线状态继续为“待最终验收”。

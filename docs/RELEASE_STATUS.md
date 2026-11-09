@@ -390,3 +390,32 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 ### 工作流与授权状态
 - 最近可完整核验的 Autonomous Business Engine main run 仍为 #383（[42440410278](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410278)）：build/deploy success，144 passed，Pages artifact ID `13601382380`（47,789 bytes）。PR #18 合并后的 main push ABE run 尚未独立读取。
 - 授权公钥仍待卖家提供本地导出的公钥或 SHA256 指纹进行匹配；不要求、也不接收卖家私钥。真实 Windows GUI、签发、激活、重启验收仍未完成，产品线状态继续为“待最终验收”。
+
+
+## 2026-11-09 PR #19 装修工程签证与进度款管理助手已合并（候选包通过，主线包待独立核验）
+
+### 产品与数据完整性增强
+- PR #19（[Add offline construction variation and progress-payment assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/19)）已于 2026-11-09 squash 合并；main 合并提交：`9774c457786f3f01e4ae9cde9630ed8d49198cf5`。
+- 新增 `apps/装修工程签证与进度款管理助手.py`，产品授权 ID：`装修工程签证与进度款管理助手`；业务数据保存在 `%LOCALAPPDATA%\\MainlandBusinessTools\\construction_settlement.json`。
+- 产品覆盖项目合同、增项/减项/工期签证、数量/面积/体积/固定金额计算、证据文件路径与 SHA256、进度款/质保金计算、风险规则和操作日志；不依赖 VPN、ChatGPT、外部 AI、云端或外部 API。
+- 支持三类 CSV 严格导入/导出、全量 JSON 备份恢复、项目/签证/进度款关联校验和失败写入回滚。规则结果只作业务核对提示，不是法律意见、造价鉴定或审计结论。
+- 本轮追加完整性校验：CSV/备份中的签证金额必须与计量规则重新计算结果一致；篡改金额会整批拒绝或拒绝恢复，不覆盖原数据。新增回归测试覆盖 CSV 与备份两条路径。
+
+### PR Windows 构建与候选客户包核验
+- PR 最终 Mainland Windows EXE run #266：[#42552887063](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42552887063)，最终 head `59fab873e5267415e3004eb2e083abda741230d3`；19/19 jobs success（18 个产品/启动器构建 + customer package）。
+- 装修工程签证与进度款管理助手 job #128952142038：`35 passed in 0.61s`；源码 self-test 输出 `SELF_TEST_OK`；PyInstaller EXE 构建成功；冻结 EXE 自测输出 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`。
+- PR 候选客户包 artifact `mainland-phase1-customer-package` ID `13645654774`，外层 ZIP 293,192,633 bytes，SHA256 `498046f1e6c59714027d41dbd530a76a4618f42f8e9f8d62b9a5e8ba4128a38a`；已实际下载，外层 CRC 通过。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：293,109,846 bytes，SHA256 `1a821aeb886e831bb51eaf296458dbe8421aaaffe541ec212427ab9e33dcf527`；manifest artifact ID `13646177712` 与内层 bytes/SHA256 完全匹配；parts artifact ID `13646172709`，16 个分片重组后的 bytes/SHA256 与内层 ZIP 完全匹配。外层、内层、manifest、parts ZIP CRC 均通过。
+- 内层 ZIP 共 41 个条目（39 个文件、2 个目录）：18 个 EXE（17 款业务工具 + 启动器）、18 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。套餐 C 写明全部 17 款业务工具 + 启动器；README 声明 18 款 EXE，数量一致。包内文件时间戳为 2026-11-09 02:49:18 UTC。
+- **该包是 PR run #266 的候选包，不是 main push 发布包；不得冒充主线正式发布包。**
+
+### Main / Autonomous Business Engine 检查边界
+- 当前 main HEAD 为 `9774c457786f3f01e4ae9cde9630ed8d49198cf5`，PR #19 已合并，open PR 查询为 0。
+- 最近可实际下载核验的 main 客户包仍是 Mainland Windows EXE run #259（[#42440410231](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410231)），artifact ID `13601262927`；该包只有 17 个 EXE，早于 PR #18 的合同履约日志回滚修复及 PR #19 新产品，因此已过时，不作为当前交付包。
+- 最近有完整 job/artifact 记录可复核的 Autonomous Business Engine main run #383（[#42440410278](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410278)）：build/deploy success，`144 passed`，Pages artifact ID `13601382380`。日志中业务引擎数据源出现一次 HTTP 502 fallback，但后续步骤、构建和部署均成功。
+- 当前 GitHub 连接器可读取 PR-triggered workflow runs、job logs 和 artifacts，但没有列出 repository 最新 workflow runs 的动作；对 merge commit `9774c457...` 的 `fetch_commit_workflow_runs` 与 combined status 均未返回 main push run。因此本记录不猜测 main run 编号，也不把 PR #266 冒充 main run。需要取得并核验 PR #19 合并后最新 main Windows run 的实际 artifact 后，才能更新“主线客户包已验收”。
+
+### 最终销售验收仍未完成
+- `src/license.py` 内嵌公钥 SHA256 仍为 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` SHA256 仍为 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，两者不匹配。
+- 不请求、上传、创建、猜测或替换卖家私钥。真实 Windows GUI 业务流程、卖家公钥匹配、真实签发/激活/关闭重启后再次验证均未完成。
+- 所有产品继续标记为“待最终验收”；PR 构建通过不等于真实 Windows 用户验收或授权销售验收。

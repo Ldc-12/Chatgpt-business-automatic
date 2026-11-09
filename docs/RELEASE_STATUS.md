@@ -475,3 +475,29 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 ### 授权与最终验收
 - `src/license.py` 内嵌公钥与 `config/mainland_license_public_key.pem` 仍不匹配；本轮未改动公钥、签名逻辑或卖家密钥。
 - 真实卖家公钥匹配、Windows GUI、签发、设备激活及关闭重启后复验仍待完成；所有产品继续标记“待最终验收”，不宣称正式可销售。
+
+
+## 2026-11-09 PR #22 修复单品 ZIP 缺少中文说明书
+
+### 缺陷证据
+- 本轮下载并检查 PR #21 run #275 的租金助手单品 artifact `13669153591`（29,615,916 bytes，SHA256 `d8e4fff4f6b2bccf2ca2001fb56836a80d666639c6ff2ad4b676f5f23b3cf3c5`）。其内层单品 ZIP 只有 EXE 与 README，没有对应中文说明书。
+- 复查通用 Windows 工作流发现，所有单品 ZIP 都由同一逻辑仅写入 EXE 与 README，因此这不是单个产品问题，而是全部单品交付包的系统性缺项。完整套餐此前有说明书，但闲鱼单品购买者拿到的 ZIP 缺少说明书。
+
+### 修复与合并
+- PR #22（[Include Chinese manual in every standalone Windows product ZIP](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/22)）已 squash 合并；PR head `2370bc0d41075f82cd2c89070065094975c562f0`，main merge commit `9748a5695c38fe969b346c1dd162641c61923a82`。
+- 为 19 个 EXE 矩阵项（18 款业务工具 + 工具箱）逐一绑定唯一说明书文件；每个单品 ZIP 现在包含 EXE、README 和 `说明书/<对应产品说明书>`。
+- 新增回归测试检查 19 个 manual 路径唯一、文件实际存在，并确认 ZIP 构建步骤把对应说明书写入 `说明书/` 目录。
+
+### Windows 构建与实际 ZIP 核验
+- PR Windows run #277（[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42609982620)）：20/20 jobs success（19 个矩阵构建 + 1 个客户套餐任务），无失败 job。租金助手 job #129135612708：49 passed，源码 self-test、PyInstaller EXE、冻结 EXE self-test 均 success；工具箱/打包回归 job #129135612698：29 passed，冻结 EXE self-test success；客户包 job #129136221118 success。
+- 租金助手单品 artifact `13669712383`：29,622,472 bytes，SHA256 `8c129226a5f5b326d272c35ebcee993d62ffb3248dd4ecbb3b9c82541909c54c`。实际下载检查外层与内层 ZIP CRC 均通过；内层 `MainlandRentalLedgerAssistant-mainland.zip` 14,804,828 bytes，SHA256 `7ea0d3ea21c498ccef1ce5e4190522cf1c475b16b88212d44799782977e35d07`，文件列表为 EXE、`README-mainland.txt`、`说明书/18-物业租金与押金管理助手-用户说明书.md`。说明书确实已进入单品包。
+- run #277 客户包 artifact `mainland-phase1-customer-package` ID `13669622318`，308,006,299 bytes，外层 SHA256 `1cd32eda983f23c8a426144099cff3ce4ff7b8239bfce362f2e4f0dc88cf0638`；内层 ZIP 307,919,391 bytes，SHA256 `e7517b5e953b33edfc206bbdd91cef2894fe59227f2fec57e11c62b974623221`；外层、内层 CRC 均通过。
+- 内层 ZIP 43 个条目：19 个 EXE、19 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。套餐 C 已包含租金押金助手；包内时间戳 2026-11-09 11:35:00 UTC。
+- Manifest artifact ID `13668634291`；分片 artifact ID `13670555204`，17 个分片。实际下载后按序重组为 307,919,391 bytes，与内层 ZIP 字节完全相同，SHA256 与 manifest 一致；manifest 的 bytes、SHA256、parts 数量全部吻合。
+- 该包由 PR #22 run #277 构建；合并后 main 中的工作流与测试内容和构建分支对应 Git blob SHA 相同，因此候选包包含已合并的单品说明书修复。当前 connector 仍未提供 repository 最新 main push run 列表；本 artifact 仍标记为 PR 候选包，不冒充 main-push artifact。
+
+### 当前状态与遗留阻塞
+- PR #22 合并后 open PR 查询为 0；main merge commit `9748a5695c38fe969b346c1dd162641c61923a82`。
+- ABE 最近可完整检查的 run 仍为 #383（2026-11-08）；build/deploy success，build 日志记录 144 passed，Pages artifact `13601382380` 上传成功、deploy success。当前无法确认 2026-11-09 当日最新 scheduled run 编号，不猜测 run ID。
+- 卖家公钥指纹仍不匹配：内嵌 Ed25519 DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；配置公钥 DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。本轮没有修改任何密钥或签名代码。
+- 真实 Windows GUI、可信卖家公钥匹配、签发、设备激活及关闭重启后再次验证仍待最终验收；PR CI 和冻结 EXE 自测不等于真实用户授权验收。

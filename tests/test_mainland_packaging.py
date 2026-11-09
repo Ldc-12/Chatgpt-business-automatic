@@ -182,3 +182,18 @@ def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package()
     assert "19 款 Windows EXE（18 款业务工具及工具箱启动器）" in workflow
     assert "全部 18 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 19
+
+
+def test_every_standalone_delivery_zip_has_its_matching_chinese_manual():
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    manual_names = [
+        line.strip().split("manual: ", 1)[1]
+        for line in workflow.splitlines()
+        if line.strip().startswith("manual: ")
+    ]
+    assert len(manual_names) == 19
+    assert len(set(manual_names)) == 19
+    for name in manual_names:
+        assert (root / "docs" / "manuals" / name).is_file(), name
+    assert "z.write('docs/manuals/${{ matrix.manual }}','说明书/${{ matrix.manual }}')" in workflow

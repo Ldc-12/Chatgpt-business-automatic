@@ -375,7 +375,7 @@ def test_lease_statement_combines_rent_payments_and_deposit_history(tmp_path):
         **{"金额(元)": "600"},
     ))
 
-    report = store.lease_statement("R001", today="2026-02-10")
+    report = store.lease_statement("R001", today="2026-03-10")
     invoice = next(row for row in report["rows"] if row["记录类型"] == "租金应收")
     deposits = [row for row in report["rows"] if row["记录类型"].startswith("押金")]
 

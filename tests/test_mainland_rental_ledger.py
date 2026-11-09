@@ -350,3 +350,86 @@ def test_lease_billing_terms_are_locked_after_charges_are_generated(tmp_path):
     contact_update = lease(联系电话="13900000000")
     store.update_lease("R001", contact_update)
     assert store.leases[0]["联系电话"] == "13900000000"
+
+
+def test_lease_statement_combines_rent_payments_and_deposit_history(tmp_path):
+    store = prepared_store(tmp_path / "rental.json")
+    store.add_payment(payment("P001", 收款日期="2026-01-20"))
+    store.add_payment(payment(
+        "P002", 收款日期="2026-01-25", 流水号="TX-002",
+        **{"金额(元)": "1200"},
+    ))
+    store.add_deposit(deposit("D001", 日期="2026-01-15"))
+    store.add_deposit(deposit(
+        "D002", 日期="2026-02-01", 类型="扣除", 说明="维修扣款",
+        **{"金额(元)": "500"},
+    ))
+    store.add_deposit(deposit(
+        "D003", 日期="2026-03-05", 类型="退还", 说明="部分退还",
+        **{"金额(元)": "600"},
+    ))
+
+    report = store.lease_statement("R001", today="2026-02-10")
+    invoice = next(row for row in report["rows"] if row["记录类型"] == "租金应收")
+    deposits = [row for row in report["rows"] if row["记录类型"].startswith("押金")]
+
+    assert invoice["应收金额(元)"] == "1700.00"
+    assert invoice["收款金额(元)"] == "1700.00"
+    assert invoice["未收金额(元)"] == "0.00"
+    assert invoice["状态"] == "已结清"
+    assert len([row for row in report["rows"] if row["记录类型"] == "租金收款"]) == 2
+    assert [row["押金余额(元)"] for row in deposits] == [
+        "3100.00", "2600.00", "2000.00"
+    ]
+    assert report["summary"]["应收金额(元)"] == "7900.00"
+    assert report["summary"]["收款金额(元)"] == "1700.00"
+    assert report["summary"]["未收金额(元)"] == "6200.00"
+    assert report["summary"]["押金余额(元)"] == "2000.00"
+
+
+def test_lease_statement_is_scoped_to_one_lease_and_rejects_unknown_id(tmp_path):
+    store = prepared_store(tmp_path / "rental.json")
+    second = lease("R002", 房产_房间="B-202", 租客="第二位租客")
+    second["房产/房间"] = "B-202"
+    store.add_lease(second)
+    store.generate_charges("R002", "2026-01")
+
+    report = store.lease_statement("R001", today="2026-01-31")
+    assert all(row["租约编号"] == "R001" for row in report["rows"])
+    try:
+        store.lease_statement("MISSING", today="2026-01-31")
+    except ValueError as exc:
+        assert "找不到租约" in str(exc)
+    else:
+        raise AssertionError("statement for unknown lease was accepted")
+
+
+def test_lease_statement_csv_has_bom_summary_and_atomic_write(tmp_path, monkeypatch):
+    store = prepared_store(tmp_path / "rental.json")
+    path = tmp_path / "R001-租约对账单.csv"
+    summary = store.export_lease_statement_csv("R001", path, today="2026-01-31")
+    content = path.read_bytes()
+    assert content.startswith(b"\\xef\\xbb\\xbf")
+    rows = list(csv.DictReader(path.open(encoding="utf-8-sig", newline="")))
+    assert rows[-1]["记录类型"] == "统计汇总"
+    assert rows[-1]["应收金额(元)"] == summary["应收金额(元)"]
+
+    previous = path.read_bytes()
+    def fail_replace(_source, _target):
+        raise OSError("simulated statement export failure")
+    monkeypatch.setattr(module.os, "replace", fail_replace)
+    try:
+        store.export_lease_statement_csv("R001", path, today="2026-01-31")
+    except OSError as exc:
+        assert "simulated statement export failure" in str(exc)
+    else:
+        raise AssertionError("statement export failure was not propagated")
+    assert path.read_bytes() == previous
+    assert not list(tmp_path.glob(path.name + ".*.tmp"))
+
+
+def test_rental_lease_statement_export_is_available_in_lease_tab():
+    app = (Path(__file__).resolve().parents[1] / "apps" / "物业租金与押金管理助手.py").read_text(encoding="utf-8")
+    assert "导出租约对账单" in app
+    assert "def export_lease_statement(self):" in app
+    assert "export_lease_statement_csv" in app

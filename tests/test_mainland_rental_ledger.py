@@ -77,17 +77,17 @@ def test_generate_charges_is_idempotent_and_respects_lease_end(tmp_path):
 
 def test_payment_partial_full_and_overpayment_rejection(tmp_path):
     store = prepared_store(tmp_path / "rental.json")
-    store.add_payment(payment(金额元="500"))
+    store.add_payment(payment())
     row = store.rent_rows("2026-01-21")[0]
     assert row["已收金额(元)"] == "500.00"
     assert row["未收金额(元)"] == "1200.00"
     assert row["状态"] == "部分收款"
 
-    store.add_payment(payment("P002", 金额元="1200", 流水号="TX-002"))
+    store.add_payment(payment("P002", 流水号="TX-002", **{"金额(元)": "1200"}))
     row = store.rent_rows("2026-01-21")[0]
     assert row["状态"] == "已结清"
     try:
-        store.add_payment(payment("P003", 金额元="0.01", 流水号="TX-003"))
+        store.add_payment(payment("P003", 流水号="TX-003", **{"金额(元)": "0.01"}))
     except ValueError as exc:
         assert "超过应收金额" in str(exc)
     else:
@@ -117,7 +117,7 @@ def test_payment_update_overpayment_rolls_back_record_and_disk(tmp_path):
     store.add_payment(payment())
     before = store.path.read_bytes()
     try:
-        store.update_payment("P001", payment(金额元="1800"))
+        store.update_payment("P001", payment(**{"金额(元)": "1800"}))
     except ValueError as exc:
         assert "超过应收金额" in str(exc)
     else:
@@ -130,12 +130,12 @@ def test_deposit_balance_and_no_negative_refund(tmp_path):
     store = module.RentalStore(tmp_path / "rental.json")
     store.add_lease(lease())
     store.add_deposit(deposit())
-    store.add_deposit(deposit("D002", 类型="扣除", 金额元="500", 说明="维修扣款"))
+    store.add_deposit(deposit("D002", 类型="扣除", 说明="维修扣款", **{"金额(元)": "500"}))
     assert store.deposit_balance("R001") == "2600.00"
-    store.add_deposit(deposit("D003", 类型="退还", 金额元="2600", 说明="退租退还"))
+    store.add_deposit(deposit("D003", 类型="退还", 说明="退租退还", **{"金额(元)": "2600"}))
     assert store.deposit_balance("R001") == "0.00"
     try:
-        store.add_deposit(deposit("D004", 类型="退还", 金额元="0.01", 说明="超额退还"))
+        store.add_deposit(deposit("D004", 类型="退还", 说明="超额退还", **{"金额(元)": "0.01"}))
     except ValueError as exc:
         assert "超过当时可用余额" in str(exc)
     else:
@@ -154,7 +154,7 @@ def test_risk_rules_flag_overdue_rent_expiring_lease_and_short_deposit(tmp_path)
     store = module.RentalStore(tmp_path / "rental.json")
     store.add_lease(lease(退租日期="2026-02-15"))
     store.generate_charges("R001", "2026-02")
-    store.add_deposit(deposit(金额元="1000"))
+    store.add_deposit(deposit(**{"金额(元)": "1000"}))
     codes = {x["规则编号"] for x in store.risk_findings("2026-02-10")}
     assert "RENT_OVERDUE" in codes
     assert "LEASE_END_WITHIN_30_DAYS" in codes
@@ -212,8 +212,8 @@ def test_csv_overpayment_is_rejected_without_partial_import(tmp_path):
     with bad.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=module.PAYMENT_FIELDS)
         writer.writeheader()
-        writer.writerow(payment("P001", 金额元="1000"))
-        writer.writerow(payment("P002", 金额元="1000"))
+        writer.writerow(payment("P001", **{"金额(元)": "1000"}))
+        writer.writerow(payment("P002", **{"金额(元)": "1000"}))
     before = target.payments[:]
     try:
         target.import_csv("payments", bad)

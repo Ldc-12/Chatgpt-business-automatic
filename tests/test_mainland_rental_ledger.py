@@ -317,3 +317,22 @@ def test_backup_rejects_wrong_root_shape_and_preserves_existing_data(tmp_path):
     else:
         raise AssertionError("wrong backup root accepted")
     assert store.path.read_bytes() == before
+
+
+def test_backup_write_is_atomic_and_preserves_previous_file(tmp_path, monkeypatch):
+    store = prepared_store(tmp_path / "rental.json")
+    backup = tmp_path / "backup.json"
+    backup.write_text("previous-valid-backup", encoding="utf-8")
+
+    def fail_replace(_source, _target):
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr(module.os, "replace", fail_replace)
+    try:
+        store.backup(backup)
+    except OSError as exc:
+        assert "simulated replace failure" in str(exc)
+    else:
+        raise AssertionError("simulated backup replace failure not propagated")
+    assert backup.read_text(encoding="utf-8") == "previous-valid-backup"
+    assert not list(tmp_path.glob("backup.json.*.tmp"))

@@ -359,7 +359,13 @@ def test_lease_statement_combines_rent_payments_and_deposit_history(tmp_path):
         "P002", 收款日期="2026-01-25", 流水号="TX-002",
         **{"金额(元)": "1200"},
     ))
-    store.add_deposit(deposit("D001", 日期="2026-01-15"))
+    store.add_deposit(deposit(
+        "Z-RECEIVE", 日期="2026-01-15", 类型="收取", 说明="首期押金"
+    ))
+    store.add_deposit(deposit(
+        "A-REFUND", 日期="2026-01-15", 类型="退还", 说明="同日退还",
+        **{"金额(元)": "100"},
+    ))
     store.add_deposit(deposit(
         "D002", 日期="2026-02-01", 类型="扣除", 说明="维修扣款",
         **{"金额(元)": "500"},
@@ -378,18 +384,21 @@ def test_lease_statement_combines_rent_payments_and_deposit_history(tmp_path):
     assert invoice["未收金额(元)"] == "0.00"
     assert invoice["状态"] == "已结清"
     assert len([row for row in report["rows"] if row["记录类型"] == "租金收款"]) == 2
+    assert [row["记录类型"] for row in deposits] == [
+        "押金收取", "押金退还", "押金扣除", "押金退还"
+    ]
     assert [row["押金余额(元)"] for row in deposits] == [
-        "3100.00", "2600.00", "2000.00"
+        "3100.00", "3000.00", "2500.00", "1900.00"
     ]
     assert report["summary"]["应收金额(元)"] == "7900.00"
     assert report["summary"]["收款金额(元)"] == "1700.00"
     assert report["summary"]["未收金额(元)"] == "6200.00"
-    assert report["summary"]["押金余额(元)"] == "2000.00"
+    assert report["summary"]["押金余额(元)"] == "1900.00"
 
 
 def test_lease_statement_is_scoped_to_one_lease_and_rejects_unknown_id(tmp_path):
     store = prepared_store(tmp_path / "rental.json")
-    second = lease("R002", 房产_房间="B-202", 租客="第二位租客")
+    second = lease("R002", 租客="第二位租客")
     second["房产/房间"] = "B-202"
     store.add_lease(second)
     store.generate_charges("R002", "2026-01")

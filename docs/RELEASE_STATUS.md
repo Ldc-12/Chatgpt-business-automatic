@@ -465,7 +465,7 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 对账单只统计已生成账单，不将尚未生成月份虚构为应收；使用 UTF-8 BOM 与原子写入，导出失败保留旧文件。
 - 增加应用按钮、中文说明书、租约范围/金额/押金流水/CSV BOM/原子失败回归测试。
 - 修复套餐 C 文案漏列租金押金助手的问题，并增加 packaging regression assertion。
-- 分支：`feat/rental-lease-statement-export`。本记录提交时 PR/Actions 尚待创建与验证；不得宣称已合并或已通过 CI。
+- 分支：`feat/rental-lease-statement-export`；PR #21 已创建（https://github.com/Ldc-12/Chatgpt-business-automatic/pull/21），当前 head `7f8db01cf6bcc3a02627ceac374d8ae39181b86f`。PR-triggered workflow run 尚未从当前 GitHub connector 返回；测试/构建未宣称通过，未合并。
 
 ### 授权与最终验收
 - `src/license.py` 内嵌公钥与 `config/mainland_license_public_key.pem` 仍不匹配；本轮未改动公钥、签名逻辑或卖家密钥。

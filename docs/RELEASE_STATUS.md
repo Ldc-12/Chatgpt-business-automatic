@@ -410,12 +410,36 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - **该包是 PR run #266 的候选包，不是 main push 发布包；不得冒充主线正式发布包。**
 
 ### Main / Autonomous Business Engine 检查边界
-- 当前 main HEAD 为 `9774c457786f3f01e4ae9cde9630ed8d49198cf5`，PR #19 已合并，open PR 查询为 0。
-- 最近可实际下载核验的 main 客户包仍是 Mainland Windows EXE run #259（[#42440410231](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410231)），artifact ID `13601262927`；该包只有 17 个 EXE，早于 PR #18 的合同履约日志回滚修复及 PR #19 新产品，因此已过时，不作为当前交付包。
-- 最近有完整 job/artifact 记录可复核的 Autonomous Business Engine main run #383（[#42440410278](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410278)）：build/deploy success，`144 passed`，Pages artifact ID `13601382380`。日志中业务引擎数据源出现一次 HTTP 502 fallback，但后续步骤、构建和部署均成功。
-- 当前 GitHub 连接器可读取 PR-triggered workflow runs、job logs 和 artifacts，但没有列出 repository 最新 workflow runs 的动作；对 merge commit `9774c457...` 的 `fetch_commit_workflow_runs` 与 combined status 均未返回 main push run。因此本记录不猜测 main run 编号，也不把 PR #266 冒充 main run。需要取得并核验 PR #19 合并后最新 main Windows run 的实际 artifact 后，才能更新“主线客户包已验收”。
+- PR #19 产品合并提交为 `9774c457786f3f01e4ae9cde9630ed8d49198cf5`；随后 PR #20 产品合并提交为 `1d5b6ab5d98f8df752cb2754d4f319f9f3b6c4a3`。本次检查开始时 main HEAD 为 `1d5b6ab5d98f8df752cb2754d4f319f9f3b6c4a3`，open PR 查询为 0。
+- 最近可实际下载核验的 main 客户包仍是 Mainland Windows EXE run #259（[#42440410231](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410231)），artifact ID `13601262927`；该包只有 17 个 EXE，早于 PR #18 的合同履约日志回滚修复及 PR #19、PR #20 两款新产品，因此已过时，不作为当前交付包。
+- 最近有完整 job/artifact 记录可复核的 Autonomous Business Engine main run #383（[#42440410278](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410278)）：build/deploy success，`144 passed`；本次 fetch_workflow_run_artifacts 返回空列表，没有可下载的 workflow artifact。日志中业务引擎数据源出现一次 HTTP 502 fallback，但后续步骤、构建和部署均成功。
+- 当前 GitHub 连接器可读取 PR-triggered workflow runs、job logs 和 artifacts，但没有列出 repository 最新 workflow runs 的动作；对 merge commit `9774c457...` 和 `1d5b6ab5...` 的 fetch_commit_workflow_runs 与 combined status 均未返回 main push run。因此本记录不猜测 main run 编号，也不把 PR #266 冒充 main run。需要取得并核验 PR #19 合并后最新 main Windows run 的实际 artifact 后，才能更新“主线客户包已验收”。
 
 ### 最终销售验收仍未完成
 - `src/license.py` 内嵌公钥 SHA256 仍为 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` SHA256 仍为 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，两者不匹配。
 - 不请求、上传、创建、猜测或替换卖家私钥。真实 Windows GUI 业务流程、卖家公钥匹配、真实签发/激活/关闭重启后再次验证均未完成。
 - 所有产品继续标记为“待最终验收”；PR 构建通过不等于真实 Windows 用户验收或授权销售验收。
+
+## 2026-11-09 PR #20 物业租金与押金管理助手已合并（PR 候选包通过核验，主线包待独立核验）
+
+### 产品能力与差异化规则
+- PR #20（https://github.com/Ldc-12/Chatgpt-business-automatic/pull/20）已于 2026-11-09 squash 合并；产品代码合并提交：1d5b6ab5d98f8df752cb2754d4f319f9f3b6c4a3。
+- 新增 apps/物业租金与押金管理助手.py，授权产品 ID：物业租金与押金管理助手；本地数据：%LOCALAPPDATA%\MainlandBusinessTools\rental_ledger.json。
+- 租约自动生成月度租金账单；首月/末月按实际占用天数、自然月天数及 Decimal 半入规则折算；缴租日限定 1–28 日，账单编号与租约/账期绑定。
+- 收款逐笔关联账单，允许部分收款并阻止累计收款超过应收；押金收取、扣除、退还形成流水，按日期验证历史余额，禁止余额变负。
+- 风险规则覆盖逾期/7 日内到期租金、租约 30 日内到期、有效租约已过期、押金不足和退租后押金未结算。生成账单后锁定租约计费条款，避免后续编辑改写历史应收。
+- 支持本地 JSON 持久化、四类 CSV 严格导入/导出、全量备份/恢复、原子写入和操作审计；不依赖 VPN、ChatGPT、外部 AI、云端、银行 API 或外部 API。没有自动催缴、滞纳金、租金递增或水电分摊功能，详见说明书。
+
+### PR Windows 构建与候选客户包核验
+- PR #20 最终 Mainland Windows EXE run #270：https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42553818450，最终 head ae1cc496508a08640d144f0df5420109ae3967e2；20/20 jobs success（19 个产品/启动器构建 + 1 个客户包任务）。
+- 租金押金产品 job #128955034389：44 passed in 0.47s；源码 self-test 成功；PyInstaller EXE 构建成功；冻结 EXE 自测输出 FROZEN_EXE_SELF_TEST_OK: process exited with code 0.
+- 首次 PR run #269 的日志显示 3 项测试失败（部分收款测试日期跨过缴租日、租金字段测试 fixture 未使用真实字段名、套餐计数断言仍为 17）；已逐项修正并由 run #270 全量重跑通过。#269 的失败日志已检查。
+- PR 候选客户包 artifact mainland-phase1-customer-package ID 13646612125，外层 ZIP 307,996,303 bytes，SHA256 65b8b11ad963fb084ddee81db16002398fc1b0d7d459c0c586986375be11cad2；已实际下载，外层 CRC 通过。
+- 内层 Phase1-Mainland-Windows-Tools.zip：307,909,257 bytes，SHA256 622fac16b42934d54a4f29374f4fb8aa9623a3487d4d598ebc552115cb770834；manifest artifact ID 13646612132 声明 bytes 307909257、parts 17、SHA256 与内层完全匹配；parts artifact ID 13646662063 的 17 个分片按序重组后，bytes/SHA256 与内层 ZIP 完全一致。外层、内层、manifest、parts ZIP CRC 均通过。
+- 内层 ZIP 共 43 个条目（41 个文件、2 个目录）：19 个 EXE（18 款业务工具 + 启动器）、19 份产品说明书（18 款业务工具 + 启动器）、1 份说明书索引、1 份大陆版 README、1 份套餐说明。README 写明 19 款 EXE，套餐 C 写明全部 18 款业务工具 + 启动器；包内时间戳为 2026-11-09 03:00:22 UTC。
+- 该包是 PR run #270 的候选包，不是 main push 发布包；不得冒充主线正式发布包。
+
+### 当前主线发布状态
+- PR #20 已合并；open PR 查询为 0。PR #20 merge commit 1d5b6ab5... 的 fetch_commit_workflow_runs 与 combined status 没有返回 main push run。
+- 最近仍能实际下载核验的 main 客户包是 run #259 / artifact ID 13601262927，只有 17 个 EXE，早于 PR #18、#19、#20，不能作为当前交付包。PR #270 候选包虽已完整验包，但不替代 main push 包。
+- 现有 GitHub 连接器未提供 repository 最新 workflow run 列表动作，不能据此确认 PR #20 合并后最新 main Windows EXE 和 Autonomous Business Engine run 编号；不猜测 run ID、不将 PR artifact 说成 main artifact。取得 main push 最新 run 与 artifact 并完成同样的下载、CRC、manifest/parts SHA256 核验后，才可更新主线包验收状态。

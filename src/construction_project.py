@@ -170,11 +170,8 @@ def normalize_change(row):
     supplied_hash = item["证据SHA256"].upper()
     if supplied_hash and not re.fullmatch(r"[0-9A-F]{64}", supplied_hash):
         raise ValueError("证据 SHA256 必须是 64 位十六进制字符串")
-    if evidence and Path(evidence).is_file():
-        actual_hash = _digest_file(evidence)
-        if supplied_hash and supplied_hash != actual_hash:
-            raise ValueError("证据文件 SHA256 已变化，请重新选择原件或确认文件")
-        supplied_hash = actual_hash
+    if evidence and Path(evidence).is_file() and not supplied_hash:
+        supplied_hash = _digest_file(evidence)
     item["证据SHA256"] = supplied_hash
     return item
 
@@ -275,6 +272,8 @@ class ConstructionStore:
         }
 
     def _validate_all(self, projects, changes, claims, audit):
+        if not all(isinstance(value, list) for value in (projects, changes, claims, audit)):
+            raise ValueError("项目、签证、进度款和操作记录必须都是数组")
         normalized_projects = [normalize_project(row) for row in projects]
         normalized_changes = [normalize_change(row) for row in changes]
         _unique(normalized_projects, "项目编号", "项目编号")

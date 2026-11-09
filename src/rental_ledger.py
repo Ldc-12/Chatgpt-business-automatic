@@ -28,6 +28,12 @@ DEPOSIT_FIELDS = [
     "押金流水号", "租约编号", "日期", "类型", "金额(元)", "说明",
 ]
 AUDIT_FIELDS = ["时间", "类别", "编号", "操作", "说明"]
+STATEMENT_FIELDS = [
+    "租约编号", "房产/房间", "租客", "联系电话", "统计日期", "日期",
+    "记录类型", "单据编号", "关联编号", "账期(月)", "应收金额(元)",
+    "收款金额(元)", "未收金额(元)", "押金变动(元)", "押金余额(元)",
+    "状态", "说明",
+]
 LEASE_STATUSES = ["有效", "已退租", "已终止"]
 DEPOSIT_TYPES = ["收取", "扣除", "退还"]
 
@@ -586,6 +592,132 @@ class RentalStore:
         writer.writeheader()
         writer.writerows(rows)
         _atomic_write(path, "\ufeff" + output.getvalue())
+
+    def lease_statement(self, lease_id, today=None):
+        """Build a chronological, lease-scoped rent and deposit statement."""
+        lease = self._lease(lease_id)
+        if today is None:
+            today = date.today()
+        elif isinstance(today, str):
+            today = date.fromisoformat(_date(today, "统计日期", required=True))
+        elif not isinstance(today, date):
+            raise ValueError("统计日期无效")
+
+        charge_map = {
+            row["账单编号"]: row for row in self.charges
+            if row["租约编号"] == lease_id
+        }
+        rent_map = {
+            row["账单编号"]: row for row in self.rent_rows(today)
+            if row["租约编号"] == lease_id
+        }
+        events = []
+
+        for charge_id, charge in charge_map.items():
+            current = rent_map[charge_id]
+            events.append((
+                charge["应收日期"], 0, 0, charge_id,
+                {
+                    "租约编号": lease_id, "房产/房间": lease["房产/房间"],
+                    "租客": lease["租客"], "联系电话": lease["联系电话"],
+                    "统计日期": today.isoformat(), "日期": charge["应收日期"],
+                    "记录类型": "租金应收", "单据编号": charge_id,
+                    "关联编号": lease_id, "账期(月)": charge["账期(月)"],
+                    "应收金额(元)": charge["应收金额(元)"],
+                    "收款金额(元)": current["已收金额(元)"],
+                    "未收金额(元)": current["未收金额(元)"],
+                    "押金变动(元)": "0.00", "押金余额(元)": "",
+                    "状态": current["状态"], "说明": charge["备注"],
+                },
+            ))
+
+        lease_payments = [
+            row for row in self.payments if row["账单编号"] in charge_map
+        ]
+        for payment in lease_payments:
+            charge = charge_map[payment["账单编号"]]
+            detail = "；".join(
+                value for value in (
+                    f"方式：{payment['方式']}" if payment["方式"] else "",
+                    f"流水号：{payment['流水号']}" if payment["流水号"] else "",
+                    payment["备注"],
+                ) if value
+            )
+            events.append((
+                payment["收款日期"], 1, 0, payment["收款编号"],
+                {
+                    "租约编号": lease_id, "房产/房间": lease["房产/房间"],
+                    "租客": lease["租客"], "联系电话": lease["联系电话"],
+                    "统计日期": today.isoformat(), "日期": payment["收款日期"],
+                    "记录类型": "租金收款", "单据编号": payment["收款编号"],
+                    "关联编号": payment["账单编号"], "账期(月)": charge["账期(月)"],
+                    "应收金额(元)": "0.00", "收款金额(元)": payment["金额(元)"],
+                    "未收金额(元)": "", "押金变动(元)": "0.00",
+                    "押金余额(元)": "", "状态": "已登记", "说明": detail,
+                },
+            ))
+
+        deposit_balance = Decimal("0")
+        lease_deposits = sorted(
+            (row for row in self.deposits if row["租约编号"] == lease_id),
+            key=lambda row: (
+                row["日期"], 0 if row["类型"] == "收取" else 1, row["押金流水号"]
+            ),
+        )
+        for deposit in lease_deposits:
+            amount = Decimal(deposit["金额(元)"])
+            delta = amount if deposit["类型"] == "收取" else -amount
+            deposit_balance += delta
+            events.append((
+                deposit["日期"], 2, 0 if deposit["类型"] == "收取" else 1,
+                deposit["押金流水号"],
+                {
+                    "租约编号": lease_id, "房产/房间": lease["房产/房间"],
+                    "租客": lease["租客"], "联系电话": lease["联系电话"],
+                    "统计日期": today.isoformat(), "日期": deposit["日期"],
+                    "记录类型": "押金" + deposit["类型"],
+                    "单据编号": deposit["押金流水号"], "关联编号": lease_id,
+                    "账期(月)": "", "应收金额(元)": "0.00",
+                    "收款金额(元)": "0.00", "未收金额(元)": "",
+                    "押金变动(元)": money(delta, "押金变动", allow_negative=True),
+                    "押金余额(元)": money(deposit_balance, "押金余额"),
+                    "状态": deposit["类型"], "说明": deposit["说明"],
+                },
+            ))
+
+        events.sort(key=lambda event: event[:4])
+        rows = [event[4] for event in events]
+        total_due = sum(
+            (Decimal(row["应收金额(元)"]) for row in charge_map.values()),
+            Decimal("0"),
+        )
+        total_paid = sum(
+            (Decimal(row["金额(元)"]) for row in lease_payments), Decimal("0")
+        )
+        summary = {
+            "租约编号": lease_id, "房产/房间": lease["房产/房间"],
+            "租客": lease["租客"], "联系电话": lease["联系电话"],
+            "统计日期": today.isoformat(), "日期": today.isoformat(),
+            "记录类型": "统计汇总", "单据编号": "", "关联编号": lease_id,
+            "账期(月)": "", "应收金额(元)": money(total_due, "租金应收"),
+            "收款金额(元)": money(total_paid, "租金收款"),
+            "未收金额(元)": money(total_due - total_paid, "未收租金"),
+            "押金变动(元)": "0.00",
+            "押金余额(元)": self.deposit_balance(lease_id),
+            "状态": "汇总",
+            "说明": "仅统计已生成账单；未生成账单的月份不计入应收。",
+        }
+        return {"lease": copy.deepcopy(lease), "rows": rows, "summary": summary}
+
+    def export_lease_statement_csv(self, lease_id, path, today=None):
+        report = self.lease_statement(lease_id, today=today)
+        output = io.StringIO(newline="")
+        writer = csv.DictWriter(output, fieldnames=STATEMENT_FIELDS)
+        writer.writeheader()
+        for row in report["rows"] + [report["summary"]]:
+            writer.writerow({field: row.get(field, "") for field in STATEMENT_FIELDS})
+        _atomic_write(path, "\ufeff" + output.getvalue())
+        return report["summary"]
 
     def backup(self, path):
         payload = self._payload()

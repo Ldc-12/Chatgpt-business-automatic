@@ -95,6 +95,8 @@ class App:
         ttk.Button(toolbar, text="删除", command=lambda k=kind: self.delete(k)).pack(side="left", padx=3)
         ttk.Button(toolbar, text="导入 CSV", command=lambda k=kind: self.import_csv(k)).pack(side="left", padx=3)
         ttk.Button(toolbar, text="导出 CSV", command=lambda k=kind: self.export_csv(k)).pack(side="left", padx=3)
+        if kind == "leases":
+            ttk.Button(toolbar, text="导出租约对账单", command=self.export_lease_statement).pack(side="left", padx=3)
         area = ttk.Frame(frame)
         area.pack(fill="both", expand=True)
         tree = ttk.Treeview(area, columns=config["columns"], show="headings", height=20)
@@ -279,6 +281,33 @@ class App:
         try:
             self.store.export_csv(kind, path)
             messagebox.showinfo("导出完成", "当前类别的全部记录已导出", parent=self.root)
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("导出失败", str(exc), parent=self.root)
+
+    def export_lease_statement(self):
+        lease_id = self._selected("leases")
+        if not lease_id:
+            messagebox.showinfo("提示", "请先在租约台账选择一条租约", parent=self.root)
+            return
+        path = filedialog.asksaveasfilename(
+            parent=self.root,
+            initialfile=f"{lease_id}-租约对账单.csv",
+            defaultextension=".csv",
+            filetypes=[("CSV 文件", "*.csv")],
+        )
+        if not path:
+            return
+        try:
+            summary = self.store.export_lease_statement_csv(lease_id, path)
+            messagebox.showinfo(
+                "导出完成",
+                "租约对账单已导出。\n"
+                f"租金应收：¥{summary['应收金额(元)']}\n"
+                f"租金已收：¥{summary['收款金额(元)']}\n"
+                f"租金未收：¥{summary['未收金额(元)']}\n"
+                f"押金余额：¥{summary['押金余额(元)']}",
+                parent=self.root,
+            )
         except (ValueError, OSError) as exc:
             messagebox.showerror("导出失败", str(exc), parent=self.root)
 

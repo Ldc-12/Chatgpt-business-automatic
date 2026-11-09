@@ -443,3 +443,30 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - PR #20 已合并；open PR 查询为 0。PR #20 merge commit 1d5b6ab5... 的 fetch_commit_workflow_runs 与 combined status 没有返回 main push run。
 - 最近仍能实际下载核验的 main 客户包是 run #259 / artifact ID 13601262927，只有 17 个 EXE，早于 PR #18、#19、#20，不能作为当前交付包。PR #270 候选包虽已完整验包，但不替代 main push 包。
 - 现有 GitHub 连接器未提供 repository 最新 workflow run 列表动作，不能据此确认 PR #20 合并后最新 main Windows EXE 和 Autonomous Business Engine run 编号；不猜测 run ID、不将 PR artifact 说成 main artifact。取得 main push 最新 run 与 artifact 并完成同样的下载、CRC、manifest/parts SHA256 核验后，才可更新主线包验收状态。
+
+## 2026-11-09 当前主线复核与租约对账单导出改进
+
+### 仓库与工作流复核
+- 本轮开始时 main HEAD：`93b4f003abfcdae0dc9c29ffe9926b7ce49522f5`（记录 PR #20 租金押金产品合并与候选包核验）；open PR 查询为 0。
+- PR #19 装修工程签证与进度款管理助手已合并，merge commit：`9774c457786f3f01e4ae9cde9630ed8d49198cf5`；PR #20 物业租金与押金管理助手已合并，merge commit：`1d5b6ab5d98f8df752cb2754d4f319f9f3b6c4a3`。
+- 当前可读取的最新 Mainland Windows EXE workflow run 为 PR #20 run #270（[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42553818450)，head `ae1cc496508a08640d144f0df5420109ae3967e2`），20/20 jobs success（19 个产品/启动器矩阵任务 + 1 个客户套餐任务）。租金押金 job #128955034389 的回归测试、源码自测、PyInstaller 构建、冻结 EXE 30 秒内退出码 0 均成功；package job #128955378260 成功上传客户包、manifest 和 17 个分片。
+- PR #20 的客户包 artifact `mainland-phase1-customer-package` ID `13646612125` 已于本轮重新下载。外层 ZIP 307,996,303 bytes，SHA256 `65b8b11ad963fb084ddee81db16002398fc1b0d7d459c0c586986375be11cad2`；内层 `Phase1-Mainland-Windows-Tools.zip` 307,909,257 bytes，SHA256 `622fac16b42934d54a4f29374f4fb8aa9623a3487d4d598ebc552115cb770834`。外层和内层 CRC 均通过。
+- 内层 ZIP 共 43 个条目：19 个 EXE（18 款业务工具 + 工具箱启动器）、19 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。说明书目录有 20 个 Markdown 文件，其中 19 份产品说明书 + 1 份索引。
+- **发现套餐说明缺项：**套餐 C 的数量写为 18 款业务工具，但括号列表漏列“物业租金与押金管理助手”。README 和 EXE 数量正确；该缺项已在本轮独立 PR 分支修复，并加入打包回归断言。修复通过 Windows CI 后才可纳入新客户包。
+- 本轮开始时 main 已包含 PR #19、#20 产品代码，但 GitHub connector 未提供 repository 最新 push/scheduled workflow runs 列表动作；对 main HEAD 的 commit workflow runs 与 combined status 也未返回 main push run。因此不能确认 PR #20 合并后最新 main push 的 Mainland Windows EXE 或当前最新 ABE scheduled run，不能把 PR #270 候选包冒充 main push 包。
+
+### Autonomous Business Engine 最近可完整复核记录
+- 最近可完整读取 job 与日志的 main run #383（[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410278)）：build 与 deploy 两个 job 均 success；build 运行全仓 pytest（发布记录记载 144 passed），生成业务目录并上传 Pages artifact。
+- build 日志确认上传 `github-pages` artifact ID `13601382380`，47,789 bytes；deploy 日志确认 Pages deployment success。当前 artifact 列表接口返回空数组，故以 job 日志中的上传记录为证。
+- #383 运行于 2026-11-08，不能证明它是 2026-11-09 当日最新 scheduled run；由于缺少 run-list 接口，本轮不猜测更新的 run ID。
+
+### 本轮研发 PR：租约对账单导出
+- 新增租约级 CSV 对账单：按日期汇总该租约已生成的租金账单、逐笔收款、押金收取/扣除/退还流水及逐笔押金余额，并在文件末尾附租金应收、已收、未收和当前押金余额汇总。
+- 对账单只统计已生成账单，不将尚未生成月份虚构为应收；使用 UTF-8 BOM 与原子写入，导出失败保留旧文件。
+- 增加应用按钮、中文说明书、租约范围/金额/押金流水/CSV BOM/原子失败回归测试。
+- 修复套餐 C 文案漏列租金押金助手的问题，并增加 packaging regression assertion。
+- 分支：`feat/rental-lease-statement-export`；PR #21 已创建（https://github.com/Ldc-12/Chatgpt-business-automatic/pull/21），当前 head `7f8db01cf6bcc3a02627ceac374d8ae39181b86f`。PR-triggered workflow run 尚未从当前 GitHub connector 返回；测试/构建未宣称通过，未合并。
+
+### 授权与最终验收
+- `src/license.py` 内嵌公钥与 `config/mainland_license_public_key.pem` 仍不匹配；本轮未改动公钥、签名逻辑或卖家密钥。
+- 真实卖家公钥匹配、Windows GUI、签发、设备激活及关闭重启后复验仍待完成；所有产品继续标记“待最终验收”，不宣称正式可销售。

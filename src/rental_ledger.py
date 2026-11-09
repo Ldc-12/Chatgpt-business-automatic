@@ -354,6 +354,11 @@ class RentalStore:
         item = normalize_lease(row)
         if item["租约编号"] != old_id:
             raise ValueError("租约编号创建后不能修改")
+        current = self._lease(old_id)
+        if any(x["租约编号"] == old_id for x in self.charges):
+            billing_fields = ("起租日期", "退租日期", "月租金(元)", "每月缴租日")
+            if any(item[field] != current[field] for field in billing_fields):
+                raise ValueError("该租约已有租金账单，起租/退租日期、月租金和缴租日不能直接修改；请先完成旧租约结算，再为新条款建立新租约编号")
         index = next((i for i, x in enumerate(self.leases) if x["租约编号"] == old_id), None)
         if index is None:
             raise ValueError("找不到要修改的租约")

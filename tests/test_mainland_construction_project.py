@@ -276,3 +276,46 @@ def test_failed_write_rolls_back_records_and_full_audit_history(tmp_path):
     assert store.projects == []
     assert store.audit == before
     assert len(store.audit) == module.AUDIT_LIMIT
+
+
+def test_csv_and_backup_reject_tampered_change_amount_atomically(tmp_path):
+    source = module.ConstructionStore(tmp_path / "source.json")
+    source.add_project(project())
+    source.add_change(change())
+
+    csv_path = tmp_path / "changes.csv"
+    source.export_csv("changes", csv_path)
+    rows = list(csv.DictReader(csv_path.open(encoding="utf-8-sig", newline="")))
+    rows[0]["金额(元)"] = "1.00"
+    tampered_csv = tmp_path / "tampered-changes.csv"
+    with tampered_csv.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=module.CHANGE_FIELDS)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    target = module.ConstructionStore(tmp_path / "target.json")
+    target.add_project(project())
+    before = target.changes[:]
+    try:
+        target.import_csv("changes", tampered_csv)
+    except ValueError as exc:
+        assert "计量规则计算结果不一致" in str(exc)
+    else:
+        raise AssertionError("tampered variation amount was accepted")
+    assert target.changes == before
+
+    backup = tmp_path / "backup.json"
+    source.backup(backup)
+    payload = json.loads(backup.read_text(encoding="utf-8"))
+    payload["changes"][0]["金额(元)"] = "1.00"
+    tampered_backup = tmp_path / "tampered-backup.json"
+    tampered_backup.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    before_disk = target.path.read_bytes()
+    try:
+        target.restore(tampered_backup)
+    except ValueError as exc:
+        assert "计量规则计算结果不一致" in str(exc)
+    else:
+        raise AssertionError("tampered variation amount in backup was accepted")
+    assert target.changes == before
+    assert target.path.read_bytes() == before_disk

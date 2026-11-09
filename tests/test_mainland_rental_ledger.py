@@ -418,7 +418,7 @@ def test_lease_statement_csv_has_bom_summary_and_atomic_write(tmp_path, monkeypa
     path = tmp_path / "R001-租约对账单.csv"
     summary = store.export_lease_statement_csv("R001", path, today="2026-01-31")
     content = path.read_bytes()
-    assert content.startswith(b"\\xef\\xbb\\xbf")
+    assert content.startswith(bytes.fromhex("efbbbf"))
     rows = list(csv.DictReader(path.open(encoding="utf-8-sig", newline="")))
     assert rows[-1]["记录类型"] == "统计汇总"
     assert rows[-1]["应收金额(元)"] == summary["应收金额(元)"]

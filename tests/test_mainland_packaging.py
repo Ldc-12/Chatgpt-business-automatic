@@ -33,6 +33,7 @@ APP_ENTRYPOINTS = [
     "售后维修工单管理助手.py",
     "门店排班考勤助手.py",
     "合同台账与到期提醒助手.py",
+    "装修工程签证与进度款管理助手.py",
 ]
 
 
@@ -84,7 +85,7 @@ def test_expense_reimbursement_product_is_in_build_matrix_and_customer_package()
     assert 'product: "费用报销管理助手"' in workflow
     assert "tests/test_mainland_expense_reimbursement.py" in workflow
     assert "MainlandExpenseReimbursement" in workflow
-    assert "17 款 Windows EXE（16 款业务工具及工具箱启动器）" in workflow
+    assert "18 款 Windows EXE（17 款业务工具及工具箱启动器）" in workflow
     assert "费用报销管理助手.json" in workflow
 
 
@@ -107,7 +108,7 @@ def test_repair_work_order_product_is_in_build_matrix_and_customer_package():
     assert 'product: "售后维修工单管理助手"' in workflow
     assert "tests/test_mainland_repair_work_orders.py" in workflow
     assert "MainlandRepairWorkOrderManager" in workflow
-    assert "17 款 Windows EXE（16 款业务工具及工具箱启动器）" in workflow
+    assert "18 款 Windows EXE（17 款业务工具及工具箱启动器）" in workflow
     assert "售后维修工单管理助手.json" in workflow
     launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
     assert "MainlandRepairWorkOrderManager.exe" in launcher
@@ -126,7 +127,7 @@ def test_store_schedule_product_is_in_build_matrix_and_customer_package():
     assert 'product: "门店排班考勤助手"' in workflow
     assert "tests/test_mainland_store_schedule.py" in workflow
     assert "MainlandStoreScheduleAssistant" in workflow
-    assert "17 款 Windows EXE（16 款业务工具及工具箱启动器）" in workflow
+    assert "18 款 Windows EXE（17 款业务工具及工具箱启动器）" in workflow
     assert "门店排班考勤助手.json" in workflow
     launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
     assert "MainlandStoreScheduleAssistant.exe" in launcher
@@ -143,4 +144,21 @@ def test_contract_ledger_product_is_in_build_matrix_and_customer_package():
     assert "MainlandContractLedgerAssistant" in workflow
     assert "合同台账与到期提醒助手.json" in workflow
     assert "MainlandContractLedgerAssistant.exe" in launcher
-    assert len(APP_ENTRYPOINTS) == 17
+    assert len(APP_ENTRYPOINTS) == 18
+
+
+
+def test_construction_settlement_product_is_in_build_matrix_launcher_and_customer_package():
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
+    assert "key: construction-settlement" in workflow
+    assert 'product: "装修工程签证与进度款管理助手"' in workflow
+    assert "tests/test_mainland_construction_project.py" in workflow
+    assert "MainlandConstructionSettlementAssistant" in workflow
+    assert "装修工程签证与进度款管理助手.json" in workflow
+    assert "MainlandConstructionSettlementAssistant.exe" in launcher
+    assert "assert len(TOOLS) == 17" in launcher
+    assert "18 款 Windows EXE（17 款业务工具及工具箱启动器）" in workflow
+    assert "17 款业务工具 + 工具箱启动器" in workflow
+    assert len(APP_ENTRYPOINTS) == 18

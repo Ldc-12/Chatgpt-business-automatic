@@ -215,12 +215,16 @@ class App:
                     project = next((x for x in self.store.projects
                                     if x["项目编号"] == variables["项目编号"].get()), None)
                     if project:
+                        payment_rate = (existing.get("累计支付比例(%)", project["进度款支付比例(%)"])
+                                        if existing else project["进度款支付比例(%)"])
+                        retention_rate = (existing.get("累计质保金比例(%)", project["质保金比例(%)"])
+                                          if existing else project["质保金比例(%)"])
                         result = calculate_progress_payment(
                             variables["累计完成产值(元)"].get(),
                             variables["累计已付款(元)"].get(),
                             variables["本期预付款抵扣(元)"].get(),
                             variables["本期其他扣款(元)"].get(),
-                            project["进度款支付比例(%)"], project["质保金比例(%)"],
+                            payment_rate, retention_rate,
                         )
                         preview.set(
                             f"按项目合同参数估算本期应付：¥{result['本期应付金额(元)']}；"
@@ -241,7 +245,14 @@ class App:
         def save():
             row = {field: variable.get() for field, variable in variables.items()}
             if kind == "changes" and existing:
-                row["证据SHA256"] = existing.get("证据SHA256", "")
+                row["证据SHA256"] = (
+                    existing.get("证据SHA256", "")
+                    if row.get("证据文件", "") == existing.get("证据文件", "")
+                    else ""
+                )
+            if kind == "claims" and existing:
+                row["累计支付比例(%)"] = existing.get("累计支付比例(%)", "")
+                row["累计质保金比例(%)"] = existing.get("累计质保金比例(%)", "")
             try:
                 if existing:
                     if kind == "projects":
@@ -364,6 +375,7 @@ class App:
 if __name__ == "__main__":
     if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
         self_test()
+        print("SELF_TEST_OK", flush=True)
         os._exit(0)
     require_license(PRODUCT)
     root = tk.Tk()

@@ -236,8 +236,8 @@ jobs:
           split -b 18m -d -a 2 "$package" "release/Phase1-Mainland-Windows-Tools.zip.part-"
           parts=(release/Phase1-Mainland-Windows-Tools.zip.part-*)
           parts_count=${#parts[@]}
-          if [ "$parts_count" -gt 15 ]; then
-            echo "Package exceeds the supported 15 x 18 MiB chunk size."
+          if [ "$parts_count" -gt 20 ]; then
+            echo "Package exceeds the supported 20 x 18 MiB chunk size."
             exit 1
           fi
           printf 'file=Phase1-Mainland-Windows-Tools.zip\nbytes=%s\nsha256=%s\nparts=%s\npart_size=18MiB\n' "$bytes" "$(cut -d' ' -f1 release/Phase1-Mainland-Windows-Tools.zip.sha256)" "$parts_count" > release/Phase1-Mainland-Windows-Tools.manifest.txt

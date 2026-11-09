@@ -465,7 +465,12 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 对账单只统计已生成账单，不将尚未生成月份虚构为应收；使用 UTF-8 BOM 与原子写入，导出失败保留旧文件。
 - 增加应用按钮、中文说明书、租约范围/金额/押金流水/CSV BOM/原子失败回归测试。
 - 修复套餐 C 文案漏列租金押金助手的问题，并增加 packaging regression assertion。
-- 分支：`feat/rental-lease-statement-export`；PR #21 已创建（https://github.com/Ldc-12/Chatgpt-business-automatic/pull/21），当前 head `7f8db01cf6bcc3a02627ceac374d8ae39181b86f`。PR-triggered workflow run 尚未从当前 GitHub connector 返回；测试/构建未宣称通过，未合并。
+- PR #21（[Add lease-scoped rental statement export and fix package catalog](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/21)）已 squash 合并；PR head `6550bb290e1e465b6732fc2b07be74a79a1b798a`，main merge commit `166bd2d8da4372e944c7e9518bc7c958f37b8965`。合并后 open PR 查询为 0。
+- PR Windows run #275（[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42609099272)）20/20 jobs success（19 个产品/启动器矩阵 + 1 个客户套餐）；无失败 job。租金押金 job `129132703344`：48 passed，源码 self-test success，标准 PyInstaller EXE 构建 success，冻结 EXE self-test 明确退出码 0；客户包 job `129133339186` success。
+- run #275 客户包 artifact `mainland-phase1-customer-package` ID `13669491905`，308,001,414 bytes，外层 SHA256 `4b4431f7f0e04b55138c11647cde1cc647ca4314885f95f421f5eddafdf23b2e`。内层 ZIP 307,914,586 bytes，SHA256 `3890e30c79ec408ebb5b9b8462b4cde84a2455dad39a711a71a551fd946362d2`；外层、内层 CRC 均通过。
+- 内层 ZIP 43 个条目：19 个 EXE（18 款业务工具 + 工具箱启动器）、19 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。说明书目录共 20 个 Markdown（19 份产品说明书 + 1 份索引）。套餐 C 说明已列出“物业租金与押金管理助手”；大陆版 README 也列出其独立授权文件名。包内文件时间戳：2026-11-09 11:28:40 UTC。
+- Manifest artifact ID `13669556680`；分片 artifact ID `13670290103`，共 17 个分片。下载后按顺序重组的 307,914,586 bytes 与内层 ZIP 字节完全一致，SHA256 与 manifest 一致；manifest 声明的 bytes、sha256、parts 数量全部吻合。
+- 该客户包由 PR #21 run #275 构建；合并后已比对产品源码、测试、GUI、说明书、打包工作流与 packaging test 的 Git blob SHA，均与构建分支相同，因此候选包内容与已合并代码一致。但当前 GitHub connector 未返回 main push run 列表；不能把 PR artifact 标称为 main-push artifact，也不能确认合并后的 main push 是否已完成另一轮打包。
 
 ### 授权与最终验收
 - `src/license.py` 内嵌公钥与 `config/mainland_license_public_key.pem` 仍不匹配；本轮未改动公钥、签名逻辑或卖家密钥。

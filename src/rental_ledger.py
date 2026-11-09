@@ -669,7 +669,8 @@ class RentalStore:
             delta = amount if deposit["类型"] == "收取" else -amount
             deposit_balance += delta
             events.append((
-                deposit["日期"], 2, 0, deposit["押金流水号"],
+                deposit["日期"], 2, 0 if deposit["类型"] == "收取" else 1,
+                deposit["押金流水号"],
                 {
                     "租约编号": lease_id, "房产/房间": lease["房产/房间"],
                     "租客": lease["租客"], "联系电话": lease["联系电话"],

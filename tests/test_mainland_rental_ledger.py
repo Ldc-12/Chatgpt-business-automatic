@@ -50,7 +50,7 @@ def test_month_proration_and_due_date_clamps_to_lease_start_and_end():
     assert first["应收日期"] == "2026-01-15"
 
     last = module.charge_for_month(
-        module.normalize_lease(lease(退租日期="2026-01-10", 起租日期="2026-01-01")),
+        module.normalize_lease(lease(退租日期="2026-01-10", 起租日期="2026-01-01", 每月缴租日="15")),
         "2026-01",
     )
     assert last["应收金额(元)"] == "1000.00"

@@ -77,8 +77,8 @@ def test_generate_charges_is_idempotent_and_respects_lease_end(tmp_path):
 
 def test_payment_partial_full_and_overpayment_rejection(tmp_path):
     store = prepared_store(tmp_path / "rental.json")
-    store.add_payment(payment())
-    row = store.rent_rows("2026-01-21")[0]
+    store.add_payment(payment(收款日期="2026-01-10"))
+    row = store.rent_rows("2026-01-14")[0]
     assert row["已收金额(元)"] == "500.00"
     assert row["未收金额(元)"] == "1200.00"
     assert row["状态"] == "部分收款"
@@ -339,7 +339,7 @@ def test_backup_write_is_atomic_and_preserves_previous_file(tmp_path, monkeypatc
 
 def test_lease_billing_terms_are_locked_after_charges_are_generated(tmp_path):
     store = prepared_store(tmp_path / "rental.json")
-    updated = lease(月租金="3500")
+    updated = lease(**{"月租金(元)": "3500"})
     try:
         store.update_lease("R001", updated)
     except ValueError as exc:

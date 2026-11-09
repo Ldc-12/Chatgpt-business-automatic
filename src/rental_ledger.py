@@ -94,6 +94,17 @@ def _month_iter(start_month, end_month):
             month += 1
 
 
+def _atomic_write(path, content):
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temp = target.with_name(target.name + "." + uuid.uuid4().hex + ".tmp")
+    try:
+        temp.write_text(content, encoding="utf-8", newline="")
+        os.replace(temp, target)
+    finally:
+        if temp.exists():
+            temp.unlink()
+
 def normalize_lease(row):
     if not isinstance(row, dict):
         raise ValueError("租约记录格式错误")
@@ -306,14 +317,7 @@ class RentalStore:
             self.leases, self.charges, self.payments, self.deposits, self.audit
         )
         self.leases, self.charges, self.payments, self.deposits, self.audit = validated
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temp = self.path.with_name(self.path.name + "." + uuid.uuid4().hex + ".tmp")
-        try:
-            temp.write_text(json.dumps(self._payload(), ensure_ascii=False, indent=2), encoding="utf-8", newline="")
-            os.replace(temp, self.path)
-        finally:
-            if temp.exists():
-                temp.unlink()
+        _atomic_write(self.path, json.dumps(self._payload(), ensure_ascii=False, indent=2))
 
     def _mutate(self, category, record_id, action, description, operation):
         snapshot = (
@@ -576,22 +580,12 @@ class RentalStore:
         writer = csv.DictWriter(output, fieldnames=fields)
         writer.writeheader()
         writer.writerows(rows)
-        target = Path(path)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        temp = target.with_name(target.name + "." + uuid.uuid4().hex + ".tmp")
-        try:
-            temp.write_text("\ufeff" + output.getvalue(), encoding="utf-8", newline="")
-            os.replace(temp, target)
-        finally:
-            if temp.exists():
-                temp.unlink()
+        _atomic_write(path, "\ufeff" + output.getvalue())
 
     def backup(self, path):
         payload = self._payload()
         payload["created_at"] = datetime.now().isoformat(timespec="seconds")
-        target = Path(path)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        _atomic_write(path, json.dumps(payload, ensure_ascii=False, indent=2))
 
     def restore(self, path):
         try:

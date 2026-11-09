@@ -146,7 +146,7 @@ def test_deposit_events_are_validated_in_date_order(tmp_path):
     store = module.RentalStore(tmp_path / "rental.json")
     store.add_lease(lease())
     store.add_deposit(deposit("Z-RECEIVE", 日期="2026-01-15"))
-    store.add_deposit(deposit("A-REFUND", 日期="2026-01-15", 类型="退还", 金额元="100", 说明="部分退还"))
+    store.add_deposit(deposit("A-REFUND", 日期="2026-01-15", 类型="退还", 说明="部分退还", **{"金额(元)": "100"}))
     assert store.deposit_balance("R001") == "3000.00"
 
 
@@ -336,3 +336,17 @@ def test_backup_write_is_atomic_and_preserves_previous_file(tmp_path, monkeypatc
         raise AssertionError("simulated backup replace failure not propagated")
     assert backup.read_text(encoding="utf-8") == "previous-valid-backup"
     assert not list(tmp_path.glob("backup.json.*.tmp"))
+
+def test_lease_billing_terms_are_locked_after_charges_are_generated(tmp_path):
+    store = prepared_store(tmp_path / "rental.json")
+    updated = lease(月租金="3500")
+    try:
+        store.update_lease("R001", updated)
+    except ValueError as exc:
+        assert "已有租金账单" in str(exc)
+    else:
+        raise AssertionError("lease billing terms changed after bills were generated")
+    assert store.leases[0]["月租金(元)"] == "3100.00"
+    contact_update = lease(联系电话="13900000000")
+    store.update_lease("R001", contact_update)
+    assert store.leases[0]["联系电话"] == "13900000000"

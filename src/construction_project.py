@@ -165,7 +165,11 @@ def normalize_change(row):
     for field in ("数量", "长度(m)", "宽度(m)", "高度(m)"):
         item[field] = format(_decimal(item[field] or ("1" if field == "数量" else "0"), field), "f")
     item["综合单价(元)"] = money(item["综合单价(元)"], "综合单价")
-    item["金额(元)"] = calculate_change_amount(item)
+    calculated_amount = calculate_change_amount(item)
+    supplied_amount = item["金额(元)"]
+    if supplied_amount and money(supplied_amount, "签证金额", allow_negative=True) != calculated_amount:
+        raise ValueError("签证金额与计量规则计算结果不一致")
+    item["金额(元)"] = calculated_amount
     evidence = item["证据文件"]
     supplied_hash = item["证据SHA256"].upper()
     if supplied_hash and not re.fullmatch(r"[0-9A-F]{64}", supplied_hash):

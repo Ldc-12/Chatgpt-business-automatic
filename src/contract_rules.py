@@ -36,7 +36,7 @@ PAYMENT_TERMS = ("付款", "支付", "预付款", "进度款", "尾款", "结算
 PAYMENT_EXCLUSIONS = ("违约金", "滞纳金", "利息", "税率", "增值税", "折扣", "保证金", "质保金", "押金")
 PENALTY_TERMS = ("违约金", "违约责任", "逾期违约")
 PENALTY_QUANTIFIERS = re.compile(
-    r"按日|每日|每逾期|万分之|千分之|百分之|不超过|最高|上限|按合同金额|\d+(?:\.\d+)?\s*%|\d[\d,]*(?:\.\d+)?\s*元"
+    r"万分之\s*\d+(?:\.\d+)?|千分之\s*\d+(?:\.\d+)?|百分之\s*\d+(?:\.\d+)?|(?<!\d)\d+(?:\.\d+)?\s*%|(?<!\d)\d[\d,]*(?:\.\d+)?\s*元|(?:按日|每日|每逾期)[^。；;]{0,20}\d+(?:\.\d+)?"
 )
 DEPOSIT_TERMS = ("保证金", "押金", "质保金")
 REFUND_TERMS = ("退还", "返还", "退回", "无息退还", "到期退还", "期满返还")
@@ -103,7 +103,8 @@ def review_contract_text(text):
     for number, line in lines:
         for match in AMOUNT_LABEL.finditer(line):
             tail = line[match.end():match.end() + 80]
-            amount_match = AMOUNT_AFTER_LABEL.search(tail)
+            tail = re.sub(r"^\s*(?:（[^）]*）|\([^)]*\))?\s*[：:为]?\s*", "", tail)
+            amount_match = AMOUNT_AFTER_LABEL.match(tail)
             if not amount_match:
                 continue
             try:
@@ -137,17 +138,18 @@ def review_contract_text(text):
                 payment_line_numbers.append(number)
     if len(payment_percentages) >= 2:
         total = sum(payment_percentages, Decimal("0"))
+        total_text = format(total.quantize(Decimal("0.01")), "f").rstrip("0").rstrip(".")
         if total > Decimal("100"):
             add(
                 "高", "PAYMENT_PERCENT_TOTAL_OVER_100", "付款比例合计",
-                f"可识别的付款阶段比例合计为 {total.normalize()}%，超过 100%",
+                f"可识别的付款阶段比例合计为 {total_text}%，超过 100%",
                 "核对各付款阶段是否重复、是否混入税率或其他比例",
                 payment_line_numbers,
             )
         elif total < Decimal("100"):
             add(
                 "中", "PAYMENT_PERCENT_TOTAL_UNDER_100", "付款比例合计",
-                f"可识别的付款阶段比例合计为 {total.normalize()}%，未达到 100%；可能有阶段未被识别",
+                f"可识别的付款阶段比例合计为 {total_text}%，未达到 100%；可能有阶段未被识别",
                 "核对是否遗漏尾款、质保金或其他付款阶段；以完整合同约定为准",
                 payment_line_numbers,
             )

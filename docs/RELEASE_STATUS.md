@@ -611,3 +611,31 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - `src/license.py` 内嵌公钥与 `config/mainland_license_public_key.pem` 仍为已记录的不同 SHA256 指纹；卖家私钥未在仓库中，也没有确认已安全交付给用户。本轮未读取、上传、猜测、生成或替换任何生产私钥/公钥。
 - 代码侧签名、产品 ID、路径和错误授权测试可继续；真实卖家公钥匹配、签发、Windows GUI、设备激活、退出重启后再次验证仍未完成。
 - **当前结论：main CI 与冻结 EXE 自测通过，但真实 Windows GUI/授权激活仍待最终验收；不得宣称已通过正式销售验收。**
+
+## 2026-11-10 分类套餐正式合入 main：Windows run #300 / ABE run #406
+
+### PR、main 与 CI
+- PR #27 [Package Windows tools into five independent business series](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/27) 已 squash 合并，merge commit：`b24a78a6f524826e40604a3583b4bbd37df5550a`。本轮复核 main HEAD 为该提交；open PR：0。
+- PR #27 的 Mainland Windows EXE run #299：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42810056069)，head `34e2ddd28f1dc68ad6dc9fefa13236400c8873bb`，20/20 jobs success（19 个 Windows 构建矩阵 + 1 个客户包 job）。所有 19 个冻结 EXE self-test 均输出 `FROZEN_EXE_SELF_TEST_OK`，退出码 0。
+- 失败记录已核对：run #297 的共享打包测试仍按旧标签 `套餐 C` 切分，产生 `IndexError`；run #298 改为 `系列 D` 后，测试又因套餐说明只写“物业租金与押金”简称而未包含完整产品名失败。PR 最终提交把分类说明改为完整产品名，并将测试断言更新为系列 D；run #299 全部通过。没有把失败 run 改写成成功。
+- 合并后的 Mainland Windows EXE main-push run #300：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42811688664)，head 与 merge commit `b24a78a...` 一致，20/20 jobs success（19/19 Windows 产品/启动器矩阵 + 1/1 客户包 job）。各产品回归测试、源码 self-test、PyInstaller 构建和冻结 EXE self-test 均通过。
+- Autonomous Business Engine main-push run #406：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42811688944)，head `b24a78a...`；build/deploy 均 success，build 日志 `210 passed in 1.63s`，product_factory 生成 12 个产品页；Pages artifact ID `13761899767`，47,773 bytes。外部数据请求曾返回 HTTP 502，工作流使用既有 fallback 后完成；本地 Windows 软件运行不依赖该服务。
+
+### main 客户套餐 artifact 实际下载核验（run #300）
+- `mainland-phase1-customer-package` artifact ID：`13763025418`，外层 artifact 321,788,304 bytes，外层 SHA256 `37c587b36084f3b68122f7e28b99f3a4cff033b3f7fcba85e071ce74891983f8`；外层 ZIP CRC 通过，含内层 `Phase1-Mainland-Windows-Tools.zip` 和 `README-大陆版.md`。
+- 内层客户 ZIP：321,697,581 bytes，SHA256 `251fbe0ddf903cbaf578c49a3e33d7b42097a917c2618e14f04ce336959996c1`；`ZipFile.testzip() = None`。共 44 个条目（42 个文件、2 个目录）：19 个 EXE（18 款业务工具 + 工具箱启动器）、20 份说明书 Markdown（19 份产品说明书 + 1 份说明书索引）、大陆版 README、分类套餐目录和套餐说明。
+- 内层产品文件时间戳：2026-11-10 11:59:28 UTC（中国标准时间 19:59:28）。客户包 artifact 创建于 11:59:47 UTC。
+- Manifest artifact ID：`13763005452`，784 bytes；声明 bytes `321697581`、SHA256 `251fbe0d...`、parts `18`，与实际内层 ZIP 完全一致。分片 artifact ID：`13763065205`，321,700,735 bytes；18 个分片重新拼接后为 321,697,581 bytes，SHA256 与 manifest 完全一致。
+- 套餐说明现已按 A–F 分类，不再用旧 A/B/C 通用礼包说明。建议售价仍未经过实际闲鱼成交验证。
+
+### A–E 五个分类套餐实际下载核验（main run #300）
+- `mainland-phase1-series-packages` artifact ID：`13762129966`，307,099,242 bytes；外层 ZIP CRC 通过，包含五个分类 ZIP 和 `系列套餐目录.md`。
+- A 办公效率：5 个 EXE + 5 份匹配说明书；B 门店经营：4 + 4；C 财务与交易：4 + 4；D 合同工程物业：3 + 3；E 客户与个人事务：2 + 2。每个分类 ZIP 另含 `系列说明.txt`，五个 ZIP 的 CRC 均通过。
+- 分类内容完整且不重复覆盖 18 款业务软件：A（文件整理、图片、PDF、会议、SOP）；B（库存、采购比价、售后工单、排班）；C（催款、经营收支、报价、报销）；D（合同台账、装修签证进度款、物业租金押金）；E（客户跟进、求职管理）。F 完整套餐保留 18 款业务工具 + 启动器。
+- 五个 ZIP 的文件时间戳在 2026-11-10 11:59:02–11:59:16 UTC。分类 artifact 的六个条目均已检查，五个内层 ZIP 均成功解压并通过 CRC。
+- 建议价：A/B/C/D 各 29.9 元，E 19.9 元，F 39.9 元；均为待市场验证的建议价，不是已验证成交价。单品仍独立交付，分类 ZIP 与完整套餐来自同一轮 main Windows 构建产物。
+
+### 授权与最终验收
+- 本轮未修改授权代码、公钥或任何私钥。当前客户端内嵌公钥指纹仍为 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；配置公钥指纹仍为 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，不匹配。
+- 卖家私钥未在仓库；当前不能证明用户电脑上存在 `seller-private.pem`，也不能假定曾安全交付。不得让用户盲目搜索不存在的文件，不得猜测、替换或新造生产私钥。
+- CI 冻结 EXE self-test 通过不等于真实 Windows GUI/授权激活通过。卖家密钥来源、公钥匹配、真实签发、设备激活、退出重启后再次验证及逐款 GUI/数据/备份恢复仍待最终验收。**当前全部商品仍标记为待最终验收，不得宣布可正式上架。**

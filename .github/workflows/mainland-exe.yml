@@ -161,7 +161,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt pyinstaller
       - name: Automated regression tests
-        run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py
+        run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py tests/test_mainland_series_packages.py
       - name: Source self-test
         run: python "${{ matrix.source }}" --self-test
       - name: Build EXE with ReportLab support
@@ -213,6 +213,15 @@ jobs:
           pattern: mainland-*-windows
           path: release
           merge-multiple: true
+      - name: Build five independent category series packages
+        run: python tools/build_mainland_series_packages.py --release-dir release --manuals-dir docs/manuals --output-dir release/series
+      - name: Upload independent category series packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-series-packages
+          path: |
+            release/series/*.zip
+            release/series/系列套餐目录.md
       - name: Create catalog and combined package
         shell: bash
         run: |
@@ -228,17 +237,27 @@ jobs:
           mkdir -p release/package
           mkdir -p release/package/说明书
           cp docs/manuals/*.md release/package/说明书/
+          cp docs/MAINLAND_SERIES_PACKAGES.md release/package/分类套餐目录.md
           cat > release/套餐说明.txt <<'EOF'
-          套餐 A｜电脑文件处理三件套｜建议售价 19.9 元
-          文件整理 + 图片批处理 + PDF 批处理
+          系列 A｜办公效率系列｜建议售价 29.9 元
+          文件整理助手 Pro、图片批量处理助手 Pro、PDF 批量工具 Pro、会议行动项管理、SOP 项目执行管理。
 
-          套餐 B｜办公效率工具箱｜建议售价 29.9 元
-          套餐 A + 催款 + 客户跟进 + 求职管理
+          系列 B｜门店经营系列｜建议售价 29.9 元
+          小店库存盘点助手、供应商采购比价助手、售后维修工单管理助手、门店排班考勤助手。
 
-          套餐 C｜全能工作效率工具箱｜建议售价 39.9 元
-          全部 18 款业务工具 + 工具箱启动器（含小店库存盘点助手、供应商采购比价助手、报价单生成器、费用报销管理助手、售后维修工单管理助手、门店排班考勤助手、合同台账与到期提醒助手（含 PDF/DOCX/TXT/MD 本地批量识别、规则集 CN-CONTRACT-2026.11.1：总金额冲突、付款比例合计、日期冲突、保证金返还、违约金计算和自动续约通知检查；风险明细附原文行号）、装修工程签证与进度款管理助手、物业租金与押金管理助手）
+          系列 C｜财务与交易系列｜建议售价 29.9 元
+          自由职业催款管理工具、小微企业经营收支管理、报价单生成器、费用报销管理助手。
 
-          建议：低价单品用于引流，套餐用于提高客单价；具体售价上线后根据咨询和成交数据调整。
+          系列 D｜合同工程物业系列｜建议售价 29.9 元
+          合同台账与到期提醒助手、装修工程签证与进度款管理助手、物业租金与押金管理助手。
+
+          系列 E｜客户与个人事务系列｜建议售价 19.9 元
+          轻量销售客户跟进工具、求职申请管理 Pro。
+
+          系列 F｜全系列综合套餐｜建议售价 39.9 元
+          全部 18 款业务工具 + 工具箱启动器。
+
+          以上均为待市场验证的建议售价，不代表实际成交价。分类 ZIP 独立提供，每款软件附对应中文说明书；全系列包保留全部软件及说明书。
           EOF
           cp release/*.exe release/package/
           cp release/README-大陆版.md release/套餐说明.txt release/package/

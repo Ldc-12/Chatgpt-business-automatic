@@ -303,3 +303,13 @@ def test_rule_engine_does_not_flag_explicitly_quantified_terms():
     assert "DEPOSIT_RETURN_NOT_FOUND" not in codes
     assert "PENALTY_METHOD_NOT_FOUND" not in codes
     assert "AUTO_RENEW_NOTICE_WINDOW_NOT_FOUND" not in codes
+
+
+def test_rule_engine_requires_numeric_penalty_limit_and_ignores_unlabelled_dates():
+    vague = review_contract_text("违约金不超过合同金额。")
+    assert "PENALTY_METHOD_NOT_FOUND" in {item["规则编号"] for item in vague}
+
+    unrelated = review_contract_text(
+        "合同金额：详见附件\n签订日期：2026-01-01\n到期日期：2026-12-31"
+    )
+    assert "TOTAL_AMOUNT_CONFLICT" not in {item["规则编号"] for item in unrelated}

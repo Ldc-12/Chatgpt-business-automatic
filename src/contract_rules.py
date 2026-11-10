@@ -138,7 +138,7 @@ def review_contract_text(text):
                 payment_line_numbers.append(number)
     if len(payment_percentages) >= 2:
         total = sum(payment_percentages, Decimal("0"))
-        total_text = format(total.quantize(Decimal("0.01")), "f").rstrip("0").rstrip(".")
+        total_text = format(total.normalize(), "f")
         if total > Decimal("100"):
             add(
                 "高", "PAYMENT_PERCENT_TOTAL_OVER_100", "付款比例合计",

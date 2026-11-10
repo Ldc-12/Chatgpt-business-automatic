@@ -15,7 +15,7 @@ from pathlib import Path
 from docx import Document
 from pypdf import PdfReader
 
-from src.contract_rules import CLAUSE_CHECKS, RULESET_VERSION, review_contract_text
+from src.contract_rules import RULESET_VERSION, review_contract_text
 
 CONTRACT_FIELDS = [
     "合同编号", "合同名称", "甲方/客户", "乙方/供应商", "签订日期", "生效日期", "到期日期",

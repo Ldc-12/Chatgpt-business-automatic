@@ -193,7 +193,13 @@ def review_contract_text(text):
         )
 
     deposit_lines = [number for number, line in lines if any(term in line for term in DEPOSIT_TERMS)]
-    if deposit_lines and not any(term in full_text for term in REFUND_TERMS):
+    # A refund phrase elsewhere in the document (for example, returning keys)
+    # must not suppress a deposit-return prompt. Require evidence in the same
+    # extracted clause line as the deposit wording.
+    deposit_clause_lines = [line for number, line in lines if number in deposit_lines]
+    if deposit_lines and not any(
+        term in line for line in deposit_clause_lines for term in REFUND_TERMS
+    ):
         add(
             "中", "DEPOSIT_RETURN_NOT_FOUND", "保证金/押金返还",
             "出现保证金、押金或质保金，但全文未检出明确返还/退还表述",
@@ -212,7 +218,10 @@ def review_contract_text(text):
         )
 
     renew_lines = [number for number, line in lines if any(term in line for term in AUTO_RENEW_TERMS)]
-    if renew_lines and not NOTICE_WINDOW.search(full_text):
+    # An unrelated notice window elsewhere in the contract must not satisfy
+    # the automatic-renewal notice check.
+    renew_clause_lines = [line for number, line in lines if number in renew_lines]
+    if renew_lines and not any(NOTICE_WINDOW.search(line) for line in renew_clause_lines):
         add(
             "中", "AUTO_RENEW_NOTICE_WINDOW_NOT_FOUND", "自动续约",
             "检出自动续约/自动续期表述，但未识别到提前通知天数",

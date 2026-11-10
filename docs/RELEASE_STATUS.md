@@ -580,3 +580,34 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - **仍未在真实用户 Windows 桌面环境人工完成 GUI/use flow 验收。** CI 的冻结 EXE self-test 是非交互模式，不可替代实际点击、导入合同、核对 CSV、正式导入台账、备份/恢复的手工流程。
 - 卖家公钥指纹仍不匹配：`src/license.py` 内嵌 DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。没有读取、上传、生成、猜测或替换卖家私钥。
 - 真实卖家公钥匹配、签发、设备激活、退出并重启后再次验证仍未完成。所有版本继续标记为“待最终验收”，不得宣布已可正式上架。
+
+
+## 2026-11-10 PR #26 合同离线规则集与 main 发布复验（Windows run #296 / ABE run #404）
+
+### 主线、PR 与 CI
+- 本轮开始时 main HEAD：`2fcbbe70056d13d81722b5efca772555a89d2d93`；开始时唯一未完成 PR 为 #26。
+- PR #26 [Add evidence-backed offline contract review rules](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/26) 已 squash 合并；合并提交与当前 main HEAD：`d2a52ee3e307813469c0cc475dbfc9eccd2da284`。本轮结束时 open PR：0（后续分类套餐 PR #27 另见下方）。
+- 合同规则引擎新增版本 `CN-CONTRACT-2026.11.1`，对明确标注的总金额冲突、付款比例合计、同类日期冲突/期限倒置、保证金返还、违约金计算细节、自动续约通知窗口及条款关键词提供可解释提示；风险明细附规则编号、风险等级、原文行号/摘录和建议复核动作。只生成待人工核对草稿，不自动写入正式台账，不构成法律意见；不调用 AI、OCR、VPN、网络或外部 API。
+- 代码复核发现两个跨条款误判风险：合同其他位置的“退还钥匙”或普通“提前30天通知”可能错误满足保证金返还/自动续约通知检查。已将两项检查收窄到各自条款行，并增加回归测试；中文说明书已明确跨段/跨页内容仍需人工核对。
+- PR run #294 [Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42807552314) 曾因新增测试夹具把换行写成字面量 `\\n` 而失败（1 failed / 60 passed）；已修正为真实换行。最终 PR run #295 [Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42807951334) 20/20 jobs success；合同台账 job `129801864953` 为 `61 passed in 2.71s`，冻结 EXE self-test 退出码 0，单品 ZIP 上传成功。
+- 合并后的 Mainland Windows EXE main-push run #296 [Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42808490114)，head `d2a52ee...`，20/20 jobs success，无失败 job。合同台账 job `129598555404`：`61 passed in 1.61s`；源码 self-test、PyInstaller build、冻结 EXE self-test（退出码 0）、单品 ZIP 上传均 success。
+- Autonomous Business Engine main-push run #404 [Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42808490208)，build/deploy 两个 job 均 success；build 日志 `205 passed in 2.41s`；Pages artifact ID `13761620908`，47,764 bytes。
+
+### run #296 最新 main 客户套餐实际下载核验
+- `mainland-phase1-customer-package` artifact ID：`13761406186`，artifact 大小 321,775,649 bytes，创建时间 2026-11-10 11:35:44 UTC。实际下载外层 ZIP CRC 通过，包含内层 `Phase1-Mainland-Windows-Tools.zip` 与 `README-大陆版.md`。
+- 内层 ZIP：321,684,337 bytes；SHA256 `66804fa9cf01d8b3d9b22ba8fcb09ea0082a7b4447f899ddbc472fd2b03c98a1`；`ZipFile.testzip() = None`。
+- 内容核验：19 个 EXE（18 款业务工具 + 1 个启动器）、19 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明；共 43 个 ZIP 条目（41 个文件、2 个目录）。本轮产品文件时间戳统一为 2026-11-10 11:35:26 UTC。
+- Manifest artifact ID：`13761726039`，782 bytes；声明 bytes `321684337`、SHA256 `66804fa9...`、parts `18`，与实际内层 ZIP 大小及 SHA256 一致。分片 artifact ID：`13761256288`，321,687,491 bytes。
+- 当前 main 包的套餐说明仍是原有 A/B/C 通用组合（19.9/29.9/39.9 元建议价）；分类系列 A–E 尚未进入此 main 包，不能把 PR #27 的候选内容描述为已交付。建议售价均未经过实际成交验证。
+- 本包来自 main commit `d2a52ee...` 的真实 push 构建，不是历史包或 PR 候选包。
+
+### 后续分类套餐开发
+- 新分支 `feat/mainland-category-series-packages`，PR #27 [Package Windows tools into five independent business series](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/27) 已创建，尚待 Windows CI。
+- 计划把 18 款业务工具不重复地拆成 A 办公效率（5 款）、B 门店经营（4 款）、C 财务与交易（4 款）、D 合同工程物业（3 款）、E 客户与个人事务（2 款）；F 仍为全部 18 款业务软件 + 工具箱启动器。
+- 每个 A–E 分类 ZIP 将包含本系列全部 EXE、每款匹配的中文说明书和系列说明；另作为独立 Actions artifact 发布。完整客户包只额外附分类目录，不重复嵌入五个大 ZIP，避免把主包体积翻倍。
+- PR #27 的五类 ZIP 生成、CRC/条目数校验、目录完整性、缺文件拒绝及工作流 artifact 测试尚未通过最终 Windows 构建；在 PR #27 合并和 main-push 构建前，不作为正式分类交付包。
+
+### 授权与最终验收
+- `src/license.py` 内嵌公钥与 `config/mainland_license_public_key.pem` 仍为已记录的不同 SHA256 指纹；卖家私钥未在仓库中，也没有确认已安全交付给用户。本轮未读取、上传、猜测、生成或替换任何生产私钥/公钥。
+- 代码侧签名、产品 ID、路径和错误授权测试可继续；真实卖家公钥匹配、签发、Windows GUI、设备激活、退出重启后再次验证仍未完成。
+- **当前结论：main CI 与冻结 EXE 自测通过，但真实 Windows GUI/授权激活仍待最终验收；不得宣称已通过正式销售验收。**

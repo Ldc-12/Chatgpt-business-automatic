@@ -24,24 +24,24 @@ DATE_LABELS = {
     "到期日期": ("到期日期", "终止日期", "合同截止日期", "结束日期", "履行结束日期"),
 }
 DATE_TOKEN = re.compile(
-    r"(?<!\\d)(\\d{4})\\s*(?:年|[-/.])\\s*(\\d{1,2})\\s*(?:月|[-/.])\\s*(\\d{1,2})\\s*日?(?!\\d)"
+    r"(?<!\d)(\d{4})\s*(?:年|[-/.])\s*(\d{1,2})\s*(?:月|[-/.])\s*(\d{1,2})\s*日?(?!\d)"
 )
 AMOUNT_LABEL = re.compile(r"合同金额|合同总价|合同价款|含税总价|总价款|总金额")
 AMOUNT_AFTER_LABEL = re.compile(
-    r"(?:人民币|RMB|CNY)?\\s*[￥¥]?\\s*((?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d{1,2})?)\\s*(?:元)?",
+    r"(?:人民币|RMB|CNY)?\s*[￥¥]?\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*(?:元)?",
     re.I,
 )
-PERCENT = re.compile(r"(?<![\\d.])(\\d+(?:\\.\\d+)?)\\s*%")
+PERCENT = re.compile(r"(?<![\d.])(\d+(?:\.\d+)?)\s*%")
 PAYMENT_TERMS = ("付款", "支付", "预付款", "进度款", "尾款", "结算")
 PAYMENT_EXCLUSIONS = ("违约金", "滞纳金", "利息", "税率", "增值税", "折扣", "保证金", "质保金", "押金")
 PENALTY_TERMS = ("违约金", "违约责任", "逾期违约")
 PENALTY_QUANTIFIERS = re.compile(
-    r"按日|每日|每逾期|万分之|千分之|百分之|不超过|最高|上限|按合同金额|\\d+(?:\\.\\d+)?\\s*%|\\d[\\d,]*(?:\\.\\d+)?\\s*元"
+    r"按日|每日|每逾期|万分之|千分之|百分之|不超过|最高|上限|按合同金额|\d+(?:\.\d+)?\s*%|\d[\d,]*(?:\.\d+)?\s*元"
 )
 DEPOSIT_TERMS = ("保证金", "押金", "质保金")
 REFUND_TERMS = ("退还", "返还", "退回", "无息退还", "到期退还", "期满返还")
 AUTO_RENEW_TERMS = ("自动续约", "自动续期", "期满自动续签", "自动延长")
-NOTICE_WINDOW = re.compile(r"提前\\s*\\d+\\s*(?:日|天)")
+NOTICE_WINDOW = re.compile(r"提前\s*\d+\s*(?:日|天)")
 
 
 def _valid_dates(value):
@@ -76,7 +76,7 @@ def review_contract_text(text):
             "建议动作": action,
         })
 
-    full_text = "\\n".join(line for _, line in lines)
+    full_text = "\n".join(line for _, line in lines)
 
     # Missing keywords are deliberately low-severity prompts, never proof that
     # a clause is absent. Users must inspect the complete signed document.
@@ -158,7 +158,7 @@ def review_contract_text(text):
         found = []
         for number, line in lines:
             for label in labels:
-                pattern = re.compile(re.escape(label) + r"\\s*[：:]\\s*([^；;。]{1,80})")
+                pattern = re.compile(re.escape(label) + r"\s*[：:]\s*([^；;。]{1,80})")
                 match = pattern.search(line)
                 if match:
                     found.extend((number, value) for value in _valid_dates(match.group(1)))
@@ -175,11 +175,11 @@ def review_contract_text(text):
     expiry = []
     for number, line in lines:
         for label in DATE_LABELS["生效日期"]:
-            match = re.search(re.escape(label) + r"\\s*[：:]\\s*([^；;。]{1,80})", line)
+            match = re.search(re.escape(label) + r"\s*[：:]\s*([^；;。]{1,80})", line)
             if match:
                 effective.extend((number, value) for value in _valid_dates(match.group(1)))
         for label in DATE_LABELS["到期日期"]:
-            match = re.search(re.escape(label) + r"\\s*[：:]\\s*([^；;。]{1,80})", line)
+            match = re.search(re.escape(label) + r"\s*[：:]\s*([^；;。]{1,80})", line)
             if match:
                 expiry.extend((number, value) for value in _valid_dates(match.group(1)))
     if effective and expiry and min(value for _, value in effective) > max(value for _, value in expiry):
@@ -200,7 +200,7 @@ def review_contract_text(text):
         )
 
     penalty_lines = [number for number, line in lines if any(term in line for term in PENALTY_TERMS)]
-    penalty_text = "\\n".join(line for number, line in lines if number in penalty_lines)
+    penalty_text = "\n".join(line for number, line in lines if number in penalty_lines)
     if penalty_lines and not PENALTY_QUANTIFIERS.search(penalty_text):
         add(
             "中", "PENALTY_METHOD_NOT_FOUND", "违约责任",

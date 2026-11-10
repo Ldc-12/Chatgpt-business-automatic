@@ -14,6 +14,7 @@ from tkinter import ttk, filedialog, messagebox
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
 from src.contract_workflow import (WorkflowStore, MILESTONE_FIELDS, MILESTONE_TYPES, MILESTONE_STATUSES, AUDIT_FIELDS, WORKFLOW_FORMAT, WORKFLOW_VERSION, risk_findings, finance_summary)
+from src.contract_document_parser import write_draft_csv
 
 PRODUCT = "合同台账与到期提醒助手"
 FIELDS = ["合同编号", "合同名称", "甲方/客户", "乙方/供应商", "签订日期", "生效日期", "到期日期",
@@ -24,6 +25,8 @@ BACKUP_VERSION = 2
 
 
 def money(value):
+    if value is None or not str(value).strip():
+        raise ValueError("合同金额不能为空；无偿合同请明确填写 0")
     try:
         amount = Decimal(str(value or "0").replace(",", "").strip()).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     except (InvalidOperation, ValueError):
@@ -267,7 +270,7 @@ class App:
         for label, command in [("新增合同", self.add), ("编辑", self.edit), ("删除", self.delete),
                                ("履约节点", self.manage_milestones), ("风险检查", self.show_risks),
                                ("节点导入", self.import_milestones), ("节点导出", self.export_milestones),
-                               ("操作记录", self.show_audit), ("导入 CSV", self.import_csv),
+                               ("操作记录", self.show_audit), ("批量识别合同文件", self.import_documents), ("导入 CSV", self.import_csv),
                                ("导出筛选结果", self.export_csv), ("备份", self.backup), ("恢复", self.restore)]:
             ttk.Button(bar, text=label, command=command).pack(side="left", padx=3)
         self.search = tk.StringVar()
@@ -369,6 +372,37 @@ class App:
                 count = self.store.import_csv(path); self.refresh()
                 messagebox.showinfo("导入完成", f"成功导入 {count} 份合同")
             except (ValueError, OSError) as exc: messagebox.showerror("导入失败", str(exc))
+    def import_documents(self):
+        paths = filedialog.askopenfilenames(
+            title="批量识别合同文件",
+            filetypes=[("支持的合同文件", "*.pdf *.docx *.txt *.md"),
+                       ("PDF 文件", "*.pdf"), ("Word 文件", "*.docx"),
+                       ("文本文件", "*.txt *.md")],
+        )
+        if not paths:
+            return
+        target = filedialog.asksaveasfilename(
+            title="保存合同识别草稿",
+            defaultextension=".csv",
+            initialfile="合同识别草稿.csv",
+            filetypes=[("CSV 文件", "*.csv")],
+        )
+        if not target:
+            return
+        try:
+            rows = write_draft_csv(paths, target)
+            incomplete = sum(bool(row["待补齐字段"]) for row in rows)
+            messagebox.showinfo(
+                "识别草稿已生成",
+                f"已处理 {len(rows)} 份合同文件，其中 {incomplete} 份仍有字段待补齐。\\n"
+                f"草稿位置：{target}\\n\\n"
+                "请先用 Excel/WPS 打开 CSV，对照合同原文补齐并复核字段，再点击“导入 CSV”。"
+                "软件不会自动把识别结果写入正式台账。",
+                parent=self.root,
+            )
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("识别失败", str(exc), parent=self.root)
+
     def export_csv(self):
         path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV 文件", "*.csv")])
         if path:

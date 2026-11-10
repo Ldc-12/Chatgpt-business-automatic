@@ -139,7 +139,7 @@ jobs:
           - key: contract-ledger
             product: "合同台账与到期提醒助手"
             source: apps/合同台账与到期提醒助手.py
-            test: tests/test_mainland_contract_ledger.py
+            test: tests/test_mainland_contract_ledger.py tests/test_mainland_contract_document_parser.py
             exe: MainlandContractLedgerAssistant
             manual: 16-合同台账与到期提醒助手-用户说明书.md
           - key: construction-settlement
@@ -236,7 +236,7 @@ jobs:
           套餐 A + 催款 + 客户跟进 + 求职管理
 
           套餐 C｜全能工作效率工具箱｜建议售价 39.9 元
-          全部 18 款业务工具 + 工具箱启动器（含小店库存盘点助手、供应商采购比价助手、报价单生成器、费用报销管理助手、售后维修工单管理助手、门店排班考勤助手、合同台账与到期提醒助手、装修工程签证与进度款管理助手、物业租金与押金管理助手）
+          全部 18 款业务工具 + 工具箱启动器（含小店库存盘点助手、供应商采购比价助手、报价单生成器、费用报销管理助手、售后维修工单管理助手、门店排班考勤助手、合同台账与到期提醒助手（含 PDF/DOCX/TXT 批量字段识别与规则提示）、装修工程签证与进度款管理助手、物业租金与押金管理助手）
 
           建议：低价单品用于引流，套餐用于提高客单价；具体售价上线后根据咨询和成交数据调整。
           EOF

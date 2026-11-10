@@ -175,7 +175,7 @@ def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package()
     assert "tests/test_mainland_rental_ledger.py" in workflow
     assert "MainlandRentalLedgerAssistant" in workflow
     assert "物业租金与押金管理助手.json" in workflow
-    package_description = workflow.split("套餐 C", 1)[1]
+    package_description = workflow.split("系列 D", 1)[1]
     assert "物业租金与押金管理助手" in package_description
     assert "MainlandRentalLedgerAssistant.exe" in launcher
     assert "物业租金与押金管理助手" in license_tests

@@ -117,7 +117,9 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 
 ## 2026-11-04 本轮复验与第三阶段产品开发
 
-- 本轮重新检查 main 最新提交 `6b74b803012cd40fadf05b0f984a0c02875209b0`、开放 PR（0 个），并复核 Mainland Windows EXE run #171：[#41821589374](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821589374)。- 11/11 Windows build jobs、套餐 job 全部 success。小店库存盘点助手 job #126545796209：`20 passed`，冻结 EXE 日志出现 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`，artifact `mainland-inventory-windows` ID `13317751830`。- Autonomous Business Engine run #357：[#41821589355](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821589355)，build/deploy success；测试 `45 passed`，product_factory 生成 12 个产品页面，xianyu_factory 执行成功；Pages artifact ID `13317861698`。
+- 本轮重新检查 main 最新提交 `6b74b803012cd40fadf05b0f984a0c02875209b0`、开放 PR（0 个），并复核 Mainland Windows EXE run #171：[#41821589374](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821589374)。
+- 11/11 Windows build jobs、套餐 job 全部 success。小店库存盘点助手 job #126545796209：`20 passed`，冻结 EXE 日志出现 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`，artifact `mainland-inventory-windows` ID `13317751830`。
+- Autonomous Business Engine run #357：[#41821589355](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821589355)，build/deploy success；测试 `45 passed`，product_factory 生成 12 个产品页面，xianyu_factory 执行成功；Pages artifact ID `13317861698`。
 - 本轮实际下载客户包 artifact ID `13317801473`（外层 176,862,637 bytes，SHA256 `50fd5d3a0b9a2af2bab4fd35c91947666b931937a62b99a27acb3996783fc7dd`），解出内层 ZIP 176,812,698 bytes，SHA256 `6e77236f61acbff1db5204c622cc5cc5ace0c26ec9685457c4fa2bbdfd73a104`。`ZipFile.testzip() = None`；27 个条目，11 个 EXE、11 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。套餐说明时间戳 2026-11-04 19:33:00（中国标准时间）。
 - manifest artifact ID `13317012167` 已下载，记录字节数 `176812698`、SHA256 `6e77236f61acbff1db5204c622cc5cc5ace0c26ec9685457c4fa2bbdfd73a104`、分片数 9，与实际内层 ZIP 完全一致。
 - 新增开发产品：`供应商采购比价助手`，源码 `apps/供应商采购比价助手.py`，测试 `tests/test_mainland_purchase_compare.py`，中文说明书 `docs/manuals/11-供应商采购比价助手-用户说明书.md`。采用 Decimal 计算含税到货单位成本，过期报价不参与推荐；支持供应商多报价、搜索、CSV 原子追加导入/导出、JSON 备份恢复和本地持久化。
@@ -355,7 +357,8 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - main Autonomous Business Engine run #383：[#42440410278](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410278)，build/deploy 均 success；\`144 passed\`；GitHub Pages artifact ID \`13601382380\`（47,789 bytes）。
 ### 最终销售验收仍未完成
 - 以上证明 PR 与 main 的代码测试、Windows PyInstaller 构建、冻结 EXE 非交互自测、17-EXE 客户包下载和 CRC/SHA256/manifest 核验通过；**不等于真实用户 Windows GUI 业务流程验收，也不等于授权激活验收**。
-- \`src/license.py\` 内嵌公钥与 \`config/mainland_license_public_key.pem\` 仍存在指纹不匹配。卖家私钥不在仓库；未请求、上传、生成、猜测或替换任何私钥。- 上架前仍须在真实 Windows 环境完成 GUI 业务流程测试，并由卖家在可信 Windows 电脑本地导出公钥或 SHA256 指纹（只提供公钥/指纹，绝不提供私钥）以核对客户端公钥；匹配后再进行真实签发、设备激活、关闭重启和再次验证。最终状态继续标记为“待最终验收”，不得宣称已可正式上架。
+- \`src/license.py\` 内嵌公钥与 \`config/mainland_license_public_key.pem\` 仍存在指纹不匹配。卖家私钥不在仓库；未请求、上传、生成、猜测或替换任何私钥。
+- 上架前仍须在真实 Windows 环境完成 GUI 业务流程测试，并由卖家在可信 Windows 电脑本地导出公钥或 SHA256 指纹（只提供公钥/指纹，绝不提供私钥）以核对客户端公钥；匹配后再进行真实签发、设备激活、关闭重启和再次验证。最终状态继续标记为“待最终验收”，不得宣称已可正式上架。
 
 
 ## 2026-11-08 PR #18 合同履约操作日志回滚修复

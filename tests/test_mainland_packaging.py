@@ -197,3 +197,12 @@ def test_every_standalone_delivery_zip_has_its_matching_chinese_manual():
     for name in manual_names:
         assert (root / "docs" / "manuals" / name).is_file(), name
     assert "z.write('docs/manuals/${{ matrix.manual }}','说明书/${{ matrix.manual }}')" in workflow
+
+
+def test_contract_readme_discloses_versioned_offline_review_scope():
+    text = module.render_mainland_readme("合同台账与到期提醒助手")
+    assert "CN-CONTRACT-2026.11.1" in text
+    assert "PDF/DOCX/TXT/MD" in text
+    assert "原文行号" in text
+    assert "不会自动写入正式台账" in text
+    assert "不构成法律意见" in text

@@ -1,17 +1,26 @@
-"""Write the per-product README as UTF-8, avoiding Windows PowerShell 5.1 code-page conversion."""
+"""Write per-product mainland README files as UTF-8 for Windows delivery."""
 import argparse
 from pathlib import Path
 
 
 def render_mainland_readme(product):
+    product_note = ""
+    if product == "合同台账与到期提醒助手":
+        product_note = (
+            "合同专业功能：本地批量读取可搜索 PDF/DOCX/TXT/MD，生成待人工复核 CSV 草稿；"
+            "规则集 CN-CONTRACT-2026.11.1 检查明确标注的总金额冲突、付款比例合计、日期冲突、"
+            "保证金返还、违约金计算细节和自动续约通知窗口。风险明细附规则编号、原文行号和复核建议。\\n"
+            "识别草稿不会自动写入正式台账；复杂表格、扫描件和特殊条款仍须人工核对，结果不构成法律意见。\\n"
+        )
     return (
-        f"{product}\n"
-        "Windows 单机版｜大陆版\n\n"
+        f"{product}\\n"
+        "Windows 单机版｜大陆版\\n\\n"
         "首次启动会显示本机设备码，需由卖家签发该产品专属授权后才能使用。"
-        "请把授权文件放入 %LOCALAPPDATA%\\MainlandBusinessTools\\licenses\\产品名.json。"
-        "数据默认保存在当前用户的 %LOCALAPPDATA%\\MainlandBusinessTools 目录。\n"
-        "本工具无需 ChatGPT、VPN 或外部 AI 服务。\n"
-        "首次使用建议：先添加一条测试数据，确认保存、编辑、删除和 CSV 导出正常，再录入正式数据。\n"
+        "请把授权文件放入 %LOCALAPPDATA%\\\\MainlandBusinessTools\\\\licenses\\\\产品名.json。"
+        "数据默认保存在当前用户的 %LOCALAPPDATA%\\\\MainlandBusinessTools 目录。\\n"
+        f"{product_note}"
+        "本工具无需 ChatGPT、VPN 或外部 AI 服务。\\n"
+        "首次使用建议：先添加一条测试数据，确认保存、编辑、删除和 CSV 导出正常，再录入正式数据。\\n"
     )
 
 

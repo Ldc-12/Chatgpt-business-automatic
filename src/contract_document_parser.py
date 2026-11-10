@@ -4,6 +4,7 @@ This module never uploads documents and never uses OCR, AI, network services, or
 It extracts searchable text from PDF, DOCX and TXT files, then creates a draft CSV.
 """
 import csv
+import json
 import os
 import re
 import tempfile
@@ -14,11 +15,13 @@ from pathlib import Path
 from docx import Document
 from pypdf import PdfReader
 
+from src.contract_rules import RULESET_VERSION, review_contract_text
+
 CONTRACT_FIELDS = [
     "合同编号", "合同名称", "甲方/客户", "乙方/供应商", "签订日期", "生效日期", "到期日期",
     "合同金额", "续约提醒提前天数", "状态", "负责人", "联系方式", "备注",
 ]
-REVIEW_FIELDS = ["来源文件", "识别完整度", "待补齐字段", "规则提示"]
+REVIEW_FIELDS = ["来源文件", "识别完整度", "待补齐字段", "规则版本", "风险等级", "风险命中数", "规则提示", "风险明细"]
 REQUIRED_FIELDS = ["合同编号", "合同名称", "签订日期", "生效日期", "到期日期", "合同金额"]
 MAX_FILE_BYTES = 50 * 1024 * 1024
 MAX_PDF_PAGES = 500
@@ -208,21 +211,25 @@ def parse_contract_document(path):
         warnings.append("生效日期晚于到期日期，请核对")
     if not row["甲方/客户"] or not row["乙方/供应商"]:
         warnings.append("甲方或乙方信息未完整识别，请人工核对")
-    for label, terms in CLAUSE_CHECKS:
-        if not any(term in text for term in terms):
-            warnings.append(f"未检出“{label}”相关表述，请人工核对原文")
+    findings = review_contract_text(text)
+    warnings.extend(f"{item['规则编号']}：{item['风险说明']}" for item in findings)
     if missing:
         warnings.insert(0, "待补齐字段：" + "、".join(missing))
     if not warnings:
         warnings.append("已提取主要字段；仍须逐项对照合同原文复核")
 
     complete = len(REQUIRED_FIELDS) - len(missing)
+    risk_level = next((level for level in ("高", "中", "低") if any(item["等级"] == level for item in findings)), "无")
     return {
         **row,
         "来源文件": path.name,
         "识别完整度": f"{complete}/{len(REQUIRED_FIELDS)}（{round(complete * 100 / len(REQUIRED_FIELDS))}%）",
         "待补齐字段": "、".join(missing),
+        "规则版本": RULESET_VERSION,
+        "风险等级": risk_level,
+        "风险命中数": str(len(findings)),
         "规则提示": "；".join(warnings),
+        "风险明细": json.dumps(findings, ensure_ascii=False, separators=(",", ":")),
     }
 
 

@@ -16,6 +16,7 @@ from src.contract_document_parser import (
     read_contract_text,
     write_draft_csv,
 )
+from src.contract_rules import RULESET_VERSION, review_contract_text
 
 APP_PATH = Path(__file__).resolve().parents[1] / "apps" / "合同台账与到期提醒助手.py"
 SPEC = importlib.util.spec_from_file_location("contract_ledger_for_document_tests", APP_PATH)
@@ -41,7 +42,7 @@ def contract_text(include_all=True):
             "违约责任：逾期付款按约定承担违约金。",
             "争议解决：协商不成提交仲裁。",
             "发票：乙方应开具发票。",
-            "质保：提供一年质保，另收保证金。",
+            "质保：提供一年质保，另收保证金，质保期满后30日内退还。",
         ])
     return "\n".join(lines)
 
@@ -230,3 +231,114 @@ def test_review_csv_can_be_completed_then_imported_and_blank_amount_is_rejected(
     blank_amount["合同金额"] = ""
     with pytest.raises(ValueError, match="合同金额不能为空"):
         APP.normalize(blank_amount)
+
+
+def test_review_report_has_versioned_risk_fields_and_traceable_detail(tmp_path):
+    source = tmp_path / "review.txt"
+    source.write_text(contract_text(), encoding="utf-8")
+    result = parse_contract_document(source)
+    assert result["规则版本"] == RULESET_VERSION
+    assert result["风险等级"] in ("中", "低", "无")
+    assert int(result["风险命中数"]) >= 0
+    assert isinstance(__import__("json").loads(result["风险明细"]), list)
+    assert set(REVIEW_FIELDS).issubset(result)
+
+
+def test_rule_engine_detects_conflicting_total_amounts_with_evidence():
+    findings = review_contract_text(
+        "合同金额：人民币 10000.00 元\n补充协议约定合同总价：12000.00 元"
+    )
+    item = next(item for item in findings if item["规则编号"] == "TOTAL_AMOUNT_CONFLICT")
+    assert item["等级"] == "高"
+    assert "10000.00" in item["风险说明"] and "12000.00" in item["风险说明"]
+    assert "第1行" in item["证据摘录"] and "第2行" in item["证据摘录"]
+
+
+def test_rule_engine_checks_payment_percentage_totals():
+    over = review_contract_text("付款安排：签约后支付30%，交付后支付50%，验收后支付30%。")
+    item = next(item for item in over if item["规则编号"] == "PAYMENT_PERCENT_TOTAL_OVER_100")
+    assert item["等级"] == "高"
+    assert "110%" in item["风险说明"]
+
+    under = review_contract_text("付款安排：签约后支付30%，交付后支付50%。")
+    item = next(item for item in under if item["规则编号"] == "PAYMENT_PERCENT_TOTAL_UNDER_100")
+    assert item["等级"] == "中"
+    assert "80%" in item["风险说明"]
+
+
+def test_rule_engine_detects_conflicting_labeled_dates():
+    findings = review_contract_text(
+        "生效日期：2026-01-01\n合同生效日期：2026-02-01\n到期日期：2026-12-31"
+    )
+    item = next(item for item in findings if item["规则编号"] == "生效日期_CONFLICT")
+    assert item["等级"] == "中"
+    assert "2026-01-01" in item["风险说明"]
+    assert "2026-02-01" in item["风险说明"]
+
+
+def test_rule_engine_flags_deposit_penalty_and_auto_renew_gaps():
+    findings = review_contract_text(
+        "保证金：人民币10000元\n"
+        "违约责任：违约方应承担违约金。\n"
+        "合同期满后自动续约一年。"
+    )
+    codes = {item["规则编号"] for item in findings}
+    assert {
+        "DEPOSIT_RETURN_NOT_FOUND",
+        "PENALTY_METHOD_NOT_FOUND",
+        "AUTO_RENEW_NOTICE_WINDOW_NOT_FOUND",
+    }.issubset(codes)
+
+
+def test_rule_engine_does_not_flag_explicitly_quantified_terms():
+    findings = review_contract_text(
+        "付款安排：签约后支付30%，交付后支付50%，验收后支付20%。\n"
+        "违约金：按合同金额10%计算，最高不超过合同金额20%。\n"
+        "保证金：验收合格后30日内无息退还。\n"
+        "续约：期满自动续约一年，任一方应提前30日书面通知不续约。"
+    )
+    codes = {item["规则编号"] for item in findings}
+    assert "PAYMENT_PERCENT_TOTAL_OVER_100" not in codes
+    assert "PAYMENT_PERCENT_TOTAL_UNDER_100" not in codes
+    assert "DEPOSIT_RETURN_NOT_FOUND" not in codes
+    assert "PENALTY_METHOD_NOT_FOUND" not in codes
+    assert "AUTO_RENEW_NOTICE_WINDOW_NOT_FOUND" not in codes
+
+
+def test_rule_engine_requires_numeric_penalty_limit_and_ignores_unlabelled_dates():
+    vague = review_contract_text("违约金不超过合同金额。")
+    assert "PENALTY_METHOD_NOT_FOUND" in {item["规则编号"] for item in vague}
+
+    unrelated = review_contract_text(
+        "合同金额：详见附件\n签订日期：2026-01-01\n到期日期：2026-12-31"
+    )
+    assert "TOTAL_AMOUNT_CONFLICT" not in {item["规则编号"] for item in unrelated}
+
+
+
+def test_unrelated_refund_and_notice_text_do_not_suppress_clause_specific_findings():
+    deposit_findings = review_contract_text(
+        "保证金：人民币10000元。\n"
+        "其他事项：乙方应退还门禁卡和钥匙。"
+    )
+    assert "DEPOSIT_RETURN_NOT_FOUND" in {
+        item["规则编号"] for item in deposit_findings
+    }
+
+    renewal_findings = review_contract_text(
+        "合同期满后自动续约一年。\n"
+        "付款安排：甲方应提前30天支付下一期款项。"
+    )
+    assert "AUTO_RENEW_NOTICE_WINDOW_NOT_FOUND" in {
+        item["规则编号"] for item in renewal_findings
+    }
+
+
+def test_deposit_refund_and_renewal_notice_in_same_clause_are_recognized():
+    findings = review_contract_text(
+        "保证金：合同期满后30日内无息退还。\n"
+        "合同期满后自动续约一年，任一方应提前30日书面通知不续约。"
+    )
+    codes = {item["规则编号"] for item in findings}
+    assert "DEPOSIT_RETURN_NOT_FOUND" not in codes
+    assert "AUTO_RENEW_NOTICE_WINDOW_NOT_FOUND" not in codes

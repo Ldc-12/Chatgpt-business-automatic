@@ -71,3 +71,12 @@ def test_catalog_names_all_five_series_and_full_package():
         assert series["title"] in catalog
     assert "全系列 F" in catalog
     assert "18 款业务软件 + 工具箱启动器" in catalog
+
+
+
+def test_windows_workflow_builds_and_publishes_the_series_packages():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    assert "tests/test_mainland_series_packages.py" in workflow
+    assert "tools/build_mainland_series_packages.py" in workflow
+    assert "mainland-phase1-series-packages" in workflow
+    assert "docs/MAINLAND_SERIES_PACKAGES.md" in workflow

@@ -313,3 +313,32 @@ def test_rule_engine_requires_numeric_penalty_limit_and_ignores_unlabelled_dates
         "合同金额：详见附件\n签订日期：2026-01-01\n到期日期：2026-12-31"
     )
     assert "TOTAL_AMOUNT_CONFLICT" not in {item["规则编号"] for item in unrelated}
+
+
+
+def test_unrelated_refund_and_notice_text_do_not_suppress_clause_specific_findings():
+    deposit_findings = review_contract_text(
+        "保证金：人民币10000元。\\n"
+        "其他事项：乙方应退还门禁卡和钥匙。"
+    )
+    assert "DEPOSIT_RETURN_NOT_FOUND" in {
+        item["规则编号"] for item in deposit_findings
+    }
+
+    renewal_findings = review_contract_text(
+        "合同期满后自动续约一年。\\n"
+        "付款安排：甲方应提前30天支付下一期款项。"
+    )
+    assert "AUTO_RENEW_NOTICE_WINDOW_NOT_FOUND" in {
+        item["规则编号"] for item in renewal_findings
+    }
+
+
+def test_deposit_refund_and_renewal_notice_in_same_clause_are_recognized():
+    findings = review_contract_text(
+        "保证金：合同期满后30日内无息退还。\\n"
+        "合同期满后自动续约一年，任一方应提前30日书面通知不续约。"
+    )
+    codes = {item["规则编号"] for item in findings}
+    assert "DEPOSIT_RETURN_NOT_FOUND" not in codes
+    assert "AUTO_RENEW_NOTICE_WINDOW_NOT_FOUND" not in codes

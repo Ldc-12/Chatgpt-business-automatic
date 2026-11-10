@@ -392,12 +392,17 @@ class App:
         try:
             rows = write_draft_csv(paths, target)
             incomplete = sum(bool(row["待补齐字段"]) for row in rows)
+            high = sum(row["风险等级"] == "高" for row in rows)
+            medium = sum(row["风险等级"] == "中" for row in rows)
+            low = sum(row["风险等级"] == "低" for row in rows)
             messagebox.showinfo(
                 "识别草稿已生成",
                 f"已处理 {len(rows)} 份合同文件，其中 {incomplete} 份仍有字段待补齐。\n"
+                f"合同规则提示：高风险 {high} 份 / 中风险 {medium} 份 / 低风险 {low} 份。\n"
                 f"草稿位置：{target}\n\n"
-                "请先用 Excel/WPS 打开 CSV，对照合同原文补齐并复核字段，再点击“导入 CSV”。"
-                "软件不会自动把识别结果写入正式台账。",
+                "请先用 Excel/WPS 打开 CSV，查看“风险明细”列中的规则编号和原文行号，"
+                "对照签署文件逐项核实，再补齐字段并点击“导入 CSV”。"
+                "识别和风险提示不会自动写入正式台账，也不构成法律意见。",
                 parent=self.root,
             )
         except (ValueError, OSError) as exc:

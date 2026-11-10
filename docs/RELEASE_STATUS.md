@@ -117,8 +117,7 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 
 ## 2026-11-04 本轮复验与第三阶段产品开发
 
-- 本轮重新检查 main 最新提交 `6b74b803012cd40fadf05b0f984a0c02875209b0`、开放 PR（0 个），并复核 Mainland Windows EXE run #171：[#41821589374](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821589374)。
-- 11/11 Windows build jobs、套餐 job 全部 success。小店库存盘点助手 job #126545796209：`20 passed`，冻结 EXE 日志出现 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`，artifact `mainland-inventory-windows` ID `13317751830`。
+- 本轮重新检查 main 最新提交 `6b74b803012cd40fadf05b0f984a0c02875209b0`、开放 PR（0 个），并复核 Mainland Windows EXE run #171：[#41821589374](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821589374)。- 11/11 Windows build jobs、套餐 job 全部 success。小店库存盘点助手 job #126545796209：`20 passed`，冻结 EXE 日志出现 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`，artifact `mainland-inventory-windows` ID `13317751830`。
 - Autonomous Business Engine run #357：[#41821589355](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/41821589355)，build/deploy success；测试 `45 passed`，product_factory 生成 12 个产品页面，xianyu_factory 执行成功；Pages artifact ID `13317861698`。
 - 本轮实际下载客户包 artifact ID `13317801473`（外层 176,862,637 bytes，SHA256 `50fd5d3a0b9a2af2bab4fd35c91947666b931937a62b99a27acb3996783fc7dd`），解出内层 ZIP 176,812,698 bytes，SHA256 `6e77236f61acbff1db5204c622cc5cc5ace0c26ec9685457c4fa2bbdfd73a104`。`ZipFile.testzip() = None`；27 个条目，11 个 EXE、11 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明。套餐说明时间戳 2026-11-04 19:33:00（中国标准时间）。
 - manifest artifact ID `13317012167` 已下载，记录字节数 `176812698`、SHA256 `6e77236f61acbff1db5204c622cc5cc5ace0c26ec9685457c4fa2bbdfd73a104`、分片数 9，与实际内层 ZIP 完全一致。
@@ -236,7 +235,6 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 内层 ZIP 文件时间戳：2026-11-05 12:21:08 UTC（中国标准时间 20:21:08）。
 - PR #13 的代码、回归测试、Windows 冻结 EXE 自测与客户套餐结构均已通过 PR run #232。此包是 PR 验证候选包，PR 合并后的 main push 构建仍需单独记录；不得把 PR artifact 误称为 main 最新 artifact。
 - 最终终端验收仍未完成：未在真实用户 Windows 环境完成 GUI/业务流程测试，卖家私钥仍未与客户端内嵌公钥匹配确认，真实授权签发、设备绑定、激活和重启测试待用户本地公钥指纹比对。未更改、生成或索取任何生产私钥。
-
 
 ## 2026-11-05 PR #13 合并状态更正
 
@@ -357,7 +355,6 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 内层 \`Phase1-Mainland-Windows-Tools.zip\`：278,314,876 bytes；SHA256：\`9ae659441a1d63fa0da016f9e0e8db21c1db203a17611f8be77ffa0007797427\`。manifest artifact ID \`13601642030\` 中 bytes/SHA256 完全匹配；parts artifact ID \`13601587362\` 含 15 个分片（14 个 18 MiB，末片 14,073,724 bytes），拼接后 bytes/SHA256 与内层 ZIP 完全一致。外层、manifest、parts、内层 ZIP CRC 均通过。
 - 内层 ZIP 共 39 个条目（37 个文件、2 个目录）：17 个 EXE（16 款业务工具 + 工具箱启动器）、17 份说明书（16 款业务工具 + 工具箱）、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT。套餐 A/B/C 描述与既有 17 EXE 数量一致；套餐 C 为 16 款业务工具 + 启动器。内层文件时间戳为 2026-11-08 02:55:24 UTC（北京时间 10:55:24）。
 - main Autonomous Business Engine run #383：[#42440410278](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42440410278)，build/deploy 均 success；\`144 passed\`；GitHub Pages artifact ID \`13601382380\`（47,789 bytes）。
-
 ### 最终销售验收仍未完成
 - 以上证明 PR 与 main 的代码测试、Windows PyInstaller 构建、冻结 EXE 非交互自测、17-EXE 客户包下载和 CRC/SHA256/manifest 核验通过；**不等于真实用户 Windows GUI 业务流程验收，也不等于授权激活验收**。
 - \`src/license.py\` 内嵌公钥与 \`config/mainland_license_public_key.pem\` 仍存在指纹不匹配。卖家私钥不在仓库；未请求、上传、生成、猜测或替换任何私钥。
@@ -478,7 +475,6 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 
 
 ## 2026-11-09 PR #22 修复单品 ZIP 缺少中文说明书
-
 ### 缺陷证据
 - 本轮下载并检查 PR #21 run #275 的租金助手单品 artifact `13669153591`（29,615,916 bytes，SHA256 `d8e4fff4f6b2bccf2ca2001fb56836a80d666639c6ff2ad4b676f5f23b3cf3c5`）。其内层单品 ZIP 只有 EXE 与 README，没有对应中文说明书。
 - 复查通用 Windows 工作流发现，所有单品 ZIP 都由同一逻辑仅写入 EXE 与 README，因此这不是单个产品问题，而是全部单品交付包的系统性缺项。完整套餐此前有说明书，但闲鱼单品购买者拿到的 ZIP 缺少说明书。
@@ -501,3 +497,32 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - ABE 最近可完整检查的 run 仍为 #383（2026-11-08）；build/deploy success，build 日志记录 144 passed，Pages artifact `13601382380` 上传成功、deploy success。当前无法确认 2026-11-09 当日最新 scheduled run 编号，不猜测 run ID。
 - 卖家公钥指纹仍不匹配：内嵌 Ed25519 DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；配置公钥 DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。本轮没有修改任何密钥或签名代码。
 - 真实 Windows GUI、可信卖家公钥匹配、签发、设备激活及关闭重启后再次验证仍待最终验收；PR CI 和冻结 EXE 自测不等于真实用户授权验收。
+
+## 2026-11-10 自动复核：main Windows run #278 与 ABE run #399
+
+### 当前主线与工作流
+- 本轮开始时 main HEAD：`a677414f7416b63804295bf492adb6514b2525b9`。该提交仅更新 `docs/RELEASE_STATUS.md`；最新包含产品/工作流代码的 Windows main-push 构建仍是前一提交 `9748a5695c38fe969b346c1dd162641c61923a82`。
+- 开始时 open PR：0。
+- Mainland Windows EXE main-push run #278：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42610524499)，head `9748a5695c38fe969b346c1dd162641c61923a82`，结论 success。19/19 个产品矩阵构建 job 和 1/1 客户套餐 job 全部 success；各矩阵的自动回归测试、源码 self-test、冻结 EXE self-test、单品 ZIP 生成与上传步骤均 success。冻结 EXE 检查是进程自测，不等同于人工逐页 GUI 验收。
+- Autonomous Business Engine scheduled run #399：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42711496275)，head `a677414f7416b63804295bf492adb6514b2525b9`，build/deploy 均 success；build 日志记录 `184 passed in 1.47s`，product_factory 与 xianyu_factory 步骤完成。Pages artifact ID `13716276205`，47,779 bytes。
+- 最近的历史失败 Mainland run #264 已复核 job log：19 个 EXE build job 均成功，只有 package job 因分片上限 15 × 18 MiB 而失败。后续工作流上限已提高，run #278 package job 成功并产出 17 个分片。run #278 本身无失败 job；run #399 build/deploy 亦无失败 job。
+
+### run #278 客户包实际下载验收
+- `mainland-phase1-customer-package` artifact ID：`13670660669`，大小 308,006,470 bytes；创建时间 2026-11-09 11:39:24 UTC；下载后外层 ZIP SHA256：`eba21c6a1604da91c15e539bd8db8ad2cd89edaf945e4139950d3b59346dd050`。
+- 外层 ZIP `testzip() = None`，包含内层 `Phase1-Mainland-Windows-Tools.zip`（307,919,710 bytes）及 `README-大陆版.md`（909 bytes）。内层 ZIP SHA256：`702748083dfddd3b097ce0f9adcac8c1d35115cf9a1e61c38f9d679c29cc7ad7`，`testzip() = None`。
+- 内层 ZIP 共 43 个条目：19 个 EXE（18 款业务工具 + 工具箱启动器）、20 个 Markdown 文件（19 份产品说明书 + 1 份说明书索引）、1 份大陆版 README、1 份套餐说明及目录项。ZIP 内产品文件时间戳为 2026-11-09 11:39:04 UTC；内层 ZIP 时间戳 11:39:12 UTC。
+- Manifest artifact ID：`13669842943`，781 bytes；内容声明 bytes `307919710`、SHA256 `702748083dfddd3b097ce0f9adcac8c1d35115cf9a1e61c38f9d679c29cc7ad7`、parts `17`。三项与实际内层 ZIP 字节数、SHA256 及分片数量一致。分片 artifact ID：`13670750443`，307,922,690 bytes。
+- 套餐说明实际内容：A 文件处理三件套 19.9 元；B 办公效率工具箱 29.9 元；C 全部业务工具 + 启动器 39.9 元。上述为仓库建议价，不代表市场成交验证。
+- 本包是 run #278、代码提交 `9748a569...` 的真实 main-push 构建产物；main 后续 HEAD `a677414f...` 仅增加发布状态文档，没有改动产品或 Windows 工作流代码。不得将此包说成包含本轮新开发的合同文件识别功能；该功能仍在独立 PR 中等待 Windows CI。
+
+### 本轮继续开发：合同文件批量识别与规则提示
+- 分支：`feat/contract-document-intake-review`，从 main HEAD `a677414f...` 独立创建。
+- 新增 `src/contract_document_parser.py`：本地读取可搜索 PDF、DOCX、TXT、MD；按明确字段标签提取合同编号/名称、甲乙方、日期和金额；输出包含来源文件、完整度、待补齐字段、规则提示的 UTF-8 BOM CSV 草稿。
+- 规则提示检查付款结算、交付验收、违约责任、争议解决、发票、质保/保证金等关键词，并提示缺失字段和日期异常。扫描版 PDF 明确提示暂不支持 OCR；不使用 AI、网络、云服务或外部 API。
+- 草稿不会自动写入正式台账；用户必须对照合同原文补齐和复核后，再通过现有 CSV 追加导入。空金额不再默认为 0，必须明确填写金额；无偿合同填写 0。
+- 新增 DOCX 读取依赖 `python-docx`，新增文档解析回归测试并纳入合同工具 Windows 矩阵；更新中文说明书和套餐 C 的功能描述。该分支尚未创建/通过 PR Windows CI，不能算作已交付功能。
+
+### 授权与最终验收
+- `src/license.py` 内嵌 Ed25519 公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem`：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，仍不匹配。本轮未读取、上传、生成、猜测或替换卖家私钥，也未修改两份公钥。
+- 真实 Windows GUI/use flow、卖家公钥匹配、真实签发、设备激活及关闭重启后再次验证仍未完成。run #278 的冻结 EXE self-test 只证明自测模式下进程成功退出，不证明真实 GUI 或授权激活通过。
+- **当前结论：所有版本继续标记为“待最终验收”，不得宣布可正式上架。**

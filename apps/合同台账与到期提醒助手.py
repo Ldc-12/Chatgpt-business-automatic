@@ -394,8 +394,8 @@ class App:
             incomplete = sum(bool(row["待补齐字段"]) for row in rows)
             messagebox.showinfo(
                 "识别草稿已生成",
-                f"已处理 {len(rows)} 份合同文件，其中 {incomplete} 份仍有字段待补齐。\\n"
-                f"草稿位置：{target}\\n\\n"
+                f"已处理 {len(rows)} 份合同文件，其中 {incomplete} 份仍有字段待补齐。\n"
+                f"草稿位置：{target}\n\n"
                 "请先用 Excel/WPS 打开 CSV，对照合同原文补齐并复核字段，再点击“导入 CSV”。"
                 "软件不会自动把识别结果写入正式台账。",
                 parent=self.root,

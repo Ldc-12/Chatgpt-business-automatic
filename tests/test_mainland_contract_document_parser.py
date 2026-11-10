@@ -154,6 +154,14 @@ def test_unsupported_or_oversized_file_is_rejected(tmp_path, monkeypatch):
         read_contract_text(oversized)
 
 
+def test_amount_with_more_than_two_decimal_places_is_not_truncated(tmp_path):
+    path = tmp_path / "bad-amount.txt"
+    path.write_text("合同金额：12,345.678元", encoding="utf-8")
+    result = parse_contract_document(path)
+    assert result["合同金额"] == ""
+    assert "合同金额" in result["待补齐字段"]
+
+
 def test_invalid_date_is_reported_instead_of_silently_normalized(tmp_path):
     path = tmp_path / "bad-date.txt"
     path.write_text("签订日期：2026年2月30日", encoding="utf-8")

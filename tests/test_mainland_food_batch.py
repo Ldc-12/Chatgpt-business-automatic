@@ -251,6 +251,7 @@ def test_fefo_requires_sku_destination_and_reason(tmp_path):
 
 def test_csv_exports_escape_spreadsheet_formulas_in_batch_and_movement_fields(tmp_path):
     store = MODULE.FoodBatchStore(tmp_path / "food.json")
+    assert MODULE.csv_safe_cell(" \t=1+1") == "' \t=1+1"
     unsafe = batch(
         batch_id=" =HYPERLINK(\"https://example.invalid\")",
         sku="=1+1",
@@ -265,7 +266,7 @@ def test_csv_exports_escape_spreadsheet_formulas_in_batch_and_movement_fields(tm
     store.export_csv(batches_csv)
     with batches_csv.open(encoding="utf-8-sig", newline="") as handle:
         exported_batch = next(csv.DictReader(handle))
-    assert exported_batch["批次编号"].startswith("' ")
+    assert exported_batch["批次编号"].startswith("'=")
     assert exported_batch["商品编码"].startswith("'=")
     assert exported_batch["商品名称"].startswith("'+")
     assert exported_batch["供应商"].startswith("'@")

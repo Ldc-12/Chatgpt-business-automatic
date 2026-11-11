@@ -71,8 +71,18 @@ def safe_relative(value):
     path = PurePosixPath(text)
     if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
         raise ValueError("证据路径包含不安全的目录跳转")
-    if path.parts and ":" in path.parts[0]:
-        raise ValueError("证据路径不能包含盘符")
+    windows_reserved = {"CON", "PRN", "AUX", "NUL"}
+    windows_reserved.update(f"{prefix}{number}" for prefix in ("COM", "LPT") for number in range(1, 10))
+    windows_reserved.update(f"{prefix}{number}" for prefix in ("COM", "LPT") for number in ("¹", "²", "³"))
+    for part in path.parts:
+        stem = part.split(".", 1)[0].upper()
+        if (
+            any(ord(ch) < 32 for ch in part)
+            or any(ch in '<>:"|?*' for ch in part)
+            or part.endswith((" ", "."))
+            or stem in windows_reserved
+        ):
+            raise ValueError(f"证据路径包含 Windows 不支持的文件名：{part}")
     return path.as_posix()
 
 

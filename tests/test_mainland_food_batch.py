@@ -260,7 +260,7 @@ def test_csv_exports_escape_spreadsheet_formulas_in_batch_and_movement_fields(tm
     unsafe["供应商"] = "@SUM(1,1)"
     unsafe["备注"] = "-1+1"
     store.add_batch(unsafe)
-    store.adjust_batch(unsafe["批次编号"], "减少", "1", "=HYPERLINK(\"https://example.invalid\")")
+    store.adjust_batch(store.batches[0]["批次编号"], "减少", "1", "=HYPERLINK(\"https://example.invalid\")")
 
     batches_csv = tmp_path / "safe-batches.csv"
     store.export_csv(batches_csv)

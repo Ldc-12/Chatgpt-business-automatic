@@ -110,6 +110,7 @@ def test_default_license_paths_match_all_protected_product_ids():
         "报价单生成器",
         "费用报销管理助手",
         "售后维修工单管理助手",
+        "售后纠纷证据链管理助手",
         "门店排班考勤助手",
         "合同台账与到期提醒助手",
         "装修工程签证与进度款管理助手",

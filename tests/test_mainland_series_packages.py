@@ -20,11 +20,11 @@ def _make_inputs(tmp_path):
     return release, manuals, output
 
 
-def test_series_catalog_covers_all_18_products_once():
+def test_series_catalog_covers_all_20_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 19
-    assert len(assigned) == 19
+    assert len(MODULE.PRODUCTS) == 20
+    assert len(assigned) == 20
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "19 款业务软件 + 工具箱启动器" in catalog
+    assert "20 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -86,3 +86,10 @@ def test_store_series_contains_food_batch_expiry_assistant():
     store_series = next(item for item in MODULE.SERIES if item["code"] == "B")
     assert "food-batch" in store_series["products"]
     assert MODULE.PRODUCTS["food-batch"][1] == "MainlandFoodBatchExpiryAssistant.exe"
+
+
+def test_store_series_contains_after_sales_evidence_chain_assistant():
+    store_series = next(item for item in MODULE.SERIES if item["code"] == "B")
+    assert "after-sales-evidence" in store_series["products"]
+    assert MODULE.PRODUCTS["after-sales-evidence"][1] == "MainlandAfterSalesEvidenceAssistant.exe"
+    assert MODULE.PRODUCTS["after-sales-evidence"][2] == "20-售后纠纷证据链管理助手-用户说明书.md"

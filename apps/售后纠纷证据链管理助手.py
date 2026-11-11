@@ -32,11 +32,11 @@ EVIDENCE_FIELDS = [
 ]
 EVENT_FIELDS = [
     "序号", "时间", "案件编号", "事件类型", "说明", "证据编号",
-    "前序哈希", "事件哈希",
+    "记录快照SHA256", "前序哈希", "事件哈希",
 ]
 STATUSES = {"待处理", "处理中", "待平台介入", "已解决", "已关闭"}
 BACKUP_FORMAT = "mainland-after-sales-evidence-backup"
-BACKUP_VERSION = 1
+BACKUP_VERSION = 2
 ZERO_HASH = "0" * 64
 MAX_EVIDENCE_BYTES = 100 * 1024 * 1024
 MAX_BACKUP_BYTES = 1024 * 1024 * 1024
@@ -135,6 +135,9 @@ def verify_event_chain(events):
             datetime.fromisoformat(item["时间"])
         except ValueError:
             raise ValueError(f"第 {expected_seq} 条事件时间无效") from None
+        snapshot_hash = item["记录快照SHA256"]
+        if len(snapshot_hash) != 64 or any(ch not in "0123456789abcdef" for ch in snapshot_hash.lower()):
+            raise ValueError(f"第 {expected_seq} 条案件记录快照 SHA256 无效")
         if item["前序哈希"] != previous:
             raise ValueError(f"事件链前序哈希不匹配：第 {expected_seq} 条")
         expected_hash = event_hash(item)
@@ -142,6 +145,22 @@ def verify_event_chain(events):
             raise ValueError(f"事件链内容哈希不匹配：第 {expected_seq} 条")
         previous = expected_hash
     return previous
+
+
+def verify_case_snapshots(cases, events):
+    latest = {}
+    for event in events:
+        latest[event["案件编号"]] = event["记录快照SHA256"]
+    case_ids = set()
+    for row in cases:
+        case_id = row["案件编号"]
+        case_ids.add(case_id)
+        expected = sha256_bytes(canonical(normalize_case(row)))
+        if latest.get(case_id) != expected:
+            raise ValueError(f"案件记录快照哈希不匹配：{case_id}")
+    if set(latest) != case_ids:
+        raise ValueError("案件与事件日志的关联不完整")
+    return True
 
 
 def csv_safe(value):
@@ -263,6 +282,7 @@ class EvidenceStore:
             evidence = self._normalize_evidence(raw_evidence, case_ids)
             evidence_ids = {row["证据编号"] for row in evidence}
             events = self._normalize_events(raw_events, case_ids, evidence_ids)
+            verify_case_snapshots(cases, events)
             self._verify_evidence_files(evidence)
             self.cases, self.evidence, self.events = cases, evidence, events
         except (OSError, json.JSONDecodeError, TypeError, AttributeError, ValueError) as exc:
@@ -275,6 +295,7 @@ class EvidenceStore:
         evidence = self._normalize_evidence(evidence, case_ids)
         evidence_ids = {row["证据编号"] for row in evidence}
         events = self._normalize_events(events, case_ids, evidence_ids)
+        verify_case_snapshots(cases, events)
         payload = {
             "format": BACKUP_FORMAT,
             "version": BACKUP_VERSION,
@@ -296,7 +317,12 @@ class EvidenceStore:
             raise
         self.cases, self.evidence, self.events = cases, evidence, events
 
-    def _append_event(self, events, case_id, kind, description, evidence_id=""):
+    def _append_event(self, events, case_id, kind, description, evidence_id="", case_snapshot=None):
+        if case_snapshot is None:
+            case_snapshot = next((row for row in self.cases if row["案件编号"] == case_id), None)
+        if case_snapshot is None:
+            raise ValueError(f"找不到案件快照：{case_id}")
+        snapshot_hash = sha256_bytes(canonical(normalize_case(case_snapshot)))
         previous = events[-1]["事件哈希"] if events else ZERO_HASH
         event = {
             "序号": str(len(events) + 1),
@@ -305,6 +331,7 @@ class EvidenceStore:
             "事件类型": kind,
             "说明": description,
             "证据编号": evidence_id,
+            "记录快照SHA256": snapshot_hash,
             "前序哈希": previous,
             "事件哈希": "",
         }
@@ -315,7 +342,7 @@ class EvidenceStore:
         item = normalize_case(row)
         if any(existing["案件编号"] == item["案件编号"] for existing in self.cases):
             raise ValueError("案件编号已存在")
-        events = self._append_event(list(self.events), item["案件编号"], "创建案件", "建立售后案件记录")
+        events = self._append_event(list(self.events), item["案件编号"], "创建案件", "建立售后案件记录", case_snapshot=item)
         self._commit(self.cases + [item], self.evidence, events)
 
     def update_case(self, case_id, row):
@@ -332,9 +359,9 @@ class EvidenceStore:
         if not changes:
             return
         description = "更新字段：" + "、".join(changes)
-        events = self._append_event(list(self.events), case_id, "更新案件", description)
+        events = self._append_event(list(self.events), case_id, "更新案件", description, case_snapshot=item)
         if current["状态"] != item["状态"]:
-            events = self._append_event(events, case_id, "状态变更", f"{current['状态']} → {item['状态']}")
+            events = self._append_event(events, case_id, "状态变更", f"{current['状态']} → {item['状态']}", case_snapshot=item)
         cases = [item if row["案件编号"] == case_id else row for row in self.cases]
         self._commit(cases, self.evidence, events)
 
@@ -370,7 +397,8 @@ class EvidenceStore:
                 "SHA256": digest,
                 "添加时间": datetime.now().isoformat(timespec="seconds"),
             }
-            events = self._append_event(list(self.events), case_id, "添加证据", f"{source.name} | SHA256 {digest}", evidence_id)
+            current_case = next(row for row in self.cases if row["案件编号"] == case_id)
+            events = self._append_event(list(self.events), case_id, "添加证据", f"{source.name} | SHA256 {digest}", evidence_id, case_snapshot=current_case)
             self._commit(self.cases, self.evidence + [item], events)
             return item
         except Exception:
@@ -398,7 +426,7 @@ class EvidenceStore:
             return 0
         events = list(self.events)
         for row in incoming:
-            events = self._append_event(events, row["案件编号"], "CSV 导入", "批量导入案件")
+            events = self._append_event(events, row["案件编号"], "CSV 导入", "批量导入案件", case_snapshot=row)
         self._commit(self.cases + incoming, self.evidence, events)
         return len(incoming)
 
@@ -422,6 +450,7 @@ class EvidenceStore:
         errors = []
         try:
             verify_event_chain(self.events)
+            verify_case_snapshots(self.cases, self.events)
         except ValueError as exc:
             errors.append(str(exc))
         for row in self.evidence:
@@ -578,6 +607,7 @@ class EvidenceStore:
             evidence = self._normalize_evidence(raw_evidence, case_ids)
             evidence_ids = {row["证据编号"] for row in evidence}
             events = self._normalize_events(raw_events, case_ids, evidence_ids)
+            verify_case_snapshots(cases, events)
             referenced_members = {"data.json"} | {f"evidence/{row['存储路径']}" for row in evidence}
             if actual_names != referenced_members:
                 raise ValueError("备份包含未引用的文件或缺少证据文件")

@@ -1,5 +1,6 @@
 import csv
 import importlib.util
+import json
 from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -12,14 +13,17 @@ SPEC.loader.exec_module(MODULE)
 
 def batch(batch_id="LOT-001", *, sku="SKU-01", name="牛奶", expiry=None, qty="10", received=None):
     today = date.today()
+    expiry = expiry or today + timedelta(days=10)
+    received = received or min(today, expiry)
+    produced = min(today, received)
     return {
         "批次编号": batch_id,
         "商品编码": sku,
         "商品名称": name,
         "供应商": "测试供应商",
-        "生产日期": today.isoformat(),
-        "到期日期": (expiry or today + timedelta(days=10)).isoformat(),
-        "入库日期": (received or today).isoformat(),
+        "生产日期": produced.isoformat(),
+        "到期日期": expiry.isoformat(),
+        "入库日期": received.isoformat(),
         "当前数量": qty,
         "单位": "盒",
         "成本单价": "2.50",
@@ -209,6 +213,6 @@ def test_expiry_state_boundaries(tmp_path):
     today = date.today()
     assert store.expiry_state(MODULE.normalize_batch(batch("A", expiry=today - timedelta(days=1)))) == ("已过期", -1)
     assert store.expiry_state(MODULE.normalize_batch(batch("B", expiry=today))) == ("3日内到期", 0)
-    assert store.expiry_state(MODULE.normalize_batch(batch("C", expiry=today + timedelta(days=4)))) == ("7日内到期", 4)
-    assert store.expiry_state(MODULE.normalize_batch(batch("D", expiry=today + timedelta(days=15)))) == ("30日内到期", 15)
+    assert store.expiry_state(MODULE.normalize_batch(batch("C", expiry=today + timedelta(days=4)))) == ("4–7日内到期", 4)
+    assert store.expiry_state(MODULE.normalize_batch(batch("D", expiry=today + timedelta(days=15)))) == ("8–30日内到期", 15)
     assert store.expiry_state(MODULE.normalize_batch(batch("E", expiry=today + timedelta(days=31)))) == ("正常", 31)

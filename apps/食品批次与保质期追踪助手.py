@@ -9,7 +9,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, simpledialog, ttk
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
@@ -56,6 +56,8 @@ def parse_date(value, field, *, required=True):
 
 
 def normalize_batch(row):
+    if not isinstance(row, dict):
+        raise ValueError("批次记录必须是对象")
     item = {field: str(row.get(field, "") or "").strip() for field in FIELDS}
     for field in ("批次编号", "商品编码", "商品名称", "到期日期", "入库日期", "单位"):
         if not item[field]:
@@ -80,6 +82,8 @@ def normalize_batch(row):
 
 
 def normalize_movement(row, batch_ids):
+    if not isinstance(row, dict):
+        raise ValueError("库存流水记录必须是对象")
     item = {field: str(row.get(field, "") or "").strip() for field in MOVEMENT_FIELDS}
     if not item["流水编号"] or not item["批次编号"]:
         raise ValueError("库存流水编号和批次编号不能为空")
@@ -198,8 +202,8 @@ class FoodBatchStore:
             raise ValueError("找不到要编辑的批次")
         item = normalize_batch(row)
         item["当前数量"] = current["当前数量"]
-        if item["批次编号"] != batch_id and any(r["批次编号"] == item["批次编号"] for r in self.batches):
-            raise ValueError("批次编号已存在")
+        if item["批次编号"] != batch_id:
+            raise ValueError("批次编号创建后不可修改，以保持批次追溯关系")
         batches = [item if r["批次编号"] == batch_id else r for r in self.batches]
         movements = list(self.movements)
         self._commit(batches, movements)
@@ -266,19 +270,18 @@ class FoodBatchStore:
         if remaining > 0:
             raise ValueError(f"未过期可用库存不足，缺少 {decimal_text(remaining)}")
         allocation_map = dict(allocations)
-        batches = []
+        updated_by_id = {}
         movements = list(self.movements)
         result = []
-        for batch in self.batches:
-            take = allocation_map.get(batch["批次编号"], Decimal("0"))
-            if take:
-                updated = dict(batch)
-                updated["当前数量"] = decimal_text(Decimal(batch["当前数量"]) - take)
-                batches.append(updated)
-                movements.append(self._movement(updated, "出库", "减少", take, destination, reason))
-                result.append({"批次编号": batch["批次编号"], "数量": decimal_text(take), "到期日期": batch["到期日期"]})
-            else:
-                batches.append(batch)
+        by_id = {batch["批次编号"]: batch for batch in self.batches}
+        for batch_id, take in allocations:
+            original = by_id[batch_id]
+            updated = dict(original)
+            updated["当前数量"] = decimal_text(Decimal(original["当前数量"]) - take)
+            updated_by_id[batch_id] = updated
+            movements.append(self._movement(updated, "出库", "减少", take, destination, reason))
+            result.append({"批次编号": batch_id, "数量": decimal_text(take), "到期日期": original["到期日期"]})
+        batches = [updated_by_id.get(batch["批次编号"], batch) for batch in self.batches]
         self._commit(batches, movements)
         return result
 
@@ -359,9 +362,9 @@ class FoodBatchStore:
         if days <= 3:
             return "3日内到期", days
         if days <= 7:
-            return "7日内到期", days
+            return "4–7日内到期", days
         if days <= 30:
-            return "30日内到期", days
+            return "8–30日内到期", days
         return "正常", days
 
     def fefo_batches(self, sku=None, *, today=None):
@@ -409,7 +412,7 @@ class App:
         self.state_filter = tk.StringVar(value="全部")
         combo = ttk.Combobox(
             filters, textvariable=self.state_filter, state="readonly", width=14,
-            values=("全部", "已过期", "3日内到期", "7日内到期", "30日内到期", "正常", "已清零"),
+            values=("全部", "已过期", "3日内到期", "4–7日内到期", "8–30日内到期", "正常", "已清零"),
         )
         combo.pack(side="left")
         combo.bind("<<ComboboxSelected>>", lambda *_: self.refresh())
@@ -546,7 +549,7 @@ class App:
         batch = self.selected_batch()
         if not batch:
             return
-        reason = tk.simpledialog.askstring("作废批次", "请输入作废原因：", parent=self.root)
+        reason = simpledialog.askstring("作废批次", "请输入作废原因：", parent=self.root)
         if reason is None:
             return
         try:
@@ -626,10 +629,13 @@ def self_test():
         store.add_batch({
             "批次编号": "LOT-A", "商品编码": "SKU-1", "商品名称": "测试食品",
             "供应商": "测试供应商", "生产日期": today.isoformat(),
-            "到期日期": (today.replace(day=1)).isoformat() if False else today.replace(day=1).isoformat(),
-            "入库日期": today.replace(day=1).isoformat(), "当前数量": "5",
+            "到期日期": date.fromordinal(today.toordinal() + 10).isoformat(),
+            "入库日期": today.isoformat(), "当前数量": "5",
             "单位": "件", "成本单价": "2.5", "库位": "A1", "备注": "",
         })
+        store.issue_by_fefo("SKU-1", "1", "self-test", "smoke-test", today=today)
+        assert store.batches[0]["当前数量"] == "4"
+        assert len(store.movements) == 2
         assert PRODUCT == "食品批次与保质期追踪助手"
         print("SELF_TEST_OK", flush=True)
 

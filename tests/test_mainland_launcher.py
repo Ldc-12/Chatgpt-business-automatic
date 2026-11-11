@@ -25,6 +25,7 @@ def test_launcher_lists_every_business_exe():
         "MainlandQuotationGenerator.exe",
         "MainlandExpenseReimbursement.exe",
         "MainlandRepairWorkOrderManager.exe",
+        "MainlandAfterSalesEvidenceAssistant.exe",
         "MainlandStoreScheduleAssistant.exe",
         "MainlandContractLedgerAssistant.exe",
         "MainlandConstructionSettlementAssistant.exe",
@@ -32,7 +33,7 @@ def test_launcher_lists_every_business_exe():
     ]
     actual = [exe for _, exe in module.TOOLS]
     assert actual == expected
-    assert len(module.TOOLS) == 19
+    assert len(module.TOOLS) == 20
 
 
 def test_frozen_launcher_resolves_sibling_exes_next_to_launcher(tmp_path, monkeypatch):
@@ -47,7 +48,7 @@ def test_source_launcher_uses_source_directory(monkeypatch):
     assert module.application_directory() == Path(module.__file__).resolve().parent
 
 
-def test_launcher_manual_lists_all_eighteen_tools_and_same_folder_rule():
+def test_launcher_manual_lists_all_twenty_tools_and_same_folder_rule():
     manual = (Path(__file__).resolve().parents[1] / "docs" / "manuals" / "00-实用效率工具箱-用户说明书.md").read_text(encoding="utf-8")
     for name, _ in module.TOOLS:
         assert name in manual

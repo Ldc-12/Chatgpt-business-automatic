@@ -1,4 +1,5 @@
 import csv
+import io
 import hashlib
 import importlib.util
 import io
@@ -306,3 +307,54 @@ def test_noninteractive_self_test_exercises_backup_restore(tmp_path):
     )
     assert result.returncode == 0
     assert "SELF_TEST_OK" in result.stdout
+
+def test_case_bundle_is_scoped_to_selected_case_and_formula_safe(tmp_path):
+    store = MODULE.EvidenceStore(tmp_path / "cases.json")
+    store.add_case(case("CASE-001"))
+    store.add_case(case("CASE-002", 订单编号="ORDER-002", 商品名称="另一件商品"))
+    source = tmp_path / "proof.txt"
+    source.write_bytes(b"case-specific evidence")
+    store.add_evidence("CASE-001", source, '=HYPERLINK("https://example.invalid")')
+
+    output = tmp_path / "case-001.zip"
+    store.export_case_bundle("CASE-001", output)
+    with zipfile.ZipFile(output) as archive:
+        chain = json.loads(archive.read("event-chain.json").decode("utf-8"))
+        assert chain["scope"] == "case-only"
+        assert chain["case_id"] == "CASE-001"
+        assert all(event["案件编号"] == "CASE-001" for event in chain["events"])
+        assert "CASE-002" not in json.dumps(chain, ensure_ascii=False)
+
+        events = list(csv.DictReader(io.StringIO(archive.read("events.csv").decode("utf-8-sig"))))
+        assert events and all(row["案件编号"] == "CASE-001" for row in events)
+
+        evidence_rows = list(csv.DictReader(io.StringIO(archive.read("evidence-index.csv").decode("utf-8-sig"))))
+        assert evidence_rows[0]["说明"].startswith("'=")
+
+
+def test_restore_rejects_malformed_manifest_size_without_overwriting(tmp_path):
+    source = MODULE.EvidenceStore(tmp_path / "source" / "cases.json")
+    source.add_case(case())
+    good = tmp_path / "good.zip"
+    source.backup(good)
+    with zipfile.ZipFile(good) as archive:
+        members = {name: archive.read(name) for name in archive.namelist()}
+    manifest = json.loads(members["manifest.json"].decode("utf-8"))
+    manifest["files"]["data.json"]["size"] = None
+    members["manifest.json"] = json.dumps(manifest).encode("utf-8")
+
+    bad = tmp_path / "malformed-manifest.zip"
+    with zipfile.ZipFile(bad, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for name, data in members.items():
+            archive.writestr(name, data)
+
+    target = MODULE.EvidenceStore(tmp_path / "target" / "cases.json")
+    target.add_case(case("KEEP-001"))
+    before = (list(target.cases), list(target.events))
+    try:
+        target.restore(bad)
+    except ValueError as exc:
+        assert "文件大小无效" in str(exc)
+    else:
+        raise AssertionError("malformed manifest size should be rejected")
+    assert (target.cases, target.events) == before

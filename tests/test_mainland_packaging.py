@@ -27,6 +27,7 @@ APP_ENTRYPOINTS = [
     "SOP项目执行管理.py",
     "实用效率工具箱.py",
     "小店库存盘点助手.py",
+    "食品批次与保质期追踪助手.py",
     "供应商采购比价助手.py",
     "报价单生成器.py",
     "费用报销管理助手.py",
@@ -86,7 +87,7 @@ def test_expense_reimbursement_product_is_in_build_matrix_and_customer_package()
     assert 'product: "费用报销管理助手"' in workflow
     assert "tests/test_mainland_expense_reimbursement.py" in workflow
     assert "MainlandExpenseReimbursement" in workflow
-    assert "19 款 Windows EXE（18 款业务工具及工具箱启动器）" in workflow
+    assert "20 款 Windows EXE（19 款业务工具及工具箱启动器）" in workflow
     assert "费用报销管理助手.json" in workflow
 
 
@@ -145,7 +146,7 @@ def test_contract_ledger_product_is_in_build_matrix_and_customer_package():
     assert "MainlandContractLedgerAssistant" in workflow
     assert "合同台账与到期提醒助手.json" in workflow
     assert "MainlandContractLedgerAssistant.exe" in launcher
-    assert len(APP_ENTRYPOINTS) == 19
+    assert len(APP_ENTRYPOINTS) == 20
 
 
 
@@ -180,7 +181,7 @@ def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package()
     assert "MainlandRentalLedgerAssistant.exe" in launcher
     assert "物业租金与押金管理助手" in license_tests
     assert "19 款 Windows EXE（18 款业务工具及工具箱启动器）" in workflow
-    assert "全部 18 款业务工具 + 工具箱启动器" in workflow
+    assert "全部 19 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 19
 
 
@@ -192,11 +193,18 @@ def test_every_standalone_delivery_zip_has_its_matching_chinese_manual():
         for line in workflow.splitlines()
         if line.strip().startswith("manual: ")
     ]
-    assert len(manual_names) == 19
-    assert len(set(manual_names)) == 19
+    assert len(manual_names) == 20
+    assert len(set(manual_names)) == 20
     for name in manual_names:
         assert (root / "docs" / "manuals" / name).is_file(), name
     assert "z.write('docs/manuals/${{ matrix.manual }}','说明书/${{ matrix.manual }}')" in workflow
+
+
+def test_food_batch_readme_discloses_offline_fefo_and_traceability():
+    text = module.render_mainland_readme("食品批次与保质期追踪助手")
+    assert "FEFO" in text
+    assert "过期库存自动排除" in text
+    assert "批次流水" in text
 
 
 def test_contract_readme_discloses_versioned_offline_review_scope():

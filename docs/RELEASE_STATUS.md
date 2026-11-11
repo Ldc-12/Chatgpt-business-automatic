@@ -647,3 +647,45 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - `tools/issue_license.py` 只读取 `--private-key` 指定的现有文件、派生公钥并签名；不会生成私钥。`tools/export_license_public_key.py` 只从现有私钥导出公钥和指纹；也不会生成私钥。因此不能假定 `seller-private.pem` 曾自动出现在用户电脑。
 - 历史公钥变更：2026-09-23 初始客户端提交 `26066f7` 使用 `OYI/...` 公钥；配置公钥初始提交 `b7af0f0` 使用同一值；配置文件随后在 `376ee09` 独立改为 `EAK4...`；客户端又在 `6d1dccb` 独立改为 `aVE...`，并在 `c8f3014` 修正 PEM 算法标识拼写。两次独立修改没有形成当前一致的客户端/配置公钥。
 - 以上历史无法证明哪把公钥对应真实卖家私钥，也无法证明任何私钥已安全交付。**不要求用户下载导出脚本、不要求搜索一个未确认存在的文件、不要求上传私钥；不猜测、不替换、不新造生产密钥。**只有在确认存在某个外部保管的真实私钥后，才可让用户在本机导出其公钥/指纹进行只读比对；若确实从未生成私钥，必须先由用户明确决定是否允许另行制定密钥轮换和安全托管方案，当前授权激活继续阻塞。
+
+
+## 2026-11-11 PR #29：闲鱼售后纠纷证据链助手合并与主线构建 #313 验收
+
+### 代码与功能
+- PR [#29 Add offline after-sales dispute evidence-chain assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/29) 已合并。
+- 主线合并提交：`040172ce6028e55955d644a3a1d3a755d01d1836`。
+- 新增产品：`apps/售后纠纷证据链管理助手.py`，授权产品 ID：`售后纠纷证据链管理助手`。
+- 功能包括：售后案件台账、响应截止状态、证据文件本地归档、文件大小/SHA256、追加式哈希事件链、案件字段快照 SHA256、案件范围证据 ZIP、CSV 安全导出、全量备份/恢复。
+- 每条事件绑定案件字段快照 SHA256；完整性校验会将最新快照与当前案件记录比对，发现绕过应用直接修改案件字段的情况。案件导出只包含当前案件事件，避免把其他买家/订单事件泄露到单案件包。
+- 哈希链不是数字签名或可信时间戳；拥有本地完整写权限的人仍可重写整个数据文件并重新计算哈希。它不证明证据来源、形成时间或法律可采性。软件不登录或抓取闲鱼，不自动申诉，不依赖 VPN、ChatGPT、外部 AI 或云服务。
+- 新增中文说明书：`docs/manuals/20-售后纠纷证据链管理助手-用户说明书.md`；已加入工具箱启动器、独立授权路径测试、Windows EXE 矩阵及 B 门店经营系列套餐。
+
+### PR Windows 验证
+- PR Windows Actions：[run #312](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42958040720)，head：`d67ead4a20278f4fe05c70ae8a9d7cf520576042`，22/22 jobs success。
+- 售后证据工具测试：58 passed；源程序 self-test 输出 `SELF_TEST_OK`；冻结 EXE 自测在 Windows 上退出码 0，并输出 `FROZEN_EXE_SELF_TEST_OK`。
+- 独立产品 artifact：`mainland-after-sales-evidence-windows`，ID `13827792273`，29,613,118 bytes；下载后外层 ZIP CRC 通过，SHA256 `1f493227862a8178bf64cff2a498b852f4ffa5a2cef28187a58fbcb65dc8a9b8`。内层单品 ZIP 14,800,256 bytes，SHA256 `1ad040984fd9c51f5969a740b2aa94c53b929753886d0f122e40a24f7b351344`，3 项：EXE、README、对应中文说明书；CRC 通过。
+- PR 客户包 artifact：ID `13828615408`；内层 ZIP 351,278,267 bytes，SHA256 `df110e07ff4c82e960d7d8bc05021e7d8c1cdcbfc67ab39a41ce083aa4515b4c`。Manifest artifact ID `13827419654`，声明字节数和 SHA256 与下载内层 ZIP 完全一致。PR 分类套餐 artifact ID `13828410995`；A/B/C/D/E 分别为 5/6/4/3/2 款，5 个内层 ZIP CRC 均通过。以上是 PR 验证产物，不作为主线发布 artifact。
+
+### 合并后的 main Windows EXE 构建与客户包
+- Mainline Windows Actions：[run #313](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42958664332)，提交：`040172ce6028e55955d644a3a1d3a755d01d1836`，22/22 jobs success；21 个 Windows 矩阵构建任务与客户套餐任务全部成功，无失败 job。
+- 主线售后证据工具：58 passed；源程序自测通过；PyInstaller Windows EXE 构建成功；冻结 EXE self-test 退出码 0。
+- 主客户包 artifact：`mainland-phase1-customer-package`，ID `13828008669`，351,377,197 bytes；外层 ZIP CRC 通过，SHA256 `f6ef4c405f10707d06a6c54f11ecdf39fc1e36b3baf08af9d6ebe648a903d804`。
+- 已实际下载内层 `Phase1-Mainland-Windows-Tools.zip`：351,278,099 bytes，SHA256 `d3966ab7c5076568e204750c50ca30c12247e3c49b4542591a8b270d52c7d117`；`ZipFile.testzip() = None`。共 48 个条目（46 个文件、2 个目录）：21 个 EXE（20 款业务软件 + 工具箱启动器）、24 个 Markdown 文件、1 份套餐说明 TXT。24 个 Markdown 包括 20 份产品说明书、1 份工具箱说明书、1 份说明书索引、1 份分类套餐目录、1 份大陆版 README。新售后证据 EXE 与 `20-售后纠纷证据链管理助手-用户说明书.md` 均在包内。
+- 内层客户 ZIP 所有文件时间戳：2026-11-11 04:23:38 UTC（中国标准时间 12:23:38）；内层 ZIP 条目时间戳 04:23:46 UTC；客户包 artifact 创建时间 04:23:56 UTC（中国标准时间 12:23:56）。
+- Manifest artifact ID `13828427035`，783 bytes；声明内层 ZIP `351278099` bytes、SHA256 `d3966ab7c5076568e204750c50ca30c12247e3c49b4542591a8b270d52c7d117`、19 个分片；与实际下载内层 ZIP 字节数和 SHA256 完全一致。
+- 分类套餐 artifact：`mainland-phase1-series-packages`，ID `13828276561`，336,691,273 bytes；外层 ZIP CRC 通过，5 个内层 ZIP 均 CRC 通过：A 办公效率 5 款、B 门店经营 6 款、C 财务交易 4 款、D 合同工程物业 3 款、E 客户个人事务 2 款。B 套餐已包含“售后纠纷证据链管理助手”，且附对应说明书和系列说明。
+- 售后单品主线 artifact：ID `13827329184`，29,615,913 bytes；外层 ZIP CRC 通过，内层单品 ZIP 14,801,832 bytes，SHA256 `a7a895d9fc3f66ffa51ab98b30cec0c4fc9994c3cb139e563cdcd5ea7f4f5a8d`，含 EXE、README、说明书三项，CRC 通过。
+
+### Autonomous Business Engine
+- main ABE Actions：[run #411](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42958664388)，提交同为 `040172ce6028e55955d644a3a1d3a755d01d1836`；build 与 deploy 均 success。
+- 自动化引擎测试：252 passed；product_factory 生成 12 个产品；xianyu_factory 生成 12 个闲鱼商品目录条目。
+- Pages artifact ID `13827913533`，47,768 bytes；下载后 ZIP CRC 通过，SHA256 `d1024fb51e9a0729d1689ec509957dbf72d47d47706804f104d9a0f433421cc1`；内含 198 个 TAR 条目、12 个 delivery 页面、12 个 Xianyu listing 页面，以及 mainland/xianyu 索引。
+
+### 失败修复记录
+- PR 初次 Windows run #307 曾失败：证据篡改测试写入了不同长度文件，先触发大小变化检查而非 SHA256 检查；说明书唯一性断言仍按 20 份而非 21 份计算。已将篡改样本改为相同字节长度，并把唯一说明书数量改为 21。最终 PR run #312 和合并后 main run #313 均通过。
+- 旧的主线 run #306 客户包（20 个 EXE、19 款业务软件 + 启动器）已被本节 run #313 的 21 个 EXE 主线包取代；不可将旧包当成最新包。
+
+### 最终验收阻塞仍然存在
+- 客户包和 Windows CI 构建通过，不等于真实 Windows GUI 全流程、卖家授权签发、首次激活、退出重启后再次验证已经完成。
+- `src/license.py` 内嵌公钥与 `config/mainland_license_public_key.pem` 的 SHA256 指纹仍不一致；本轮没有读取、上传、生成、猜测或替换卖家私钥，也没有修改任何生产公钥。
+- 仍须在真实 Windows 电脑完成逐款 GUI、保存/重启、CSV、备份恢复验收；并在确认真实卖家密钥来源后完成公钥匹配、签发、激活和重启复验。**所有商品继续标记为待最终验收，尚未达到闲鱼正式上架标准。**

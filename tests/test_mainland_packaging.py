@@ -236,6 +236,7 @@ def test_food_batch_product_is_in_build_matrix_launcher_license_and_store_series
 def test_after_sales_evidence_readme_discloses_hash_chain_limits():
     text = module.render_mainland_readme("售后纠纷证据链管理助手")
     assert "SHA256" in text
+    assert "案件字段快照 SHA256" in text
     assert "哈希链仅用于发现本地记录变化" in text
     assert "不自动连接或抓取交易平台" in text
 

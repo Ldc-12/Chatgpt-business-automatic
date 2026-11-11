@@ -216,3 +216,34 @@ def test_expiry_state_boundaries(tmp_path):
     assert store.expiry_state(MODULE.normalize_batch(batch("C", expiry=today + timedelta(days=4)))) == ("4–7日内到期", 4)
     assert store.expiry_state(MODULE.normalize_batch(batch("D", expiry=today + timedelta(days=15)))) == ("8–30日内到期", 15)
     assert store.expiry_state(MODULE.normalize_batch(batch("E", expiry=today + timedelta(days=31)))) == ("正常", 31)
+
+
+def test_batch_id_cannot_be_changed_after_history_exists(tmp_path):
+    store = MODULE.FoodBatchStore(tmp_path / "food.json")
+    store.add_batch(batch())
+    changed = batch("LOT-RENAMED")
+    try:
+        store.update_batch("LOT-001", changed)
+    except ValueError as exc:
+        assert "不可修改" in str(exc)
+    else:
+        raise AssertionError("batch ID change should be rejected")
+    assert store.batches[0]["批次编号"] == "LOT-001"
+    assert store.movements[0]["批次编号"] == "LOT-001"
+
+
+def test_fefo_requires_sku_destination_and_reason(tmp_path):
+    store = MODULE.FoodBatchStore(tmp_path / "food.json")
+    store.add_batch(batch())
+    for args in [
+        ("", "1", "门店", "销售"),
+        ("SKU-01", "1", "", "销售"),
+        ("SKU-01", "1", "门店", ""),
+    ]:
+        try:
+            store.issue_by_fefo(*args)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("incomplete FEFO issue should be rejected")
+    assert store.batches[0]["当前数量"] == "10"

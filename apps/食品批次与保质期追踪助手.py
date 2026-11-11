@@ -245,6 +245,8 @@ class FoodBatchStore:
         self._commit(batches, movements)
 
     def issue_by_fefo(self, sku, quantity, destination, reason, *, today=None):
+        if not sku.strip():
+            raise ValueError("商品编码不能为空")
         if not destination.strip():
             raise ValueError("出库去向不能为空")
         if not reason.strip():
@@ -331,7 +333,18 @@ class FoodBatchStore:
             "batches": self.batches,
             "movements": self.movements,
         }
-        Path(path).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temp = target.with_name(target.name + ".tmp")
+        try:
+            with temp.open("w", encoding="utf-8", newline="") as handle:
+                json.dump(payload, handle, ensure_ascii=False, indent=2)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temp, target)
+        except Exception:
+            temp.unlink(missing_ok=True)
+            raise
 
     def restore(self, path):
         payload = json.loads(Path(path).read_text(encoding="utf-8"))

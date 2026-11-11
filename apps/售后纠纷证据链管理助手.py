@@ -151,6 +151,13 @@ def csv_safe(value):
     return text
 
 
+def csv_restore(value):
+    text = str(value if value is not None else "")
+    if text.startswith("'") and text[1:].lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
+        return text[1:]
+    return text
+
+
 def write_csv(path, fields, rows):
     with open(path, "w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
@@ -379,7 +386,7 @@ class EvidenceStore:
                 raise ValueError("CSV 必须包含全部案件字段：" + "、".join(CASE_FIELDS))
             for line, row in enumerate(reader, start=2):
                 try:
-                    incoming.append(normalize_case(row))
+                    incoming.append(normalize_case({key: csv_restore(value) for key, value in row.items()}))
                 except ValueError as exc:
                     raise ValueError(f"第 {line} 行：{exc}") from exc
         self._unique(incoming, "案件编号", "CSV 案件编号")
@@ -477,9 +484,18 @@ class EvidenceStore:
         events_csv.seek(0)
         entries["events.csv"] = events_csv.read().encode("utf-8-sig")
         events_csv.close()
-        for row in self.evidence_for(case_id):
+        entries["event-chain.json"] = json.dumps(self.events, ensure_ascii=False, indent=2).encode("utf-8")
+        evidence_rows = self.evidence_for(case_id)
+        evidence_csv = tempfile.SpooledTemporaryFile(mode="w+", encoding="utf-8", newline="")
+        evidence_writer = csv.DictWriter(evidence_csv, fieldnames=EVIDENCE_FIELDS)
+        evidence_writer.writeheader()
+        evidence_writer.writerows(evidence_rows)
+        evidence_csv.seek(0)
+        entries["evidence-index.csv"] = evidence_csv.read().encode("utf-8-sig")
+        evidence_csv.close()
+        for row in evidence_rows:
             source = self._evidence_path(row["存储路径"])
-            entries[f"evidence/{Path(row['原始文件名']).name}"] = source.read_bytes()
+            entries[f"evidence/{row['证据编号']}_{safe_component(row['原始文件名'])}"] = source.read_bytes()
         self._atomic_zip(path, entries, "mainland-after-sales-case-export")
 
     def backup(self, path):
@@ -509,23 +525,24 @@ class EvidenceStore:
             names = archive.namelist()
             if len(names) != len(set(names)):
                 raise ValueError("备份包含重复文件名")
-            for name in names:
-                if name.endswith("/"):
-                    continue
+            file_names = [name for name in names if not name.endswith("/")]
+            if sum(archive.getinfo(name).file_size for name in file_names) > MAX_BACKUP_BYTES:
+                raise ValueError("备份解压后的总大小超过 1 GiB，拒绝恢复")
+            for name in file_names:
                 safe_relative(name)
-            if "manifest.json" not in names or "data.json" not in names:
+            if "manifest.json" not in file_names or "data.json" not in file_names:
                 raise ValueError("备份缺少 manifest.json 或 data.json")
             manifest = json.loads(archive.read("manifest.json").decode("utf-8"))
-            if manifest.get("format") != BACKUP_FORMAT:
+            if not isinstance(manifest, dict) or manifest.get("format") != BACKUP_FORMAT:
                 raise ValueError("备份格式不受支持")
             expected = manifest.get("files")
-            actual_names = set(names) - {"manifest.json"}
+            actual_names = set(file_names) - {"manifest.json"}
             if not isinstance(expected, dict) or set(expected) != actual_names:
                 raise ValueError("备份清单与 ZIP 文件列表不一致")
             for name in actual_names:
                 data = archive.read(name)
                 meta = expected[name]
-                if len(data) != int(meta.get("size", -1)) or sha256_bytes(data) != meta.get("sha256"):
+                if not isinstance(meta, dict) or len(data) != int(meta.get("size", -1)) or sha256_bytes(data) != meta.get("sha256"):
                     raise ValueError(f"备份文件 SHA256 或大小不匹配：{name}")
             payload = json.loads(archive.read("data.json").decode("utf-8"))
             if not isinstance(payload, dict) or payload.get("format") != BACKUP_FORMAT or payload.get("version") != BACKUP_VERSION:
@@ -539,6 +556,9 @@ class EvidenceStore:
             evidence = self._normalize_evidence(raw_evidence, case_ids)
             evidence_ids = {row["证据编号"] for row in evidence}
             events = self._normalize_events(raw_events, case_ids, evidence_ids)
+            referenced_members = {"data.json"} | {f"evidence/{row['存储路径']}" for row in evidence}
+            if actual_names != referenced_members:
+                raise ValueError("备份包含未引用的文件或缺少证据文件")
             for row in evidence:
                 member = f"evidence/{row['存储路径']}"
                 if member not in actual_names:
@@ -743,6 +763,7 @@ class App:
         except (ValueError, OSError) as exc:
             messagebox.showerror("归档失败", str(exc))
             return
+        self.refresh()
         messagebox.showinfo("证据已归档", f"已复制到本地证据目录。\nSHA256：{item['SHA256']}")
 
     def export_case(self):

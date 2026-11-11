@@ -536,9 +536,9 @@ class App:
         def save():
             try:
                 allocations = self.store.issue_by_fefo(sku.get().strip(), quantity.get(), destination.get(), reason.get())
-                detail = "\\n".join(f"{item['批次编号']}：{item['数量']}（到期 {item['到期日期']}）" for item in allocations)
+                detail = "\n".join(f"{item['批次编号']}：{item['数量']}（到期 {item['到期日期']}）" for item in allocations)
                 self.refresh()
-                messagebox.showinfo("出库完成", "FEFO 批次分配：\\n" + detail, parent=win)
+                messagebox.showinfo("出库完成", "FEFO 批次分配：\n" + detail, parent=win)
                 win.destroy()
             except (ValueError, OSError) as exc:
                 messagebox.showerror("出库失败", str(exc), parent=win)

@@ -15,6 +15,7 @@ TOOLS = [
     ("会议行动项管理", "MainlandMeetingActions.exe"),
     ("SOP 项目执行管理", "MainlandSOPManager.exe"),
     ("小店库存盘点助手", "MainlandInventoryAssistant.exe"),
+    ("食品批次与保质期追踪助手", "MainlandFoodBatchExpiryAssistant.exe"),
     ("供应商采购比价助手", "MainlandPurchaseCompare.exe"),
     ("报价单生成器", "MainlandQuotationGenerator.exe"),
     ("费用报销管理助手", "MainlandExpenseReimbursement.exe"),
@@ -38,7 +39,7 @@ def application_directory():
 
 
 def self_test():
-    assert len(TOOLS) == 18
+    assert len(TOOLS) == 19
     names = [name for name, _ in TOOLS]
     exes = [exe for _, exe in TOOLS]
     assert len(set(names)) == len(names)

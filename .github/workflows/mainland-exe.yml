@@ -106,6 +106,12 @@ jobs:
             test: tests/test_mainland_inventory.py
             exe: MainlandInventoryAssistant
             manual: 10-小店库存盘点助手-用户说明书.md
+          - key: food-batch
+            product: "食品批次与保质期追踪助手"
+            source: apps/食品批次与保质期追踪助手.py
+            test: tests/test_mainland_food_batch.py
+            exe: MainlandFoodBatchExpiryAssistant
+            manual: 19-食品批次与保质期追踪助手-用户说明书.md
           - key: purchase-compare
             product: "供应商采购比价助手"
             source: apps/供应商采购比价助手.py
@@ -228,11 +234,11 @@ jobs:
           cat > release/README-大陆版.md <<'EOF'
           # 第一阶段 Windows 工具包
 
-          本包包含 19 款 Windows EXE（18 款业务工具及工具箱启动器）。
+          本包包含 20 款 Windows EXE（19 款业务工具及工具箱启动器）。
           使用方式：双击对应 EXE 即可运行。
           数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
           工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。
-          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“小店库存盘点助手.json”“供应商采购比价助手.json”“报价单生成器.json”“费用报销管理助手.json”“售后维修工单管理助手.json”“门店排班考勤助手.json”“合同台账与到期提醒助手.json”“装修工程签证与进度款管理助手.json”“物业租金与押金管理助手.json”）。每款产品的授权文件分开保存。
+          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“小店库存盘点助手.json”“食品批次与保质期追踪助手.json”“供应商采购比价助手.json”“报价单生成器.json”“费用报销管理助手.json”“售后维修工单管理助手.json”“门店排班考勤助手.json”“合同台账与到期提醒助手.json”“装修工程签证与进度款管理助手.json”“物业租金与押金管理助手.json”）。每款产品的授权文件分开保存。
           EOF
           mkdir -p release/package
           mkdir -p release/package/说明书
@@ -243,7 +249,7 @@ jobs:
           文件整理助手 Pro、图片批量处理助手 Pro、PDF 批量工具 Pro、会议行动项管理、SOP 项目执行管理。
 
           系列 B｜门店经营系列｜建议售价 29.9 元
-          小店库存盘点助手、供应商采购比价助手、售后维修工单管理助手、门店排班考勤助手。
+          小店库存盘点助手、食品批次与保质期追踪助手、供应商采购比价助手、售后维修工单管理助手、门店排班考勤助手。
 
           系列 C｜财务与交易系列｜建议售价 29.9 元
           自由职业催款管理工具、小微企业经营收支管理、报价单生成器、费用报销管理助手。
@@ -255,7 +261,7 @@ jobs:
           轻量销售客户跟进工具、求职申请管理 Pro。
 
           系列 F｜全系列综合套餐｜建议售价 39.9 元
-          全部 18 款业务工具 + 工具箱启动器。
+          全部 19 款业务工具 + 工具箱启动器。
 
           以上均为待市场验证的建议售价，不代表实际成交价。分类 ZIP 独立提供，每款软件附对应中文说明书；全系列包保留全部软件及说明书。
           EOF

@@ -23,8 +23,8 @@ def _make_inputs(tmp_path):
 def test_series_catalog_covers_all_18_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 18
-    assert len(assigned) == 18
+    assert len(MODULE.PRODUCTS) == 19
+    assert len(assigned) == 19
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "18 款业务软件 + 工具箱启动器" in catalog
+    assert "19 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -80,3 +80,9 @@ def test_windows_workflow_builds_and_publishes_the_series_packages():
     assert "tools/build_mainland_series_packages.py" in workflow
     assert "mainland-phase1-series-packages" in workflow
     assert "docs/MAINLAND_SERIES_PACKAGES.md" in workflow
+
+
+def test_store_series_contains_food_batch_expiry_assistant():
+    store_series = next(item for item in MODULE.SERIES if item["code"] == "B")
+    assert "food-batch" in store_series["products"]
+    assert MODULE.PRODUCTS["food-batch"][1] == "MainlandFoodBatchExpiryAssistant.exe"

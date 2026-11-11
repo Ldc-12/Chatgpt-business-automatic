@@ -20,6 +20,7 @@ def test_launcher_lists_every_business_exe():
         "MainlandMeetingActions.exe",
         "MainlandSOPManager.exe",
         "MainlandInventoryAssistant.exe",
+        "MainlandFoodBatchExpiryAssistant.exe",
         "MainlandPurchaseCompare.exe",
         "MainlandQuotationGenerator.exe",
         "MainlandExpenseReimbursement.exe",
@@ -31,7 +32,7 @@ def test_launcher_lists_every_business_exe():
     ]
     actual = [exe for _, exe in module.TOOLS]
     assert actual == expected
-    assert len(module.TOOLS) == 18
+    assert len(module.TOOLS) == 19
 
 
 def test_frozen_launcher_resolves_sibling_exes_next_to_launcher(tmp_path, monkeypatch):

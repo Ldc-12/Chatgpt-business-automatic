@@ -698,3 +698,14 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - ABE 测试仍为 252 passed；product_factory 生成 12 个产品，xianyu_factory 生成 12 个闲鱼商品目录条目。
 - 最新 Pages artifact ID `13827823903`，47,773 bytes；下载后 ZIP CRC 通过，SHA256 `ca3f47be81d68d8ff5eef79ec0becf5698a3664b55db79bcfed3adc8d92ca731`；内含 198 个 TAR 条目、12 个 delivery 页面、12 个 Xianyu listing 页面，以及 mainland/xianyu 索引。
 - 该 ABE run 不替代 Windows EXE 构建、客户包内容验收或真实 Windows GUI/授权验收。
+
+## 2026-11-11 PR #32：售后证据归档路径 Windows 兼容性加固
+
+- 发现售后纠纷证据链助手的 ZIP 恢复校验原先主要按 POSIX 路径规则判断；某些 POSIX 合法名称（如 CON.txt、NUL、COM1、带冒号/问号/星号的文件名、尾随空格或句点）在 Windows 文件系统中属于设备名或非法路径，可能导致恢复失败或产生非预期文件系统行为。
+- PR [#32 Reject Windows-unsafe evidence archive paths](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/32) 已合并；合并提交：86af3aa50fb3d7600c9833deb23280991298cd13。
+- 代码修改仅收紧 safe_relative()：拒绝 Windows 保留设备名（含 COM/LPT 数字与上标变体）、控制字符、Windows 禁用字符及尾随空格/句点；正常嵌套相对路径继续允许。
+- 新增 2 项回归测试，覆盖 13 种非法路径与正常嵌套路径。独立本地逻辑检查：13/13 非法路径均拒绝，正常路径接受。
+- PR Mainland Windows EXE Actions [run #314](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42969364179)：22/22 jobs success；售后证据产品 job 130353995303：60 passed in 1.27s，源码 self-test SELF_TEST_OK，Windows 冻结 EXE self-test FROZEN_EXE_SELF_TEST_OK，退出码 0；独立售后 EXE artifact ID 13833096162。
+- PR 客户包 artifact ID 13832447191；PR 分类套餐 artifact ID 13833105918。这些是 PR 构建候选产物，不作为最新 main 客户交付包。
+- 合并后 main HEAD 已更新为上述提交。合并后的 main-push Windows 构建、客户套餐 artifact 与 ABE 运行尚待重新核验；在 main 新构建完成前，最新已核验 main 客户包仍是 run #313（artifact 13828008669），不得用 PR artifact 冒充 main 发布包。
+- 本次未修改任何授权公钥、私钥或签发逻辑；真实 Windows GUI/授权激活仍待最终验收。

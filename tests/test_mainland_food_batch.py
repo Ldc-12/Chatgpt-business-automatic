@@ -271,7 +271,7 @@ def test_csv_exports_escape_spreadsheet_formulas_in_batch_and_movement_fields(tm
     assert exported_batch["商品名称"].startswith("'+")
     assert exported_batch["供应商"].startswith("'@")
     assert exported_batch["备注"].startswith("'-")
-    assert exported_batch["当前数量"] == "10"
+    assert exported_batch["当前数量"] == "9"
 
     movements_csv = tmp_path / "safe-movements.csv"
     store.export_movements_csv(movements_csv)

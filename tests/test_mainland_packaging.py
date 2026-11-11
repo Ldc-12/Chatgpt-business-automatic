@@ -214,3 +214,19 @@ def test_contract_readme_discloses_versioned_offline_review_scope():
     assert "原文行号" in text
     assert "不会自动写入正式台账" in text
     assert "不构成法律意见" in text
+
+
+def test_food_batch_product_is_in_build_matrix_launcher_license_and_store_series():
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
+    license_tests = (root / "tests" / "test_mainland_license.py").read_text(encoding="utf-8")
+    series_builder = (root / "tools" / "build_mainland_series_packages.py").read_text(encoding="utf-8")
+    assert 'key: food-batch' in workflow
+    assert 'product: "食品批次与保质期追踪助手"' in workflow
+    assert "tests/test_mainland_food_batch.py" in workflow
+    assert "MainlandFoodBatchExpiryAssistant" in workflow
+    assert "19-食品批次与保质期追踪助手-用户说明书.md" in workflow
+    assert "MainlandFoodBatchExpiryAssistant.exe" in launcher
+    assert "食品批次与保质期追踪助手" in license_tests
+    assert '"food-batch"' in series_builder

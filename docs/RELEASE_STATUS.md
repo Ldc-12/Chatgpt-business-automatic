@@ -709,3 +709,36 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - PR 客户包 artifact ID 13832447191；PR 分类套餐 artifact ID 13833105918。这些是 PR 构建候选产物，不作为最新 main 客户交付包。
 - 合并后 main HEAD 已更新为上述提交。合并后的 main-push Windows 构建、客户套餐 artifact 与 ABE 运行尚待重新核验；在 main 新构建完成前，最新已核验 main 客户包仍是 run #313（artifact 13828008669），不得用 PR artifact 冒充 main 发布包。
 - 本次未修改任何授权公钥、私钥或签发逻辑；真实 Windows GUI/授权激活仍待最终验收。
+
+
+## 2026-11-11 PR #33 合并、CSV 安全加固与 main run #319 最终验收
+
+### 本轮代码改进
+- PR [#33 Prevent spreadsheet formula execution in food batch CSV exports](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/33) 已合并。
+- 合并提交：`0a697def3173257bfbda8de8f51b2c1ba585632d`。
+- 食品批次助手的“导出批次 CSV”和“导出库存流水”现在都会对去除前导空白后以 `=`、`+`、`-`、`@` 开头的单元格前置英文单引号，避免 Excel/WPS 将商品编码、备注、供应商、去向或原因当作公式执行；本地 JSON 原始数据不变。
+- 新增回归测试覆盖批次编号、商品编码/名称、供应商、备注、库存流水去向/原因、前导空白及数量字段；中文说明书已补充实际 CSV 导入字段流程和安全导出说明。
+- PR 验证 run #318：22/22 jobs success；食品批次产品 53 passed，源码 self-test 为 `SELF_TEST_OK`，Windows 冻结 EXE self-test 为 `FROZEN_EXE_SELF_TEST_OK`（退出码 0）；客户包 job success。
+- 失败迭代没有隐瞒：run #316 的测试夹具把未经规范化的批次编号传给库存调整，触发“找不到所选批次”；修正为读取 store 中规范化后的批次编号。run #317 又把扣减 1 件后的数量误断言为 10，日志实际为 9；已修正断言。最终 run #318 全部通过后才合并。
+
+### 合并后 main Windows EXE 构建
+- main HEAD：`0a697def3173257bfbda8de8f51b2c1ba585632d`。
+- Mainland Windows EXE Actions run #319：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43013197801)，结论 success，22/22 jobs success（21 个产品/启动器 Windows 构建任务 + 1 个客户套餐任务），无失败 job。
+- 食品批次助手 main job：53 passed；源码 self-test 通过；PyInstaller EXE 构建成功；冻结 EXE self-test 退出码 0。单品 artifact `mainland-food-batch-windows` ID `13850229946`，29,596,771 bytes。
+- Autonomous Business Engine run #417：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43013197776)，build/deploy 均 success；自动化引擎测试 255 passed；product_factory 生成 12 个产品页面，xianyu_factory 生成 12 个闲鱼商品目录条目；Pages artifact ID `13850459272`，47,783 bytes。
+
+### 最新 main 客户包实际下载与核验（run #319，不是 PR 候选包）
+- 客户包 artifact：`mainland-phase1-customer-package`，ID `13851492463`，351,390,188 bytes；外层 SHA256：`8f34d0bd8c473305017235fa8ebbe0fe31a6a79ddc932853dbdb6673a5700e3f`。
+- 已实际下载外层 ZIP 并解出内层 `Phase1-Mainland-Windows-Tools.zip`：351,290,633 bytes；SHA256：`60ef8dccb0b43ce1a18ac9d68707b1bebf2ed48421282eddaebbb2de51bffc63`；外层与内层 `ZipFile.testzip() = None`。
+- 内层 ZIP 共 48 个条目（46 个文件、2 个目录）：21 个 EXE（20 款业务工具 + 工具箱启动器）、21 份对应产品说明书、1 份说明书索引、1 份大陆版 README、1 份分类套餐目录、1 份套餐说明 TXT；文档文件合计 25 份。21 个 EXE 均在包内，包含新增的食品批次与保质期追踪助手、售后纠纷证据链管理助手。
+- 内层所有文件时间戳统一为 2026-11-11 19:37:58（中国标准时间）；客户包 artifact 创建时间为 19:38:13。
+- Manifest artifact ID `13852150497`，782 bytes；声明内层 ZIP 字节数 `351290633`、SHA256 `60ef8dccb0b43ce1a18ac9d68707b1bebf2ed48421282eddaebbb2de51bffc63`、分片数 19、分片大小 18 MiB；与实际下载的内层 ZIP 完全一致。
+- 分类套餐 artifact：`mainland-phase1-series-packages`，ID `13850879976`，336,702,379 bytes；外层 CRC 通过，包含 5 个分类 ZIP 和目录。A 办公效率 5 款、B 门店经营 6 款、C 财务与交易 4 款、D 合同工程物业 3 款、E 客户与个人事务 2 款；逐个下载结构核验，五个内层 ZIP 的 CRC 均通过，每包均含对应数量的 EXE、同数量产品说明书及系列说明。
+- 当前套餐说明建议价：A/B/C/D 各 29.9 元，E 19.9 元，F 全系列 39.9 元；均是待市场验证的建议价，不是已验证闲鱼成交价。F 包含 20 款业务工具 + 工具箱启动器。
+
+### 授权与最终验收（状态未改变）
+- 本轮没有读取、上传、生成、猜测、替换或轮换任何生产私钥/公钥；卖家私钥不在仓库。
+- `src/license.py` 内嵌公钥 SHA256 仍为 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` SHA256 仍为 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，两者不一致。
+- 不假定 `seller-private.pem` 曾自动出现在用户电脑，也不要求用户盲目搜索或上传私钥。若用户确认真实卖家私钥确实存在且由其在可信 Windows 电脑保管，最终只需在本机导出公钥 PEM 或 SHA256 指纹供比对；不得发送私钥。若没有已知的真实私钥，必须先由用户明确决定是否制定密钥轮换/安全托管方案。
+- **状态仍为“待最终验收”，不是可正式销售版。** 目前 CI 的源码测试、PyInstaller 构建、冻结 EXE 非交互启动/退出码自测和 ZIP 内容核验均通过；但未完成用户真实 Windows 电脑上的 GUI 全流程、实际卖家密钥匹配、真实签发/激活/重启后再次验证，以及逐款 CSV、数据持久化和备份恢复验收。未完成这些项目之前，不得向用户宣称已达到闲鱼正式上架标准。
+- 当前 main 无未完成 PR。

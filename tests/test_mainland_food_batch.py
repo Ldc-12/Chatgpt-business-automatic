@@ -247,3 +247,38 @@ def test_fefo_requires_sku_destination_and_reason(tmp_path):
         else:
             raise AssertionError("incomplete FEFO issue should be rejected")
     assert store.batches[0]["当前数量"] == "10"
+
+
+def test_csv_exports_escape_spreadsheet_formulas_in_batch_and_movement_fields(tmp_path):
+    store = MODULE.FoodBatchStore(tmp_path / "food.json")
+    assert MODULE.csv_safe_cell(" \t=1+1") == "' \t=1+1"
+    unsafe = batch(
+        batch_id=" =HYPERLINK(\"https://example.invalid\")",
+        sku="=1+1",
+        name="+SUM(1,1)",
+    )
+    unsafe["供应商"] = "@SUM(1,1)"
+    unsafe["备注"] = "-1+1"
+    store.add_batch(unsafe)
+    store.adjust_batch(store.batches[0]["批次编号"], "减少", "1", "=HYPERLINK(\"https://example.invalid\")")
+
+    batches_csv = tmp_path / "safe-batches.csv"
+    store.export_csv(batches_csv)
+    with batches_csv.open(encoding="utf-8-sig", newline="") as handle:
+        exported_batch = next(csv.DictReader(handle))
+    assert exported_batch["批次编号"].startswith("'=")
+    assert exported_batch["商品编码"].startswith("'=")
+    assert exported_batch["商品名称"].startswith("'+")
+    assert exported_batch["供应商"].startswith("'@")
+    assert exported_batch["备注"].startswith("'-")
+    assert exported_batch["当前数量"] == "9"
+
+    movements_csv = tmp_path / "safe-movements.csv"
+    store.export_movements_csv(movements_csv)
+    with movements_csv.open(encoding="utf-8-sig", newline="") as handle:
+        movements = list(csv.DictReader(handle))
+    assert movements[0]["商品编码"].startswith("'=")
+    assert movements[0]["商品名称"].startswith("'+")
+    assert movements[0]["去向"].startswith("'@")
+    assert movements[-1]["原因"].startswith("'=")
+    assert movements[-1]["变动数量"] == "1"

@@ -42,6 +42,14 @@ def decimal_value(value, field, *, allow_zero=True):
 def decimal_text(value):
     return format(value.normalize(), "f") if value else "0"
 
+def csv_safe_cell(value):
+    """Keep spreadsheet programs from evaluating imported text as formulas."""
+    text = "" if value is None else str(value)
+    probe = text.lstrip(" \t\r\n")
+    if probe.startswith(("=", "+", "-", "@")):
+        return "'" + text
+    return text
+
 
 def parse_date(value, field, *, required=True):
     text = str(value or "").strip()
@@ -317,13 +325,19 @@ class FoodBatchStore:
         with open(path, "w", encoding="utf-8-sig", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=FIELDS)
             writer.writeheader()
-            writer.writerows(self.batches)
+            writer.writerows(
+                {field: csv_safe_cell(row.get(field, "")) for field in FIELDS}
+                for row in self.batches
+            )
 
     def export_movements_csv(self, path):
         with open(path, "w", encoding="utf-8-sig", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=MOVEMENT_FIELDS)
             writer.writeheader()
-            writer.writerows(self.movements)
+            writer.writerows(
+                {field: csv_safe_cell(row.get(field, "")) for field in MOVEMENT_FIELDS}
+                for row in self.movements
+            )
 
     def backup(self, path):
         payload = {

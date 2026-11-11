@@ -62,7 +62,7 @@ def normalize_batch(row):
     for field in ("批次编号", "商品编码", "商品名称", "到期日期", "入库日期", "单位"):
         if not item[field]:
             raise ValueError(f"{field}不能为空")
-    if any(ch in item["批次编号"] for ch in "\\r\\n"):
+    if any(ord(ch) < 32 for ch in item["批次编号"]):
         raise ValueError("批次编号不能包含换行")
     produced = parse_date(item["生产日期"], "生产日期", required=False)
     expires = parse_date(item["到期日期"], "到期日期")
@@ -269,7 +269,6 @@ class FoodBatchStore:
                 break
         if remaining > 0:
             raise ValueError(f"未过期可用库存不足，缺少 {decimal_text(remaining)}")
-        allocation_map = dict(allocations)
         updated_by_id = {}
         movements = list(self.movements)
         result = []

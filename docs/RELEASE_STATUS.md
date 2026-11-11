@@ -689,3 +689,12 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 客户包和 Windows CI 构建通过，不等于真实 Windows GUI 全流程、卖家授权签发、首次激活、退出重启后再次验证已经完成。
 - `src/license.py` 内嵌公钥与 `config/mainland_license_public_key.pem` 的 SHA256 指纹仍不一致；本轮没有读取、上传、生成、猜测或替换卖家私钥，也没有修改任何生产公钥。
 - 仍须在真实 Windows 电脑完成逐款 GUI、保存/重启、CSV、备份恢复验收；并在确认真实卖家密钥来源后完成公钥匹配、签发、激活和重启复验。**所有商品继续标记为待最终验收，尚未达到闲鱼正式上架标准。**
+
+
+## 2026-11-11 文档记录提交后的 ABE 最新复核（run #412）
+
+- 文档验收 PR #30 合并后，main 文档提交为 `f4e5df91bbd5c179c10b63a754f8e31a1a8bd215`。该提交只更新发布状态文档，没有改变 Windows 产品代码；因此最新 Mainland Windows EXE 仍是上节 run #313。
+- 最新 Autonomous Business Engine Actions：[run #412](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/42959480730)，提交：`f4e5df91bbd5c179c10b63a754f8e31a1a8bd215`，build/deploy 均 success。
+- ABE 测试仍为 252 passed；product_factory 生成 12 个产品，xianyu_factory 生成 12 个闲鱼商品目录条目。
+- 最新 Pages artifact ID `13827823903`，47,773 bytes；下载后 ZIP CRC 通过，SHA256 `ca3f47be81d68d8ff5eef79ec0becf5698a3664b55db79bcfed3adc8d92ca731`；内含 198 个 TAR 条目、12 个 delivery 页面、12 个 Xianyu listing 页面，以及 mainland/xianyu 索引。
+- 该 ABE run 不替代 Windows EXE 构建、客户包内容验收或真实 Windows GUI/授权验收。

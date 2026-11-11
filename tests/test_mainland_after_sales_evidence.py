@@ -358,3 +358,18 @@ def test_restore_rejects_malformed_manifest_size_without_overwriting(tmp_path):
     else:
         raise AssertionError("malformed manifest size should be rejected")
     assert (target.cases, target.events) == before
+
+
+def test_case_record_tampering_is_detected_by_latest_snapshot_hash(tmp_path):
+    path = tmp_path / "cases.json"
+    store = MODULE.EvidenceStore(path)
+    store.add_case(case())
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["cases"][0]["退款金额"] = "999.00"
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    try:
+        MODULE.EvidenceStore(path)
+    except ValueError as exc:
+        assert "案件记录快照哈希不匹配" in str(exc)
+    else:
+        raise AssertionError("edited case fields should be detected")

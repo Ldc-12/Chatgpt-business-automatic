@@ -268,6 +268,26 @@ def test_restore_rejects_path_traversal_member(tmp_path):
         raise AssertionError("path traversal backup should fail")
 
 
+def test_safe_relative_rejects_windows_reserved_and_invalid_components():
+    invalid = (
+        "evidence/CON", "evidence/PRN.txt", "evidence/AUX", "evidence/NUL.log",
+        "evidence/COM1.txt", "evidence/LPT9", "evidence/COM¹.txt",
+        "evidence/trailing.", "evidence/trailing ", "evidence/bad:name",
+        "evidence/bad?name", "evidence/bad|name", "evidence/control\x01name",
+    )
+    for value in invalid:
+        try:
+            MODULE.safe_relative(value)
+        except ValueError as exc:
+            assert "Windows" in str(exc)
+        else:
+            raise AssertionError(f"Windows-unsafe evidence path was accepted: {value!r}")
+
+
+def test_safe_relative_accepts_normal_nested_windows_compatible_paths():
+    assert MODULE.safe_relative("evidence/CASE-001/chat screenshot 01.png") == "evidence/CASE-001/chat screenshot 01.png"
+
+
 def test_case_export_bundle_contains_evidence_and_matching_manifest(tmp_path):
     store = MODULE.EvidenceStore(tmp_path / "cases.json")
     store.add_case(case())

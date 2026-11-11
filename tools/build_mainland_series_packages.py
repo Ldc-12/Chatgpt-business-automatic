@@ -1,6 +1,6 @@
 """Build independent mainland Windows product-series ZIP packages.
 
-The five series are disjoint and cover all 18 business apps exactly once.
+The five series are disjoint and cover all 19 business apps exactly once.
 The all-in-one F package remains the main Phase 1 customer package.
 """
 from __future__ import annotations
@@ -23,6 +23,7 @@ PRODUCTS = {
     "meetings": ("会议行动项管理", "MainlandMeetingActions.exe", "08-会议行动项管理-用户说明书.md"),
     "sop": ("SOP 项目执行管理", "MainlandSOPManager.exe", "09-SOP项目执行管理-用户说明书.md"),
     "inventory": ("小店库存盘点助手", "MainlandInventoryAssistant.exe", "10-小店库存盘点助手-用户说明书.md"),
+    "food-batch": ("食品批次与保质期追踪助手", "MainlandFoodBatchExpiryAssistant.exe", "19-食品批次与保质期追踪助手-用户说明书.md"),
     "purchase-compare": ("供应商采购比价助手", "MainlandPurchaseCompare.exe", "11-供应商采购比价助手-用户说明书.md"),
     "quotation": ("报价单生成器", "MainlandQuotationGenerator.exe", "12-报价单生成器-用户说明书.md"),
     "expense-reimbursement": ("费用报销管理助手", "MainlandExpenseReimbursement.exe", "13-费用报销管理助手-用户说明书.md"),
@@ -47,8 +48,8 @@ SERIES = (
         "slug": "store-operations",
         "title": "门店经营系列",
         "price": "29.9",
-        "products": ("inventory", "purchase-compare", "repair-work-order", "store-schedule"),
-        "summary": "库存盘点、采购比价、售后工单和员工排班。",
+        "products": ("inventory", "food-batch", "purchase-compare", "repair-work-order", "store-schedule"),
+        "summary": "库存盘点、批次效期追踪、采购比价、售后工单和员工排班。",
     },
     {
         "code": "C",
@@ -116,7 +117,7 @@ def render_catalog() -> str:
         "# 大陆版 Windows 软件分类套餐目录",
         "",
         "五个分类系列 A–E 各自独立打包，18 款业务软件不重复、无遗漏。",
-        "全系列 F 为主客户包：18 款业务软件 + 工具箱启动器；建议售价 39.9 元，本脚本不重复生成 F 包。",
+        "全系列 F 为主客户包：19 款业务软件 + 工具箱启动器；建议售价 39.9 元，本脚本不重复生成 F 包。",
         "价格均为待市场验证的建议价，不代表已发生的闲鱼成交。",
         "",
         "| 编号 | 系列 | 软件数量 | 建议售价 | 商品内容 |",

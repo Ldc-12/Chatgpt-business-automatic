@@ -480,16 +480,29 @@ class EvidenceStore:
         events_csv = tempfile.SpooledTemporaryFile(mode="w+", encoding="utf-8", newline="")
         writer = csv.DictWriter(events_csv, fieldnames=EVENT_FIELDS)
         writer.writeheader()
-        writer.writerows(events)
+        writer.writerows({field: csv_safe(row.get(field, "")) for field in EVENT_FIELDS} for row in events)
         events_csv.seek(0)
         entries["events.csv"] = events_csv.read().encode("utf-8-sig")
         events_csv.close()
-        entries["event-chain.json"] = json.dumps(self.events, ensure_ascii=False, indent=2).encode("utf-8")
+        entries["event-chain.json"] = json.dumps(
+            {
+                "format": "mainland-after-sales-case-event-reference",
+                "version": 1,
+                "scope": "case-only",
+                "case_id": case_id,
+                "event_count": len(events),
+                "global_chain_head": self.events[-1]["事件哈希"] if self.events else ZERO_HASH,
+                "note": "本文件只包含当前案件事件，保留原始序号和前序哈希；完整全局事件链须在本地数据文件中校验。本文件不独立证明全局链完整性。",
+                "events": events,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ).encode("utf-8")
         evidence_rows = self.evidence_for(case_id)
         evidence_csv = tempfile.SpooledTemporaryFile(mode="w+", encoding="utf-8", newline="")
         evidence_writer = csv.DictWriter(evidence_csv, fieldnames=EVIDENCE_FIELDS)
         evidence_writer.writeheader()
-        evidence_writer.writerows(evidence_rows)
+        evidence_writer.writerows({field: csv_safe(row.get(field, "")) for field in EVIDENCE_FIELDS} for row in evidence_rows)
         evidence_csv.seek(0)
         entries["evidence-index.csv"] = evidence_csv.read().encode("utf-8-sig")
         evidence_csv.close()
@@ -542,7 +555,16 @@ class EvidenceStore:
             for name in actual_names:
                 data = archive.read(name)
                 meta = expected[name]
-                if not isinstance(meta, dict) or len(data) != int(meta.get("size", -1)) or sha256_bytes(data) != meta.get("sha256"):
+                if not isinstance(meta, dict):
+                    raise ValueError(f"备份清单元数据无效：{name}")
+                try:
+                    expected_size = int(meta.get("size", -1))
+                except (TypeError, ValueError):
+                    raise ValueError(f"备份清单文件大小无效：{name}") from None
+                expected_hash = meta.get("sha256")
+                if expected_size < 0 or not isinstance(expected_hash, str) or len(expected_hash) != 64:
+                    raise ValueError(f"备份清单 SHA256 或大小无效：{name}")
+                if len(data) != expected_size or sha256_bytes(data) != expected_hash:
                     raise ValueError(f"备份文件 SHA256 或大小不匹配：{name}")
             payload = json.loads(archive.read("data.json").decode("utf-8"))
             if not isinstance(payload, dict) or payload.get("format") != BACKUP_FORMAT or payload.get("version") != BACKUP_VERSION:

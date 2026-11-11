@@ -122,7 +122,7 @@ def test_evidence_tampering_is_detected(tmp_path):
     store = MODULE.EvidenceStore(tmp_path / "cases.json")
     store.add_case(case())
     item = add_evidence(store, tmp_path)
-    store._evidence_path(item["存储路径"]).write_bytes(b"modified")
+    store._evidence_path(item["存储路径"]).write_bytes(b"evil screenshot")
     errors = store.verify_integrity()
     assert any("哈希已变化" in error for error in errors)
 

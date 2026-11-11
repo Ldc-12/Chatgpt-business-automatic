@@ -163,7 +163,7 @@ def test_construction_settlement_product_is_in_build_matrix_launcher_and_custome
     assert "assert len(TOOLS) == 18" in launcher
     assert "20 款 Windows EXE（19 款业务工具及工具箱启动器）" in workflow
     assert "19 款业务工具 + 工具箱启动器" in workflow
-    assert len(APP_ENTRYPOINTS) == 19
+    assert len(APP_ENTRYPOINTS) == 20
 
 
 def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package():
@@ -182,7 +182,7 @@ def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package()
     assert "物业租金与押金管理助手" in license_tests
     assert "20 款 Windows EXE（19 款业务工具及工具箱启动器）" in workflow
     assert "全部 19 款业务工具 + 工具箱启动器" in workflow
-    assert len(APP_ENTRYPOINTS) == 19
+    assert len(APP_ENTRYPOINTS) == 20
 
 
 def test_every_standalone_delivery_zip_has_its_matching_chinese_manual():

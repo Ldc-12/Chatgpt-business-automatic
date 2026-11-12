@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
 from src.contract_workflow import (WorkflowStore, MILESTONE_FIELDS, MILESTONE_TYPES, MILESTONE_STATUSES, AUDIT_FIELDS, WORKFLOW_FORMAT, WORKFLOW_VERSION, risk_findings, finance_summary)
 from src.contract_document_parser import write_draft_csv
-from src.contract_review import ReviewStore, RECORD_FIELDS
+from src.contract_review import ReviewStore, spreadsheet_safe_cell
 
 PRODUCT = "合同台账与到期提醒助手"
 FIELDS = ["合同编号", "合同名称", "甲方/客户", "乙方/供应商", "签订日期", "生效日期", "到期日期",
@@ -187,7 +187,8 @@ class ContractStore:
         with open(path, "w", encoding="utf-8-sig", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=FIELDS)
             writer.writeheader()
-            writer.writerows(self.rows if rows is None else rows)
+            for item in (self.rows if rows is None else rows):
+                writer.writerow({field: spreadsheet_safe_cell(item.get(field, "")) for field in FIELDS})
 
     def backup(self, path, workflow=None, reviews=None):
         payload = {"format": BACKUP_FORMAT, "version": BACKUP_VERSION,
@@ -426,8 +427,8 @@ class App:
                 f"合同规则提示：高风险 {high} 份 / 中风险 {medium} 份 / 低风险 {low} 份。\n"
                 f"草稿位置：{target}\n\n"
                 "请先用 Excel/WPS 打开 CSV，查看“风险明细”列中的规则编号和原文行号，"
-                "对照签署文件逐项核实，再补齐字段并点击“导入 CSV”。"
-                "识别和风险提示不会自动写入正式台账，也不构成法律意见。",
+                "对照签署文件逐项核实，再补齐合同字段后用“导入 CSV”入账；填写人工结论、复核人和备注后，"
+                "用“导入复核结果”单独保存复核历史。识别和风险提示不会自动写入正式台账，也不构成法律意见。",
                 parent=self.root,
             )
         except (ValueError, OSError) as exc:

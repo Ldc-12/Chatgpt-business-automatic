@@ -151,7 +151,7 @@ jobs:
           - key: contract-ledger
             product: "合同台账与到期提醒助手"
             source: apps/合同台账与到期提醒助手.py
-            test: tests/test_mainland_contract_ledger.py tests/test_mainland_contract_document_parser.py
+            test: tests/test_mainland_contract_ledger.py tests/test_mainland_contract_document_parser.py tests/test_mainland_contract_review.py
             exe: MainlandContractLedgerAssistant
             manual: 16-合同台账与到期提醒助手-用户说明书.md
           - key: construction-settlement

@@ -228,3 +228,31 @@ def test_bad_local_data_is_not_silently_overwritten(tmp_path):
 
 def test_self_test_runs_without_license_or_gui():
     MODULE.self_test()
+
+
+def test_tampered_inspection_snapshot_is_detected_even_if_outer_checksum_is_recomputed(tmp_path):
+    path = tmp_path / "data.json"
+    store = MODULE.InspectionStore(path)
+    create(store)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["巡检记录"][0]["门店名称"] = "被篡改门店"
+    body = {key: value for key, value in payload.items() if key != "SHA256"}
+    payload["SHA256"] = __import__("hashlib").sha256(MODULE.canonical_bytes(body)).hexdigest()
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    try:
+        MODULE.InspectionStore(path)
+    except ValueError as exc:
+        assert "记录快照 SHA256" in str(exc)
+    else:
+        raise AssertionError("tampered inspection snapshot should be rejected")
+
+
+def test_event_chain_latest_snapshot_is_bound_to_inspection_record(tmp_path):
+    store = MODULE.InspectionStore(tmp_path / "data.json")
+    inspection_id = create(store)
+    row = store.get_inspection(inspection_id)
+    assert store.events[-1]["记录SHA256"] == row["记录SHA256"]
+    fail(store, inspection_id)
+    row = store.get_inspection(inspection_id)
+    assert store.events[-1]["记录SHA256"] == row["记录SHA256"]
+    assert MODULE.verify_event_chain(store.events)

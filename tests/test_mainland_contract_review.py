@@ -53,7 +53,9 @@ def write_csv(path, rows):
 
 
 def test_parser_records_source_and_risk_fingerprints(tmp_path):
-    source, row = parsed_row(tmp_path)
+    source = tmp_path / "合同-复核.txt"
+    source.write_text(source_text(), encoding="utf-8")
+    row = parse_contract_document(source)
     findings = json.loads(row["风险明细"])
     assert row["来源SHA256"] == sha256_file(source)
     assert row["风险明细SHA256"] == findings_sha256(findings)
@@ -85,19 +87,19 @@ def test_review_csv_import_persists_traceable_decision_and_allows_distinct_rerev
 
 
 @pytest.mark.parametrize(
-    ("field", "value", "decision", "note", "message"),
+    ("field", "value", "message"),
     [
-        ("来源SHA256", "not-a-hash", REVIEW_DECISIONS[0], "", "来源 SHA256"),
-        ("规则版本", "", REVIEW_DECISIONS[0], "", "规则版本"),
-        ("复核人", "", REVIEW_DECISIONS[0], "", "复核人"),
-        ("人工结论", "通过", REVIEW_DECISIONS[0], "", "人工结论"),
-        ("人工结论", REVIEW_DECISIONS[1], REVIEW_DECISIONS[1], "", "必须填写复核备注"),
+        ("来源SHA256", "not-a-hash", "来源 SHA256"),
+        ("规则版本", "", "规则版本"),
+        ("复核人", "", "复核人"),
+        ("人工结论", "通过", "人工结论"),
+        ("复核备注", "", "必须填写复核备注"),
     ],
 )
-def test_invalid_review_rows_are_rejected_atomically(tmp_path, field, value, decision, note, message):
+def test_invalid_review_rows_are_rejected_atomically(tmp_path, field, value, message):
     _, row = parsed_row(tmp_path)
-    row["人工结论"] = decision
-    row["复核备注"] = note
+    row["人工结论"] = REVIEW_DECISIONS[1]
+    row["复核备注"] = "基础复核备注"
     bad = dict(row)
     bad[field] = value
     csv_path = tmp_path / "bad.csv"
@@ -231,3 +233,47 @@ def test_legacy_v2_backup_restores_without_review_history(tmp_path):
     contracts.restore(path, workflow, reviews)
     assert [item["合同编号"] for item in contracts.rows] == ["OLD"]
     assert reviews.records == []
+
+
+def test_draft_csv_escapes_formula_like_contract_fields(tmp_path):
+    source = tmp_path / "formula.txt"
+    source.write_text(
+        source_text().replace("办公服务合同", '=HYPERLINK("https://evil.invalid","click")'),
+        encoding="utf-8",
+    )
+    output = tmp_path / "draft.csv"
+    from src.contract_document_parser import write_draft_csv
+    write_draft_csv([source], output)
+    with output.open("r", encoding="utf-8-sig", newline="") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["合同名称"].startswith("'=")
+
+
+def test_contract_and_milestone_csv_exports_escape_formula_like_cells(tmp_path):
+    contract = {
+        "合同编号": "=1+1", "合同名称": "合同", "甲方/客户": "甲方", "乙方/供应商": "乙方",
+        "签订日期": "2026-01-01", "生效日期": "2026-01-01", "到期日期": "2026-12-31",
+        "合同金额": "100", "续约提醒提前天数": "30", "状态": "执行中",
+    }
+    contracts = APP.ContractStore(tmp_path / "contracts.json")
+    contracts.add(contract)
+    contract_csv = tmp_path / "contracts.csv"
+    contracts.export_csv(contract_csv)
+    with contract_csv.open("r", encoding="utf-8-sig", newline="") as handle:
+        assert next(csv.DictReader(handle))["合同编号"] == "'=1+1"
+
+    workflow = APP.WorkflowStore(tmp_path / "workflow.json")
+    milestone = {
+        "节点编号": "M001", "合同编号": "=1+1", "节点名称": "节点", "节点类型": "其他",
+        "计划日期": "2026-12-01", "金额": "0", "状态": "待处理", "完成日期": "", "备注": "@SUM(1,1)",
+    }
+    workflow.milestones = [APP.normalize_milestone(milestone)] if hasattr(APP, "normalize_milestone") else [
+        {"节点编号": "M001", "合同编号": "=1+1", "节点名称": "节点", "节点类型": "其他",
+         "计划日期": "2026-12-01", "金额": "0.00", "状态": "待处理", "完成日期": "", "备注": "@SUM(1,1)"}
+    ]
+    milestone_csv = tmp_path / "milestones.csv"
+    workflow.export_csv(milestone_csv)
+    with milestone_csv.open("r", encoding="utf-8-sig", newline="") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["合同编号"] == "'=1+1"
+    assert row["备注"] == "'@SUM(1,1)"

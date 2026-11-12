@@ -1,6 +1,6 @@
 """Build independent mainland Windows product-series ZIP packages.
 
-The five series are disjoint and cover all 20 business apps exactly once.
+The five series are disjoint and cover all 21 business apps exactly once.
 The all-in-one F package remains the main Phase 1 customer package.
 """
 from __future__ import annotations
@@ -24,6 +24,7 @@ PRODUCTS = {
     "sop": ("SOP 项目执行管理", "MainlandSOPManager.exe", "09-SOP项目执行管理-用户说明书.md"),
     "inventory": ("小店库存盘点助手", "MainlandInventoryAssistant.exe", "10-小店库存盘点助手-用户说明书.md"),
     "food-batch": ("食品批次与保质期追踪助手", "MainlandFoodBatchExpiryAssistant.exe", "19-食品批次与保质期追踪助手-用户说明书.md"),
+    "food-safety-inspection": ("门店食品安全巡检与整改闭环助手", "MainlandFoodSafetyInspectionAssistant.exe", "21-门店食品安全巡检与整改闭环助手-用户说明书.md"),
     "purchase-compare": ("供应商采购比价助手", "MainlandPurchaseCompare.exe", "11-供应商采购比价助手-用户说明书.md"),
     "quotation": ("报价单生成器", "MainlandQuotationGenerator.exe", "12-报价单生成器-用户说明书.md"),
     "expense-reimbursement": ("费用报销管理助手", "MainlandExpenseReimbursement.exe", "13-费用报销管理助手-用户说明书.md"),
@@ -49,7 +50,7 @@ SERIES = (
         "slug": "store-operations",
         "title": "门店经营系列",
         "price": "29.9",
-        "products": ("inventory", "food-batch", "purchase-compare", "repair-work-order", "after-sales-evidence", "store-schedule"),
+        "products": ("inventory", "food-batch", "food-safety-inspection", "purchase-compare", "repair-work-order", "after-sales-evidence", "store-schedule"),
         "summary": "库存盘点、批次效期追踪、采购比价、售后工单、纠纷证据归档和员工排班。",
     },
     {
@@ -117,8 +118,8 @@ def render_catalog() -> str:
     lines = [
         "# 大陆版 Windows 软件分类套餐目录",
         "",
-        "五个分类系列 A–E 各自独立打包，20 款业务软件不重复、无遗漏。",
-        "全系列 F 为主客户包：20 款业务软件 + 工具箱启动器；建议售价 39.9 元，本脚本不重复生成 F 包。",
+        "五个分类系列 A–E 各自独立打包，21 款业务软件不重复、无遗漏。",
+        "全系列 F 为主客户包：21 款业务软件 + 工具箱启动器；建议售价 39.9 元，本脚本不重复生成 F 包。",
         "价格均为待市场验证的建议价，不代表已发生的闲鱼成交。",
         "",
         "| 编号 | 系列 | 软件数量 | 建议售价 | 商品内容 |",
@@ -136,7 +137,7 @@ def render_catalog() -> str:
         "",
         "- 单品：每个单品 ZIP 独立交付 EXE、README 和对应中文说明书。",
         "- A–E：按业务场景购买，避免用户为无关软件付费。",
-        "- F：完整综合套餐，包含全部 20 款业务软件和工具箱启动器。",
+        "- F：完整综合套餐，包含全部 21 款业务软件和工具箱启动器。",
         "",
         "所有软件均为本地 Windows 程序；首次运行的设备授权须在最终 Windows 验收后开放销售。",
         "",

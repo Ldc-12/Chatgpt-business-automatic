@@ -277,3 +277,48 @@ def test_contract_and_milestone_csv_exports_escape_formula_like_cells(tmp_path):
         row = next(csv.DictReader(handle))
     assert row["合同编号"] == "'=1+1"
     assert row["备注"] == "'@SUM(1,1)"
+
+
+def test_combined_restore_rolls_back_all_stores_when_review_write_fails(tmp_path, monkeypatch):
+    contract_path = tmp_path / "contracts.json"
+    workflow_path = tmp_path / "workflow.json"
+    review_path = tmp_path / "reviews.json"
+    contracts = APP.ContractStore(contract_path)
+    workflow = APP.WorkflowStore(workflow_path)
+    reviews = ReviewStore(review_path)
+    contract = {
+        "合同编号": "C001", "合同名称": "合同", "甲方/客户": "甲方", "乙方/供应商": "乙方",
+        "签订日期": "2026-01-01", "生效日期": "2026-01-01", "到期日期": "2026-12-31",
+        "合同金额": "1000", "续约提醒提前天数": "30", "状态": "执行中",
+    }
+    contracts.add(contract)
+    node = {
+        "节点编号": "", "合同编号": "C001", "节点名称": "首付款", "节点类型": "付款",
+        "计划日期": "2026-02-01", "金额": "100.00", "状态": "待处理", "完成日期": "", "备注": "",
+    }
+    workflow.add("C001", node)
+    _, row = parsed_row(tmp_path)
+    review_csv = tmp_path / "review.csv"
+    write_csv(review_csv, [row])
+    reviews.import_csv(review_csv)
+    backup = tmp_path / "workspace.json"
+    contracts.backup(backup, workflow, reviews)
+
+    contracts.add({**contract, "合同编号": "C002"})
+    workflow.add("C002", {**node, "节点编号": "", "合同编号": "C002"})
+    row["复核备注"] = "第二次复核记录"
+    write_csv(review_csv, [row])
+    reviews.import_csv(review_csv)
+    before_contracts = contracts.rows[:]
+    before_milestones = workflow.milestones[:]
+    before_audit = workflow.audit[:]
+    before_reviews = reviews.records[:]
+
+    monkeypatch.setattr(reviews, "save", lambda: (_ for _ in ()).throw(OSError("review disk full")))
+    with pytest.raises(OSError, match="review disk full"):
+        contracts.restore(backup, workflow, reviews)
+    assert contracts.rows == before_contracts
+    assert workflow.milestones == before_milestones
+    assert workflow.audit == before_audit
+    assert reviews.records == before_reviews
+    assert len(ReviewStore(review_path).records) == 2

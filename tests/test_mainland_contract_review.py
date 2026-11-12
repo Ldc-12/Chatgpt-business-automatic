@@ -148,7 +148,7 @@ def test_review_csv_export_escapes_spreadsheet_formulas(tmp_path):
     with exported.open("r", encoding="utf-8-sig", newline="") as handle:
         exported_row = next(csv.DictReader(handle))
     assert exported_row["复核人"].startswith("'=")
-    assert exported_row["复核备注"].startswith("'  @")
+    assert exported_row["复核备注"].startswith("'@")
 
 
 def test_review_store_restore_payload_is_atomic_on_write_failure(tmp_path, monkeypatch):

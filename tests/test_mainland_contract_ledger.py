@@ -85,7 +85,7 @@ def test_contract_csv_export_keeps_utf8_bom_and_formula_safety(tmp_path):
     store.export_csv(target)
 
     raw = target.read_bytes()
-    assert raw.startswith(b"\\xef\\xbb\\xbf")
+    assert raw.startswith(bytes((0xEF, 0xBB, 0xBF)))
     with target.open("r", encoding="utf-8-sig", newline="") as handle:
         exported = next(csv.DictReader(handle))
     assert exported["备注"] == "'=1+1"

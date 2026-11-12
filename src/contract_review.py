@@ -1,6 +1,7 @@
 """Persistent, traceable human review decisions for offline contract screening."""
 import csv
 import hashlib
+from collections import Counter
 import json
 import os
 import re
@@ -129,6 +130,39 @@ def spreadsheet_safe_cell(value):
     return text
 
 
+def _finding_key(item):
+    return tuple(item[field] for field in ("等级", "规则编号", "检查项", "风险说明", "证据摘录", "建议动作"))
+
+
+def compare_findings(previous, current):
+    """Classify risk findings by full rule/evidence identity without mutating either list."""
+    previous = _findings(previous)
+    current = _findings(current)
+    previous_counts = Counter(_finding_key(item) for item in previous)
+    current_counts = Counter(_finding_key(item) for item in current)
+
+    remaining_previous = previous_counts.copy()
+    unchanged = []
+    added = []
+    for item in current:
+        key = _finding_key(item)
+        if remaining_previous[key] > 0:
+            unchanged.append(item)
+            remaining_previous[key] -= 1
+        else:
+            added.append(item)
+
+    remaining_current = current_counts.copy()
+    resolved = []
+    for item in previous:
+        key = _finding_key(item)
+        if remaining_current[key] > 0:
+            remaining_current[key] -= 1
+        else:
+            resolved.append(item)
+    return {"added": added, "resolved": resolved, "unchanged": unchanged}
+
+
 class ReviewStore:
     """Append-only review history; each re-review is a separate dated record."""
 
@@ -229,6 +263,45 @@ class ReviewStore:
                 row = dict(item)
                 row["风险明细"] = json.dumps(item["风险明细"], ensure_ascii=False, separators=(",", ":"))
                 writer.writerow({field: spreadsheet_safe_cell(row.get(field, "")) for field in RECORD_FIELDS})
+
+    def compare_previous(self, review_id):
+        """Compare a review with the latest earlier, different source version under the same ruleset."""
+        current_index = next(
+            (index for index, item in enumerate(self.records) if item["复核编号"] == review_id),
+            None,
+        )
+        if current_index is None:
+            raise ValueError("找不到所选复核记录")
+        current = self.records[current_index]
+        if not current["合同编号"]:
+            return {
+                "status": "no_previous",
+                "reason": "该复核记录没有识别到合同编号，无法可靠匹配同一份合同。",
+                "current": current,
+            }
+
+        earlier = [
+            item for item in self.records[:current_index]
+            if item["合同编号"] == current["合同编号"]
+            and item["来源SHA256"] != current["来源SHA256"]
+        ]
+        comparable = [item for item in earlier if item["规则版本"] == current["规则版本"]]
+        if not comparable:
+            reason = (
+                "找到更早的不同文件版本，但规则版本不同；为避免把规则升级误判为合同风险变化，本次不直接比较。"
+                if earlier else
+                "没有该合同更早的不同文件版本，暂时无法比较。"
+            )
+            return {"status": "no_previous", "reason": reason, "current": current}
+
+        previous = comparable[-1]
+        delta = compare_findings(previous["风险明细"], current["风险明细"])
+        return {
+            "status": "ok",
+            "previous": previous,
+            "current": current,
+            **delta,
+        }
 
     def restore_payload(self, payload):
         records = self.validate_payload(payload)

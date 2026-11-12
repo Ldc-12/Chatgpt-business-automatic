@@ -467,7 +467,7 @@ class App:
     def show_reviews(self):
         win = tk.Toplevel(self.root)
         win.title("合同人工复核历史")
-        win.geometry("1180x520")
+        win.geometry("1180x560")
         columns = ["复核时间", "合同编号", "合同名称", "来源文件", "来源SHA256", "规则版本",
                    "风险命中数", "人工结论", "复核人", "复核备注"]
         widths = [155, 100, 150, 150, 120, 150, 80, 130, 100, 260]
@@ -476,13 +476,71 @@ class App:
             tree.heading(col, text=col)
             tree.column(col, width=width, stretch=True)
         tree.pack(fill="both", expand=True, padx=8, pady=8)
-        for index, item in enumerate(reversed(self.reviews.records[-1000:])):
+        history = list(reversed(self.reviews.records[-1000:]))
+        for index, item in enumerate(history):
             values = [item[field] for field in columns]
             values[4] = item["来源SHA256"][:16] + "…"
             tree.insert("", "end", iid=str(index), values=values)
+
+        def compare_selected():
+            selected = tree.selection()
+            if not selected:
+                messagebox.showinfo("风险变化对比", "请先选择一条复核记录。", parent=win)
+                return
+            item = history[int(selected[0])]
+            try:
+                result = self.reviews.compare_previous(item["复核编号"])
+            except ValueError as exc:
+                messagebox.showerror("对比失败", str(exc), parent=win)
+                return
+            if result["status"] != "ok":
+                messagebox.showinfo("暂无可比较版本", result["reason"], parent=win)
+                return
+            self.show_review_delta(result)
+
+        buttons = ttk.Frame(win, padding=6)
+        buttons.pack(fill="x")
+        ttk.Button(buttons, text="对比上一版风险变化", command=compare_selected).pack(side="left", padx=4)
+        ttk.Label(
+            buttons,
+            text=f"共保存 {len(self.reviews.records)} 条复核历史。重新复核会追加记录，不覆盖旧结论。",
+            padding=8,
+        ).pack(side="left")
+
+    def show_review_delta(self, result):
+        previous = result["previous"]
+        current = result["current"]
+        win = tk.Toplevel(self.root)
+        win.title("合同风险变化对比")
+        win.geometry("1180x560")
         ttk.Label(
             win,
-            text=f"共保存 {len(self.reviews.records)} 条复核历史。每次重新复核会追加新记录，不覆盖旧结论。",
+            text=(
+                f"合同：{current['合同编号']}｜规则版本：{current['规则版本']}\n"
+                f"上一版文件 SHA256：{previous['来源SHA256'][:16]}…  →  当前文件 SHA256：{current['来源SHA256'][:16]}…"
+            ),
+            padding=8,
+        ).pack(fill="x")
+        summary = (
+            f"新增风险 {len(result['added'])} 项｜不再命中 {len(result['resolved'])} 项｜保持不变 {len(result['unchanged'])} 项"
+        )
+        ttk.Label(win, text=summary, padding=6).pack(fill="x")
+        columns = ["变化", "等级", "规则编号", "检查项", "风险说明", "证据摘录", "建议动作"]
+        widths = [95, 60, 190, 130, 260, 230, 260]
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for col, width in zip(columns, widths):
+            tree.heading(col, text=col)
+            tree.column(col, width=width, stretch=True)
+        tree.pack(fill="both", expand=True, padx=8, pady=8)
+        for label, key in (("新增", "added"), ("不再命中", "resolved"), ("保持不变", "unchanged")):
+            for index, item in enumerate(result[key]):
+                tree.insert(
+                    "", "end", iid=f"{key}-{index}",
+                    values=[label] + [item[field] for field in columns[1:]],
+                )
+        ttk.Label(
+            win,
+            text="仅比较同一合同编号、同一规则版本下的不同文件 SHA256；这是风险命中清单对比，不是合同全文逐字差异或法律结论。",
             padding=8,
         ).pack(fill="x")
 

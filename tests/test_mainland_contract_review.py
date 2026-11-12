@@ -322,3 +322,4 @@ def test_combined_restore_rolls_back_all_stores_when_review_write_fails(tmp_path
     assert workflow.audit == before_audit
     assert reviews.records == before_reviews
     assert len(ReviewStore(review_path).records) == 2
+

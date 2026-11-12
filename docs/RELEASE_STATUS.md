@@ -842,3 +842,32 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 客户包仍标记为“待最终验收”，不是已完成真实 Windows 授权激活的正式销售包。
 - 客户端内嵌公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；配置公钥 DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，仍不一致。
 - 未读取、上传、生成、猜测、替换或轮换生产私钥/公钥。真实卖家密钥匹配、真实 Windows 签发/激活/退出后重启复验和逐款 GUI/数据流程验收仍未完成。
+
+
+## 2026-11-12 main run #329 最新客户包核验与合同 CSV 导出加固计划
+
+### 主线、PR 与 Windows / ABE 工作流
+- 当前 main HEAD：`009a10866f4ebafdac85b3c4054569da7f586e0b`（PR #37 合并提交）；当前 open PR：0。
+- PR [#37 Make contract backup exports atomic and failure-safe](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/37) 已合并，merge commit 为 `009a10866f4ebafdac85b3c4054569da7f586e0b`。改动为合同工作区备份先写同目录临时文件、flush/fsync 后原子替换，替换失败保留旧备份并清理临时文件；自动创建目标目录；新增失败回归与嵌套目录回归，并更新中文说明书。
+- PR #37 的 Mainland Windows EXE run #328：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43207387705)，完整矩阵及客户包 job 均成功；合并后的 main Mainland Windows EXE run #329：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43208567963)，22/22 jobs success（21 个产品/启动器 Windows 构建 + 1 个客户包任务），无失败 job。
+- main run #329 合同台账 job #131149912057：合同台账、合同文件解析、人工复核、风险版本对比、授权和套餐相关测试 `96 passed in 2.94s`；冻结 EXE 日志出现 `FROZEN_EXE_SELF_TEST_OK`，进程退出码 0。客户包上传 job #131150980460 成功。
+- Autonomous Business Engine run #424：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43208567925)，build/deploy 2/2 success；build job #131149911317 的测试为 `279 passed in 2.40s`；日志明确显示 product_factory 生成 12 个 Stripe checkout 产品页面、xianyu_factory 生成 12 个闲鱼目录条目。Pages artifact ID `13938573628`，47,803 bytes；下载后 ZIP CRC 通过，内部 TAR 共 198 个条目。
+- 近期失败日志复核：Windows run #320 的合同台账 job #130948750253 曾为 1 failed / 86 passed。唯一失败是测试断言要求复核备注保留 normalize 已去除的前导空格（期望 `'  @`，实际安全导出为 `'@SUM(1,1)`）；这是测试预期错误，已修正，后续 PR #35 run #323、main run #324、#327、#329 均通过。run #320 的客户包 job 因该测试失败而 skipped；不把该 run 记为成功，也没有把旧失败包当作交付包。
+- 本轮没有失败的最新 main #329 或 ABE #424 job；其余 job 均为 success，因此没有需要重跑的失败 job。
+
+### 最新 main 客户包（run #329，已实际下载与核验）
+- Artifact：`mainland-phase1-customer-package`，ID `13940062530`，351,403,678 bytes；外层 ZIP SHA256 `0c4abc9e372fbd7a32eae9573db57acb3eb3855cd0bcd292cd46d17386798ac8`，`ZipFile.testzip() = None`。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：351,304,242 bytes；SHA256 `7e71ac5c258ac2e5ce50e6d2374da7d4ba562deabd30efdd36502bef1b4bfc87`；内层 ZIP CRC 通过。
+- 内层 ZIP 共 48 个条目（46 个文件、2 个目录）：21 个 EXE（20 款业务工具 + 1 个启动器）、21 份逐款中文说明书，另有说明书索引、分类套餐目录、套餐说明 TXT 和大陆版 README。内层文件时间戳为 2026-11-12 11:25:00 UTC（北京时间 19:25:00）；artifact 创建时间 11:25:16 UTC（北京时间 19:25:16）。
+- Manifest artifact `mainland-phase1-package-manifest` ID `13939862606`，781 bytes；声明内层 ZIP 为 351,304,242 bytes、SHA256 `7e71ac5c258ac2e5ce50e6d2374da7d4ba562deabd30efdd36502bef1b4bfc87`、19 个分片、每片 18 MiB；与实际下载内层 ZIP 的字节数和 SHA256 完全一致。Manifest ZIP CRC 通过。
+- 分类套餐 artifact `mainland-phase1-series-packages` ID `13940552095`，336,716,198 bytes；外层 ZIP CRC 通过，含 A–E 五个分类 ZIP 和目录。逐包 CRC 均通过：A 办公效率 5 EXE/5 份说明书；B 门店经营 6/6；C 财务与交易 4/4；D 合同工程物业 3/3；E 客户与个人事务 2/2。建议价格仍为待市场验证价格，不是实际成交数据。
+- 客户包、manifest、分类套餐均为 run #329 当前 main 产物，已真实下载检查；没有使用 run #319 或其他历史包替代最新包。
+
+### 本轮下一项小批次开发
+- 在独立分支增加合同台账 CSV 导出原子写入：先在内存生成完整 UTF-8 BOM CSV，再通过同目录临时文件写入并原子替换，防止导出中断/写入失败时截断用户原有 CSV。
+- 配套增加“替换失败时保留旧 CSV、清理临时文件”和“成功导出保留 BOM 且公式型文本继续安全转义”的回归测试，并更新合同助手中文说明书。该项尚未进入 main 客户包，必须等完整 Windows 矩阵和冻结 EXE 自测通过后才可合并。
+
+### 授权与销售验收（仍未解除）
+- `src/license.py` 内嵌 Ed25519 公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，仍不一致。
+- 本轮没有读取、上传、生成、猜测、替换或轮换任何生产私钥/公钥；卖家私钥仍不在仓库。授权代码侧路径、产品 ID 和签名验证可继续测试，但生产密钥不得臆造。
+- **客户包仍标记“待最终验收”，不是可正式销售版。** 尚未完成可信 Windows 设备上的卖家公钥匹配、真实授权签发/激活、退出重启后复验，以及逐款 GUI 和数据流程验收。最终只需用户在可信 Windows 电脑本地导出公钥 PEM 或 SHA256 指纹供比对，绝不需要私钥。

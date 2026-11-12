@@ -1,5 +1,6 @@
 import csv
 import importlib.util
+import pytest
 from datetime import date
 from pathlib import Path
 
@@ -77,6 +78,34 @@ def test_backup_restore_and_invalid_backup_atomic(tmp_path):
     except ValueError: pass
     else: raise AssertionError("invalid backup accepted")
     assert len(store.rows)==1
+
+
+def test_backup_write_is_atomic_and_preserves_existing_backup_on_replace_failure(tmp_path, monkeypatch):
+    store = module.ContractStore(tmp_path / "contracts.json")
+    store.add(row())
+    backup = tmp_path / "backup.json"
+    backup.write_text("previous-valid-backup", encoding="utf-8")
+
+    def fail_replace(source, destination):
+        raise OSError("simulated atomic replace failure")
+
+    monkeypatch.setattr(module.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="simulated atomic replace failure"):
+        store.backup(backup)
+
+    assert backup.read_text(encoding="utf-8") == "previous-valid-backup"
+    assert list(tmp_path.glob("backup.json*.tmp")) == []
+
+
+def test_backup_creates_missing_parent_directory_and_writes_valid_json(tmp_path):
+    store = module.ContractStore(tmp_path / "contracts.json")
+    store.add(row())
+    backup = tmp_path / "exports" / "nested" / "backup.json"
+    store.backup(backup)
+    payload = __import__("json").loads(backup.read_text(encoding="utf-8"))
+    assert payload["format"] == module.BACKUP_FORMAT
+    assert payload["version"] == module.BACKUP_VERSION
+    assert payload["contracts"][0]["合同编号"] == "C001"
 
 
 def test_reminder_exclusions_for_renewed_or_terminated():

@@ -522,7 +522,7 @@ class App:
             padding=8,
         ).pack(fill="x")
         summary = (
-            f"新增风险 {len(result['added'])} 项｜已消除/不再命中 {len(result['resolved'])} 项｜保持不变 {len(result['unchanged'])} 项"
+            f"新增风险 {len(result['added'])} 项｜不再命中 {len(result['resolved'])} 项｜保持不变 {len(result['unchanged'])} 项"
         )
         ttk.Label(win, text=summary, padding=6).pack(fill="x")
         columns = ["变化", "等级", "规则编号", "检查项", "风险说明", "证据摘录", "建议动作"]

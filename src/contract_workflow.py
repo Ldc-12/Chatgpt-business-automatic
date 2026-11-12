@@ -8,6 +8,8 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 
+from src.contract_review import spreadsheet_safe_cell
+
 MILESTONE_FIELDS = ["节点编号", "合同编号", "节点名称", "节点类型", "计划日期", "金额", "状态", "完成日期", "备注"]
 MILESTONE_TYPES = ["付款", "收款", "交付", "验收", "保证金", "续约", "其他"]
 MILESTONE_STATUSES = ["待处理", "已完成", "已取消"]
@@ -248,7 +250,8 @@ class WorkflowStore:
         with open(path, "w", encoding="utf-8-sig", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=MILESTONE_FIELDS)
             writer.writeheader()
-            writer.writerows(self.milestones if rows is None else rows)
+            for item in (self.milestones if rows is None else rows):
+                writer.writerow({field: spreadsheet_safe_cell(item.get(field, "")) for field in MILESTONE_FIELDS})
 
     def restore_payload(self, payload):
         milestones, audit = self.validate_payload(payload)

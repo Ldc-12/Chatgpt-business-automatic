@@ -16,7 +16,7 @@ from docx import Document
 from pypdf import PdfReader
 
 from src.contract_rules import RULESET_VERSION, review_contract_text
-from src.contract_review import findings_sha256, sha256_file
+from src.contract_review import findings_sha256, sha256_file, spreadsheet_safe_cell
 
 CONTRACT_FIELDS = [
     "合同编号", "合同名称", "甲方/客户", "乙方/供应商", "签订日期", "生效日期", "到期日期",
@@ -255,7 +255,7 @@ def write_draft_csv(paths, output_path):
             writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
             writer.writeheader()
             for row in parsed:
-                writer.writerow({field: row.get(field, "") for field in fields})
+                writer.writerow({field: spreadsheet_safe_cell(row.get(field, "")) for field in fields})
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temp_name, target)

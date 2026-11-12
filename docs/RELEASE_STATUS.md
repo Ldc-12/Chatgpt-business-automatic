@@ -779,3 +779,9 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 ### 授权与销售状态
 - 重新核对的客户端 Ed25519 公钥 DER SHA256：B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741；配置公钥 DER SHA256：7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961，仍不一致。
 - 未读取、上传、生成、猜测或替换卖家私钥/生产公钥。所有版本继续标记“待最终验收”；CI 自测不替代真实 Windows GUI 使用、卖家密钥匹配、授权签发、激活和重启后再次验证。
+
+
+### PR #35 首轮 Windows 失败记录与修正
+- PR Mainland Windows EXE run #321（https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43147915634）在合同台账 job 中执行 88 项相关测试：87 passed、1 failed。失败测试为 test_review_csv_export_escapes_spreadsheet_formulas，实际导出值为 "'@SUM(1,1)"，测试却要求保留复核备注前导空格 "'  @"。
+- 根因是复核记录规范化阶段会 trim 备注空白；CSV 安全转义功能实际已正确在 @ 前添加单引号。已把测试断言修正为规范化后的真实输出，不改变数据或安全行为。
+- run #321 其余部分因后续分支更新而出现 cancelled/in-progress，未形成完整 Windows 矩阵与客户包验收；不得把它标为成功。修正后的新一轮完整 PR 构建仍待验证。

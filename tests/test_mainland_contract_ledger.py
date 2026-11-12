@@ -57,6 +57,40 @@ def test_csv_roundtrip_and_duplicate_import_atomic(tmp_path):
     assert store.rows==before
 
 
+def test_contract_csv_export_is_atomic_and_preserves_existing_file_on_replace_failure(tmp_path, monkeypatch):
+    store = module.ContractStore(tmp_path / "contracts.json")
+    store.add(row())
+    target = tmp_path / "exports" / "contracts.csv"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"previous-valid-csv")
+
+    def fail_replace(source, destination):
+        raise OSError("simulated CSV replace failure")
+
+    monkeypatch.setattr(module.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="simulated CSV replace failure"):
+        store.export_csv(target)
+
+    assert target.read_bytes() == b"previous-valid-csv"
+    assert list(target.parent.glob("contracts.csv*.tmp")) == []
+
+
+def test_contract_csv_export_keeps_utf8_bom_and_formula_safety(tmp_path):
+    store = module.ContractStore(tmp_path / "contracts.json")
+    item = row()
+    item["备注"] = "=1+1"
+    store.add(item)
+    target = tmp_path / "exports" / "contracts.csv"
+
+    store.export_csv(target)
+
+    raw = target.read_bytes()
+    assert raw.startswith(bytes((0xEF, 0xBB, 0xBF)))
+    with target.open("r", encoding="utf-8-sig", newline="") as handle:
+        exported = next(csv.DictReader(handle))
+    assert exported["备注"] == "'=1+1"
+
+
 def test_bad_csv_row_does_not_mutate_store(tmp_path):
     store=module.ContractStore(tmp_path/"contracts.json"); store.add(row())
     bad=tmp_path/"bad.csv"

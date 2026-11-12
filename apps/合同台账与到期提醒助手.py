@@ -200,11 +200,12 @@ class ContractStore:
         return len(incoming)
 
     def export_csv(self, path, rows=None):
-        with open(path, "w", encoding="utf-8-sig", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=FIELDS)
-            writer.writeheader()
-            for item in (self.rows if rows is None else rows):
-                writer.writerow({field: spreadsheet_safe_cell(item.get(field, "")) for field in FIELDS})
+        buffer = io.StringIO(newline="")
+        writer = csv.DictWriter(buffer, fieldnames=FIELDS)
+        writer.writeheader()
+        for item in (self.rows if rows is None else rows):
+            writer.writerow({field: spreadsheet_safe_cell(item.get(field, "")) for field in FIELDS})
+        _atomic_write_text(path, "\ufeff" + buffer.getvalue())
 
     def backup(self, path, workflow=None, reviews=None):
         payload = {"format": BACKUP_FORMAT, "version": BACKUP_VERSION,

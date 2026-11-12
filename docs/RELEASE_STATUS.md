@@ -785,3 +785,30 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - PR Mainland Windows EXE run #321（https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43147915634）在合同台账 job 中执行 88 项相关测试：87 passed、1 failed。失败测试为 test_review_csv_export_escapes_spreadsheet_formulas，实际导出值为 "'@SUM(1,1)"，测试却要求保留复核备注前导空格 "'  @"。
 - 根因是复核记录规范化阶段会 trim 备注空白；CSV 安全转义功能实际已正确在 @ 前添加单引号。已把测试断言修正为规范化后的真实输出，不改变数据或安全行为。
 - run #321 其余部分因后续分支更新而出现 cancelled/in-progress，未形成完整 Windows 矩阵与客户包验收；不得把它标为成功。修正后的新一轮完整 PR 构建仍待验证。
+
+
+## 2026-11-12 PR #35 合并及 main run #324 客户包复核
+
+### PR #35 与失败修正
+- PR [#35 Add persistent contract review decisions and evidence fingerprints](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/35) 已于 2026-11-12 03:40:05 UTC squash 合并；合并提交/main HEAD：`a143eff9300bd0c72462dda970f1210782381806`。
+- PR Windows run #323：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43148141662)，22/22 jobs success；合同台账及相关测试 `88 passed`；冻结 EXE 自测 `FROZEN_EXE_SELF_TEST_OK`，退出码 0；客户包 job success。
+- 失败记录保留：PR run #321 的合同测试 job #130949987889 曾出现 1 failed / 87 passed，失败是测试错误地要求保留规范化时会去除的备注前导空格；已检查原始日志并修正断言。run #321 其余部分因分支更新取消，不能算成功；run #323 是完整通过的验证。
+- PR 候选客户包 artifact ID `13912818159`（351,393,253 bytes），已下载核验：外层 ZIP CRC 通过；内层 ZIP 351,293,772 bytes、SHA256 `688304e418c2e64a9adad32f2e56dd209fc5c6b6e6cf88351224603fcb8badcb`、CRC 通过，包含 21 个 EXE、21 份产品说明书及套餐文档。Manifest artifact ID `13912388916`，其字节数与 SHA256 与内层 ZIP 一致。该 PR artifact 只作为合并前候选验证，不代替 main artifact。
+
+### 合并后 main Windows EXE run #324
+- Mainland Windows EXE run #324：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43149731508)，head `a143eff9300bd0c72462dda970f1210782381806`，22/22 jobs success（21 个 EXE build jobs + 1 个客户包 job），无失败 job。
+- 合同台账 job #130955816725：`88 passed in 1.93s`；冻结 EXE 自测日志出现 `FROZEN_EXE_SELF_TEST_OK: process exited with code 0.`。其他 20 个产品/启动器 build jobs 和客户包 job 均 success。
+- main 客户包 artifact `mainland-phase1-customer-package` ID `13913905235`，351,397,703 bytes；下载后的外层 ZIP SHA256 `058e0dad93adb69ee5b20bd9539a6e5d6283585572503d65cc133288164361f9`，CRC 通过。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：351,298,434 bytes；SHA256 `ce9f357dbf29f378a148131d3f4d4e03699b58dcc4ab13990323ddf655554cbf`；`ZipFile.testzip() = None`。48 个条目：21 个 EXE（20 款业务工具 + 工具箱启动器）、21 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份分类套餐目录、1 份套餐说明 TXT。内层所有文件时间戳为 2026-11-12 11:42:18（中国标准时间）。
+- Manifest artifact ID `13912769702`，784 bytes；声明内层 ZIP bytes `351298434`、SHA256 `ce9f357dbf29f378a148131d3f4d4e03699b58dcc4ab13990323ddf655554cbf`、parts `19`、part size `18MiB`；与实际下载内层 ZIP 完全一致，manifest ZIP CRC 通过。
+- 分类套餐 artifact ID `13913047921`，336,712,197 bytes，外层 CRC 通过；包含 A–E 五个分类 ZIP 和目录。五个分类 ZIP 的 CRC 均通过，分别包含 A 5 EXE/5 说明书、B 6/6、C 4/4、D 3/3、E 2/2。分类建议售价仍仅是待市场验证的定价，不是已验证闲鱼成交价。
+
+### Autonomous Business Engine run #420
+- ABE run #420：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43149731535)，head 同为 `a143eff9300bd0c72462dda970f1210782381806`，build/deploy 2/2 success；测试 `271 passed`。
+- product_factory 生成 12 个 live-checkout 产品页，xianyu_factory 生成 12 个闲鱼目录条目；Pages artifact ID `13913356649`，47,758 bytes，已下载并检查 ZIP CRC。Pages TAR 内有 17 个产品页面/产品 JSON、12 个交付页和 12 个闲鱼商品目录条目。
+- ABE 构建日志中一次实时 API 请求返回 HTTP 502，系统按既有 fallback 继续完成构建并部署成功；此 run 的成功不代表该次外部 API 请求成功。
+
+### 当前发布状态
+- PR #35 已合并；main 的 Windows EXE 构建和客户包、manifest、分类 ZIP 均已完成下载与内容核验。
+- **仍为“待最终验收”，不能宣布正式上架。** CI 冻结 EXE 非交互启动/退出码自测不等同于用户真实 Windows 桌面 GUI 全流程验收。卖家公钥指纹不一致问题仍未解决：`src/license.py` 内嵌公钥 DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`，配置文件 DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。没有读取、上传、生成、猜测、替换或轮换任何生产私钥/公钥；真实卖家密钥匹配、Windows 授权签发/激活/退出重启后再次验证，以及逐款真实 GUI/数据流程验收仍未完成。
+- 后续功能分支 `feat/contract-review-version-diff` 正在增加同一合同、同一规则版本下的风险命中版本对比；该分支尚未建立 PR，尚未通过 Mainland Windows EXE 矩阵，不属于当前 main 客户包。

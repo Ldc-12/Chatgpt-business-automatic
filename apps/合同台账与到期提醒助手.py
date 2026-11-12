@@ -25,6 +25,22 @@ BACKUP_FORMAT = "mainland-contract-ledger"
 BACKUP_VERSION = 3
 
 
+def _atomic_write_text(path, content):
+    """Write a UTF-8 text file through a same-directory temp file and atomic replace."""
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(prefix=target.name, suffix=".tmp", dir=str(target.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_name, target)
+    finally:
+        if os.path.exists(temp_name):
+            os.unlink(temp_name)
+
+
 def money(value):
     if value is None or not str(value).strip():
         raise ValueError("合同金额不能为空；无偿合同请明确填写 0")
@@ -197,7 +213,7 @@ class ContractStore:
             payload["workflow"] = workflow.payload()
         if reviews is not None:
             payload["reviews"] = reviews.payload()
-        Path(path).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        _atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2))
 
     def restore(self, path, workflow=None, reviews=None):
         try:

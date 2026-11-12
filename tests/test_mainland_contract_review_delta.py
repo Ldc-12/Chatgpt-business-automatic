@@ -14,7 +14,7 @@ def finding(rule_id, detail=None):
     }
 
 
-def make_record(record_id, source_hash, ruleset, findings, *, contract_id="C001", reviewed_at="2026-01-01T09:00:00+08:00"):
+def make_record(record_id, source_hash, ruleset, findings, *, contract_id="C001", reviewed_at="2026-01-01T09:00:00+08:00", reviewer="测试复核员"):
     decision = REVIEW_DECISIONS[1] if findings else REVIEW_DECISIONS[0]
     return normalize_record({
         "复核编号": record_id,
@@ -27,7 +27,7 @@ def make_record(record_id, source_hash, ruleset, findings, *, contract_id="C001"
         "风险命中数": str(len(findings)),
         "风险明细SHA256": findings_sha256(findings),
         "人工结论": decision,
-        "复核人": "测试复核员",
+        "复核人": reviewer,
         "复核备注": "请核对风险变化" if findings else "",
         "风险明细": findings,
     })
@@ -54,7 +54,7 @@ def test_compare_previous_skips_same_source_rereviews(tmp_path):
     store.records = [
         make_record("rev-1", "a" * 64, "RULESET-1", [finding("KEEP")]),
         make_record("rev-2", "a" * 64, "RULESET-1", [finding("KEEP")],
-                    reviewed_at="2026-01-02T09:00:00+08:00"),
+                    reviewed_at="2026-01-02T09:00:00+08:00", reviewer="第二位复核员"),
         make_record("rev-3", "b" * 64, "RULESET-1", [finding("KEEP"), finding("NEW")],
                     reviewed_at="2026-02-01T09:00:00+08:00"),
     ]
@@ -107,3 +107,17 @@ def test_compare_previous_preserves_duplicate_finding_counts(tmp_path):
     assert len(result["unchanged"]) == 1
     assert len(result["resolved"]) == 1
     assert result["added"] == []
+
+
+def test_compare_previous_treats_changed_evidence_as_a_replaced_finding(tmp_path):
+    store = ReviewStore(tmp_path / "reviews.json")
+    store.records = [
+        make_record("rev-1", "a" * 64, "RULESET-1", [finding("DEPOSIT", "未识别返还条件")]),
+        make_record("rev-2", "b" * 64, "RULESET-1", [finding("DEPOSIT", "已识别返还条件")],
+                    reviewed_at="2026-02-01T09:00:00+08:00"),
+    ]
+    store.save()
+    result = ReviewStore(tmp_path / "reviews.json").compare_previous("rev-2")
+    assert [item["风险说明"] for item in result["resolved"]] == ["未识别返还条件"]
+    assert [item["风险说明"] for item in result["added"]] == ["已识别返还条件"]
+    assert result["unchanged"] == []

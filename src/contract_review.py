@@ -25,6 +25,7 @@ SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 MAX_REVIEW_ROWS = 50000
 MAX_FINDINGS = 1000
 MAX_NOTE_CHARS = 4000
+MAX_REVIEW_CSV_BYTES = 50 * 1024 * 1024
 
 
 def _canonical(value):
@@ -98,6 +99,8 @@ def normalize_record(raw):
         raise ValueError("风险命中数必须是非负整数") from exc
     if count < 0 or count != len(findings):
         raise ValueError("风险命中数与风险明细数量不一致")
+    if count > 0 and decision == REVIEW_DECISIONS[0] and not note:
+        raise ValueError("存在风险提示时，标记已复核（无待办）必须填写复核备注")
     detail_hash = str(raw.get("风险明细SHA256", "")).strip().lower()
     actual_hash = findings_sha256(findings)
     if not SHA256_RE.fullmatch(detail_hash) or detail_hash != actual_hash:
@@ -119,7 +122,7 @@ def normalize_record(raw):
     }
 
 
-def _csv_cell(value):
+def spreadsheet_safe_cell(value):
     text = "" if value is None else str(value)
     if text.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
         return "'" + text
@@ -181,6 +184,8 @@ class ReviewStore:
                 os.unlink(temp_name)
 
     def import_csv(self, path):
+        if Path(path).stat().st_size > MAX_REVIEW_CSV_BYTES:
+            raise ValueError("复核 CSV 超过 50 MiB 安全上限")
         incoming = []
         with open(path, "r", encoding="utf-8-sig", newline="") as handle:
             reader = csv.DictReader(handle)
@@ -223,7 +228,7 @@ class ReviewStore:
             for item in self.records:
                 row = dict(item)
                 row["风险明细"] = json.dumps(item["风险明细"], ensure_ascii=False, separators=(",", ":"))
-                writer.writerow({field: _csv_cell(row.get(field, "")) for field in RECORD_FIELDS})
+                writer.writerow({field: spreadsheet_safe_cell(row.get(field, "")) for field in RECORD_FIELDS})
 
     def restore_payload(self, payload):
         records = self.validate_payload(payload)

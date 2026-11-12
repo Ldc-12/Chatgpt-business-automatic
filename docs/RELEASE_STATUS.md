@@ -742,3 +742,46 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 不假定 `seller-private.pem` 曾自动出现在用户电脑，也不要求用户盲目搜索或上传私钥。若用户确认真实卖家私钥确实存在且由其在可信 Windows 电脑保管，最终只需在本机导出公钥 PEM 或 SHA256 指纹供比对；不得发送私钥。若没有已知的真实私钥，必须先由用户明确决定是否制定密钥轮换/安全托管方案。
 - **状态仍为“待最终验收”，不是可正式销售版。** 目前 CI 的源码测试、PyInstaller 构建、冻结 EXE 非交互启动/退出码自测和 ZIP 内容核验均通过；但未完成用户真实 Windows 电脑上的 GUI 全流程、实际卖家密钥匹配、真实签发/激活/重启后再次验证，以及逐款 CSV、数据持久化和备份恢复验收。未完成这些项目之前，不得向用户宣称已达到闲鱼正式上架标准。
 - 当前 main 无未完成 PR。
+
+
+## 2026-11-12 PR：合同人工复核历史与来源指纹（待 Windows CI）
+
+- 独立分支：feat/contract-review-decision-ledger。
+- 新增本地人工复核历史：识别草稿记录来源文件 SHA256、规则版本、风险明细 SHA256；用户填写人工结论、复核人和备注后，整批校验并追加到独立复核历史。
+- 完全相同的复核内容重复导入会被拒绝；不同结论或备注作为新的复核历史保留。复核 CSV 导出对公式型文本进行转义。
+- 合同工作区备份升级为 v3，纳入合同、履约节点、操作记录和人工复核历史；仍兼容 v1/v2 旧备份，恢复旧备份时复核历史清空。
+- 新增 src/contract_review.py 与 tests/test_mainland_contract_review.py，覆盖来源/风险指纹、有效复核导入、重复导入拒绝、无效行原子拒绝、篡改风险明细检测、公式安全导出、历史恢复和旧版备份兼容。
+- 更新合同助手中文说明书及 Windows EXE 矩阵测试任务。
+- 本 PR 尚未获得 Windows Actions 结果；尚未合并、未进入 main 客户包。所有发布继续标记“待最终验收”。
+- 本次没有读取、上传、生成、猜测、替换或轮换任何生产密钥。src/license.py 与配置公钥指纹不一致的问题仍独立保留。
+
+
+## 2026-11-12 自动化复核：主线包验包与 PR #35
+
+### 主线与 PR
+- 当前 main HEAD：e04145fd4abeb5251ddb447bf345cad5e3221042。该提交只更新发布状态文档；最近一次 Mainland Windows EXE 构建所验证的源码树为 0a697def3173257bfbda8de8f51b2c1ba585632d。
+- 本轮 open PR 查询：PR #35 Add persistent contract review decisions and evidence fingerprints（https://github.com/Ldc-12/Chatgpt-business-automatic/pull/35），分支 feat/contract-review-decision-ledger，尚未合并。
+- PR #35 增加合同人工复核历史、来源文件和风险明细 SHA256、人工结论/复核人/备注、重复导入拒绝、v3 组合备份兼容、CSV 公式注入防护。PR Windows CI 尚未取得可核验 run/check 结果，不得合并或视为已交付。
+
+### 已重新下载的 main 客户包（run #319）
+- Mainland Windows EXE Actions：run #319（https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43013197801），head SHA 0a697def3173257bfbda8de8f51b2c1ba585632d；当前可访问的 job 列表为 22/22 success（21 个 Windows EXE 构建任务 + 1 个客户包任务），没有失败 job。已检查合同台账 job 日志：72 passed，冻结 EXE 自测 FROZEN_EXE_SELF_TEST_OK，退出码 0。
+- 客户包 artifact mainland-phase1-customer-package ID 13851492463，351,390,188 bytes；下载后的外层 ZIP SHA256 8f34d0bd8c473305017235fa8ebbe0fe31a6a79ddc932853dbdb6673a5700e3f，CRC 通过。
+- 内层 Phase1-Mainland-Windows-Tools.zip：351,290,633 bytes；SHA256 60ef8dccb0b43ce1a18ac9d68707b1bebf2ed48421282eddaebbb2de51bffc63；ZipFile.testzip() = None。48 个条目（46 文件、2 目录）：21 个 EXE（20 款业务工具 + 工具箱启动器）、21 份产品说明书、1 份说明书索引、1 份大陆版 README、1 份分类套餐目录、1 份套餐说明。
+- 内层 ZIP 的文件时间戳为 2026-11-11 19:37:58（中国标准时间）；客户包 artifact 创建时间 2026-11-11 19:38:13。
+- Manifest artifact ID 13852150497；内容声明 bytes 351290633、SHA256 60ef8dccb0b43ce1a18ac9d68707b1bebf2ed48421282eddaebbb2de51bffc63、parts 19、part size 18MiB；与实际内层 ZIP 大小和 SHA256 完全一致。Manifest ZIP CRC 通过。
+- 套餐说明包含 A 办公效率 5 款、B 门店经营 6 款、C 财务与交易 4 款、D 合同工程物业 3 款、E 客户与个人事务 2 款、F 全系列 20 款业务工具 + 工具箱启动器。建议价均为待市场验证价格，不是已验证成交价。
+
+### ABE 与最新 run 查询限制
+- 已检查 Autonomous Business Engine run #417（https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43013197776），head SHA 0a697def3173257bfbda8de8f51b2c1ba585632d；build/deploy 2/2 success，日志显示 255 passed，生成 12 个产品页面及 12 个闲鱼目录条目，Pages artifact ID 13850459272。
+- GitHub 连接器的 fetch_commit_workflow_runs 仅返回 PR 事件运行，未提供仓库级最新 workflow runs 列表；对 main HEAD e04145f 查询返回空数组。ABE 工作流会在 main push 时运行，因此不能仅凭 run #417 断言它是当前最新 ABE run；本记录只称其为已检查的最近可核验 run，不猜测 run #418 或其他 run ID。run #319 是当前可列出 artifact 并下载核验的 main Windows EXE 构建。
+- run #319 和 #417 的 job 列表均无失败项，因此没有失败 job log 可复核；已检查合同构建、客户包上传和 ABE build/deploy 日志。
+
+### 授权与销售状态
+- 重新核对的客户端 Ed25519 公钥 DER SHA256：B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741；配置公钥 DER SHA256：7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961，仍不一致。
+- 未读取、上传、生成、猜测或替换卖家私钥/生产公钥。所有版本继续标记“待最终验收”；CI 自测不替代真实 Windows GUI 使用、卖家密钥匹配、授权签发、激活和重启后再次验证。
+
+
+### PR #35 首轮 Windows 失败记录与修正
+- PR Mainland Windows EXE run #321（https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43147915634）在合同台账 job 中执行 88 项相关测试：87 passed、1 failed。失败测试为 test_review_csv_export_escapes_spreadsheet_formulas，实际导出值为 "'@SUM(1,1)"，测试却要求保留复核备注前导空格 "'  @"。
+- 根因是复核记录规范化阶段会 trim 备注空白；CSV 安全转义功能实际已正确在 @ 前添加单引号。已把测试断言修正为规范化后的真实输出，不改变数据或安全行为。
+- run #321 其余部分因后续分支更新而出现 cancelled/in-progress，未形成完整 Windows 矩阵与客户包验收；不得把它标为成功。修正后的新一轮完整 PR 构建仍待验证。

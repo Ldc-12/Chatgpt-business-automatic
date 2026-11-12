@@ -16,12 +16,13 @@ from docx import Document
 from pypdf import PdfReader
 
 from src.contract_rules import RULESET_VERSION, review_contract_text
+from src.contract_review import findings_sha256, sha256_file, spreadsheet_safe_cell
 
 CONTRACT_FIELDS = [
     "合同编号", "合同名称", "甲方/客户", "乙方/供应商", "签订日期", "生效日期", "到期日期",
     "合同金额", "续约提醒提前天数", "状态", "负责人", "联系方式", "备注",
 ]
-REVIEW_FIELDS = ["来源文件", "识别完整度", "待补齐字段", "规则版本", "风险等级", "风险命中数", "规则提示", "风险明细"]
+REVIEW_FIELDS = ["来源文件", "来源SHA256", "识别完整度", "待补齐字段", "规则版本", "风险等级", "风险命中数", "规则提示", "风险明细", "风险明细SHA256", "人工结论", "复核人", "复核备注"]
 REQUIRED_FIELDS = ["合同编号", "合同名称", "签订日期", "生效日期", "到期日期", "合同金额"]
 MAX_FILE_BYTES = 50 * 1024 * 1024
 MAX_PDF_PAGES = 500
@@ -220,16 +221,22 @@ def parse_contract_document(path):
 
     complete = len(REQUIRED_FIELDS) - len(missing)
     risk_level = next((level for level in ("高", "中", "低") if any(item["等级"] == level for item in findings)), "无")
+    risk_detail_json = json.dumps(findings, ensure_ascii=False, separators=(",", ":"))
     return {
         **row,
         "来源文件": path.name,
+        "来源SHA256": sha256_file(path),
         "识别完整度": f"{complete}/{len(REQUIRED_FIELDS)}（{round(complete * 100 / len(REQUIRED_FIELDS))}%）",
         "待补齐字段": "、".join(missing),
         "规则版本": RULESET_VERSION,
         "风险等级": risk_level,
         "风险命中数": str(len(findings)),
         "规则提示": "；".join(warnings),
-        "风险明细": json.dumps(findings, ensure_ascii=False, separators=(",", ":")),
+        "风险明细": risk_detail_json,
+        "风险明细SHA256": findings_sha256(findings),
+        "人工结论": "",
+        "复核人": "",
+        "复核备注": "",
     }
 
 
@@ -248,7 +255,7 @@ def write_draft_csv(paths, output_path):
             writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
             writer.writeheader()
             for row in parsed:
-                writer.writerow({field: row.get(field, "") for field in fields})
+                writer.writerow({field: spreadsheet_safe_cell(row.get(field, "")) for field in fields})
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temp_name, target)

@@ -15,13 +15,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
 from src.contract_workflow import (WorkflowStore, MILESTONE_FIELDS, MILESTONE_TYPES, MILESTONE_STATUSES, AUDIT_FIELDS, WORKFLOW_FORMAT, WORKFLOW_VERSION, risk_findings, finance_summary)
 from src.contract_document_parser import write_draft_csv
+from src.contract_review import ReviewStore, spreadsheet_safe_cell
 
 PRODUCT = "合同台账与到期提醒助手"
 FIELDS = ["合同编号", "合同名称", "甲方/客户", "乙方/供应商", "签订日期", "生效日期", "到期日期",
           "合同金额", "续约提醒提前天数", "状态", "负责人", "联系方式", "备注"]
 STATUSES = ["执行中", "待续约", "已续约", "已到期", "已终止"]
 BACKUP_FORMAT = "mainland-contract-ledger"
-BACKUP_VERSION = 2
+BACKUP_VERSION = 3
 
 
 def money(value):
@@ -186,16 +187,19 @@ class ContractStore:
         with open(path, "w", encoding="utf-8-sig", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=FIELDS)
             writer.writeheader()
-            writer.writerows(self.rows if rows is None else rows)
+            for item in (self.rows if rows is None else rows):
+                writer.writerow({field: spreadsheet_safe_cell(item.get(field, "")) for field in FIELDS})
 
-    def backup(self, path, workflow=None):
+    def backup(self, path, workflow=None, reviews=None):
         payload = {"format": BACKUP_FORMAT, "version": BACKUP_VERSION,
                    "created_at": datetime.now().isoformat(timespec="seconds"), "contracts": self.rows}
         if workflow is not None:
             payload["workflow"] = workflow.payload()
+        if reviews is not None:
+            payload["reviews"] = reviews.payload()
         Path(path).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def restore(self, path, workflow=None):
+    def restore(self, path, workflow=None, reviews=None):
         try:
             payload = json.loads(Path(path).read_text(encoding="utf-8-sig"))
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
@@ -203,7 +207,7 @@ class ContractStore:
         if not isinstance(payload, dict):
             raise ValueError("备份文件内容必须是对象")
         version = payload.get("version")
-        if payload.get("format") != BACKUP_FORMAT or type(version) is not int or version not in (1, BACKUP_VERSION):
+        if payload.get("format") != BACKUP_FORMAT or type(version) is not int or version not in (1, 2, BACKUP_VERSION):
             raise ValueError("备份文件格式或版本不受支持")
         raw_rows = payload.get("contracts")
         if not isinstance(raw_rows, list):
@@ -229,22 +233,42 @@ class ContractStore:
             contract_ids = {item["合同编号"] for item in rows}
             if any(item["合同编号"] not in contract_ids for item in milestones):
                 raise ValueError("备份包含关联不存在合同的履约节点")
+        review_records = []
+        if reviews is not None:
+            if version >= 3:
+                review_data = payload.get("reviews")
+                if review_data is None:
+                    raise ValueError("新版备份缺少合同复核记录")
+                review_records = reviews.validate_payload(review_data)
+            else:
+                review_records = []
         old_rows = self.rows[:]
         old_milestones = workflow.milestones[:] if workflow is not None else None
         old_audit = workflow.audit[:] if workflow is not None else None
+        old_reviews = reviews.records[:] if reviews is not None else None
         self.rows = rows
         if workflow is not None:
             workflow.milestones, workflow.audit = milestones, audit
+        if reviews is not None:
+            reviews.records = review_records
         try:
             self.save()
             if workflow is not None:
                 workflow.save()
+            if reviews is not None:
+                reviews.save()
         except Exception:
             self.rows = old_rows
             if workflow is not None:
                 workflow.milestones, workflow.audit = old_milestones, old_audit
                 try:
                     workflow.save()
+                except Exception:
+                    pass
+            if reviews is not None:
+                reviews.records = old_reviews
+                try:
+                    reviews.save()
                 except Exception:
                     pass
             try:
@@ -266,19 +290,29 @@ class App:
         root.geometry("1320x700")
         self.store = ContractStore(data_path())
         self.workflow = WorkflowStore(data_path().with_name("contract_workflow.json"))
+        self.reviews = ReviewStore(data_path().with_name("contract_reviews.json"))
         bar = ttk.Frame(root, padding=8); bar.pack(fill="x")
-        for label, command in [("新增合同", self.add), ("编辑", self.edit), ("删除", self.delete),
-                               ("履约节点", self.manage_milestones), ("风险检查", self.show_risks),
-                               ("节点导入", self.import_milestones), ("节点导出", self.export_milestones),
-                               ("操作记录", self.show_audit), ("批量识别合同文件", self.import_documents), ("导入 CSV", self.import_csv),
-                               ("导出筛选结果", self.export_csv), ("备份", self.backup), ("恢复", self.restore)]:
-            ttk.Button(bar, text=label, command=command).pack(side="left", padx=3)
+        toolbars = [
+            [("新增合同", self.add), ("编辑", self.edit), ("删除", self.delete),
+             ("履约节点", self.manage_milestones), ("风险检查", self.show_risks),
+             ("节点导入", self.import_milestones), ("节点导出", self.export_milestones),
+             ("操作记录", self.show_audit)],
+            [("批量识别合同文件", self.import_documents), ("导入复核结果", self.import_review_results),
+             ("复核记录", self.show_reviews), ("导出复核记录", self.export_reviews),
+             ("导入 CSV", self.import_csv), ("导出筛选结果", self.export_csv),
+             ("备份", self.backup), ("恢复", self.restore)],
+        ]
+        for actions in toolbars:
+            line = ttk.Frame(bar); line.pack(fill="x", pady=2)
+            for label, command in actions:
+                ttk.Button(line, text=label, command=command).pack(side="left", padx=3)
+        filters = ttk.Frame(bar); filters.pack(fill="x", pady=(4, 0))
         self.search = tk.StringVar()
-        ttk.Label(bar, text="搜索").pack(side="left", padx=(12, 3))
-        entry = ttk.Entry(bar, textvariable=self.search, width=24); entry.pack(side="left")
+        ttk.Label(filters, text="搜索").pack(side="left", padx=(3, 3))
+        entry = ttk.Entry(filters, textvariable=self.search, width=24); entry.pack(side="left")
         self.search.trace_add("write", lambda *_: self.refresh())
         self.only_due = tk.BooleanVar(value=False)
-        ttk.Checkbutton(bar, text="只看需要提醒", variable=self.only_due, command=self.refresh).pack(side="left", padx=10)
+        ttk.Checkbutton(filters, text="只看需要提醒", variable=self.only_due, command=self.refresh).pack(side="left", padx=10)
         self.tree = ttk.Treeview(root, columns=FIELDS + ["提醒状态", "剩余天数"], show="headings")
         for col in FIELDS + ["提醒状态", "剩余天数"]:
             self.tree.heading(col, text=col); self.tree.column(col, width=105, stretch=True)
@@ -310,7 +344,7 @@ class App:
         self.summary.set(
             f"合同总数：{len(self.store.rows)}    合同到期提醒：{due}    高/中/低风险："
             f"{sum(x['等级']=='高' for x in risks)}/{sum(x['等级']=='中' for x in risks)}/{sum(x['等级']=='低' for x in risks)}"
-            f"    待付款：{finance['待付款']}    待收款：{finance['待收款']}    数据位置：{self.store.path}"
+            f"    待付款：{finance['待付款']}    待收款：{finance['待收款']}    复核记录：{len(self.reviews.records)}    数据位置：{self.store.path}"
         )
 
     def form(self, existing=None):
@@ -401,12 +435,70 @@ class App:
                 f"合同规则提示：高风险 {high} 份 / 中风险 {medium} 份 / 低风险 {low} 份。\n"
                 f"草稿位置：{target}\n\n"
                 "请先用 Excel/WPS 打开 CSV，查看“风险明细”列中的规则编号和原文行号，"
-                "对照签署文件逐项核实，再补齐字段并点击“导入 CSV”。"
-                "识别和风险提示不会自动写入正式台账，也不构成法律意见。",
+                "对照签署文件逐项核实，再补齐合同字段后用“导入 CSV”入账；填写人工结论、复核人和备注后，"
+                "用“导入复核结果”单独保存复核历史。识别和风险提示不会自动写入正式台账，也不构成法律意见。",
                 parent=self.root,
             )
         except (ValueError, OSError) as exc:
             messagebox.showerror("识别失败", str(exc), parent=self.root)
+
+    def import_review_results(self):
+        path = filedialog.askopenfilename(
+            title="选择已填写人工结论的合同识别草稿",
+            filetypes=[("CSV 文件", "*.csv")],
+        )
+        if not path:
+            return
+        try:
+            count = self.reviews.import_csv(path)
+            try:
+                self.workflow.record_action("", "导入合同复核结果", f"新增 {count} 条复核记录")
+            except OSError as exc:
+                messagebox.showwarning("操作记录未保存", str(exc), parent=self.root)
+            self.refresh()
+            messagebox.showinfo(
+                "复核记录已保存",
+                f"已追加 {count} 条复核记录。历史记录不会被覆盖；相同内容重复导入会被拒绝。",
+                parent=self.root,
+            )
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("导入复核结果失败", str(exc), parent=self.root)
+
+    def show_reviews(self):
+        win = tk.Toplevel(self.root)
+        win.title("合同人工复核历史")
+        win.geometry("1180x520")
+        columns = ["复核时间", "合同编号", "合同名称", "来源文件", "来源SHA256", "规则版本",
+                   "风险命中数", "人工结论", "复核人", "复核备注"]
+        widths = [155, 100, 150, 150, 120, 150, 80, 130, 100, 260]
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for col, width in zip(columns, widths):
+            tree.heading(col, text=col)
+            tree.column(col, width=width, stretch=True)
+        tree.pack(fill="both", expand=True, padx=8, pady=8)
+        for index, item in enumerate(reversed(self.reviews.records[-1000:])):
+            values = [item[field] for field in columns]
+            values[4] = item["来源SHA256"][:16] + "…"
+            tree.insert("", "end", iid=str(index), values=values)
+        ttk.Label(
+            win,
+            text=f"共保存 {len(self.reviews.records)} 条复核历史。每次重新复核会追加新记录，不覆盖旧结论。",
+            padding=8,
+        ).pack(fill="x")
+
+    def export_reviews(self):
+        path = filedialog.asksaveasfilename(
+            title="导出合同人工复核历史",
+            defaultextension=".csv",
+            initialfile="合同人工复核历史.csv",
+            filetypes=[("CSV 文件", "*.csv")],
+        )
+        if path:
+            try:
+                self.reviews.export_csv(path)
+                messagebox.showinfo("导出完成", "复核历史已导出；公式型文本已按表格安全规则转义。")
+            except OSError as exc:
+                messagebox.showerror("导出失败", str(exc), parent=self.root)
 
     def export_csv(self):
         path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV 文件", "*.csv")])
@@ -418,12 +510,12 @@ class App:
     def backup(self):
         path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON 备份", "*.json")])
         if path:
-            try: self.store.backup(path, self.workflow); messagebox.showinfo("备份完成", "合同、履约节点和操作记录已备份")
+            try: self.store.backup(path, self.workflow, self.reviews); messagebox.showinfo("备份完成", "合同、履约节点、操作记录和合同复核历史已备份")
             except OSError as exc: messagebox.showerror("备份失败", str(exc))
     def restore(self):
         path = filedialog.askopenfilename(filetypes=[("JSON 备份", "*.json")])
         if path and messagebox.askyesno("确认恢复", "恢复将替换当前合同台账，建议先备份。继续？"):
-            try: self.store.restore(path, self.workflow); self.refresh(); messagebox.showinfo("恢复完成", "合同、履约节点和操作记录已恢复")
+            try: self.store.restore(path, self.workflow, self.reviews); self.refresh(); messagebox.showinfo("恢复完成", "合同、履约节点、操作记录和合同复核历史已恢复")
             except (ValueError, OSError, json.JSONDecodeError) as exc: messagebox.showerror("恢复失败", str(exc))
 
 

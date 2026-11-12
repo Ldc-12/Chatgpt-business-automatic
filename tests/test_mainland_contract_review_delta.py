@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 
 from src.contract_review import ReviewStore, findings_sha256, normalize_record, REVIEW_DECISIONS

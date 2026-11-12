@@ -42,6 +42,11 @@ def canonical_bytes(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+def inspection_snapshot_hash(inspection):
+    body = {key: value for key, value in inspection.items() if key != "记录SHA256"}
+    return hashlib.sha256(canonical_bytes(body)).hexdigest()
+
+
 def csv_safe_cell(value):
     text = "" if value is None else str(value)
     if text.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
@@ -98,7 +103,7 @@ def normalize_entry(row):
     }
 
 
-def normalize_inspection(row):
+def normalize_inspection(row, *, verify_snapshot=False):
     if not isinstance(row, dict):
         raise ValueError("巡检记录必须是对象")
     inspection_id = str(row.get("巡检编号", "") or "").strip()
@@ -121,17 +126,22 @@ def normalize_inspection(row):
         raise ValueError("同一巡检中存在重复检查项")
     if set(ids) != set(RULES):
         raise ValueError("每次巡检必须包含当前版本的全部检查项，不得漏项")
-    return {
+    normalized = {
         "巡检编号": inspection_id, "门店名称": store, "巡检日期": inspected_on,
         "检查人": inspector, "清单版本": version,
         "检查项": sorted(entries, key=lambda item: item["规则编号"]),
         "创建时间": str(row.get("创建时间", "") or datetime.now().isoformat(timespec="seconds")),
     }
+    digest = inspection_snapshot_hash(normalized)
+    if verify_snapshot and row.get("记录SHA256") != digest:
+        raise ValueError("巡检记录快照 SHA256 校验失败：" + inspection_id)
+    normalized["记录SHA256"] = digest
+    return normalized
 
 
 def verify_event_chain(events):
     previous = "0" * 64
-    required = {"序号","时间","动作","巡检编号","规则编号","摘要","前序哈希","哈希"}
+    required = {"序号","时间","动作","巡检编号","规则编号","摘要","记录SHA256","前序哈希","哈希"}
     for expected_seq, event in enumerate(events, start=1):
         if not isinstance(event, dict) or set(event) != required:
             raise ValueError("审计链事件格式无效")
@@ -149,12 +159,12 @@ def verify_event_chain(events):
     return True
 
 
-def append_event(events, action, inspection_id, rule_id="", summary=""):
+def append_event(events, action, inspection_id, snapshot_sha256, rule_id="", summary=""):
     previous = events[-1]["哈希"] if events else "0" * 64
     body = {
         "序号": len(events) + 1, "时间": datetime.now().isoformat(timespec="seconds"),
         "动作": str(action), "巡检编号": str(inspection_id), "规则编号": str(rule_id),
-        "摘要": str(summary), "前序哈希": previous,
+        "摘要": str(summary), "记录SHA256": str(snapshot_sha256), "前序哈希": previous,
     }
     event = dict(body)
     event["哈希"] = hashlib.sha256(canonical_bytes(body)).hexdigest()
@@ -191,10 +201,11 @@ class InspectionStore:
         raw_inspections, raw_events = body.get("巡检记录"), body.get("审计链")
         if not isinstance(raw_inspections, list) or not isinstance(raw_events, list):
             raise ValueError("备份缺少巡检记录或审计链")
-        inspections = [normalize_inspection(row) for row in raw_inspections]
+        inspections = [normalize_inspection(row, verify_snapshot=True) for row in raw_inspections]
         cls._unique_inspections(inspections)
         events = list(raw_events)
         verify_event_chain(events)
+        cls.verify_snapshot_links(inspections, events)
         return inspections, events
 
     def load(self):
@@ -206,6 +217,19 @@ class InspectionStore:
             self.inspections, self.events = self.decode_payload(payload)
         except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
             raise ValueError(f"本地数据无法读取，原文件未修改：{exc}") from exc
+
+    @staticmethod
+    def verify_snapshot_links(inspections, events):
+        ids = {row["巡检编号"] for row in inspections}
+        latest = {}
+        for event in events:
+            if event["巡检编号"] not in ids:
+                raise ValueError("审计链引用了不存在的巡检记录")
+            latest[event["巡检编号"]] = event["记录SHA256"]
+        for row in inspections:
+            if latest.get(row["巡检编号"]) != row["记录SHA256"]:
+                raise ValueError("巡检记录与审计链快照不匹配：" + row["巡检编号"])
+        return True
 
     def _make_payload(self, inspections, events):
         body = {
@@ -219,6 +243,7 @@ class InspectionStore:
         normalized = [normalize_inspection(row) for row in inspections]
         self._unique_inspections(normalized)
         verify_event_chain(events)
+        self.verify_snapshot_links(normalized, events)
         payload = self._make_payload(normalized, events)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temp = self.path.with_name(self.path.name + ".tmp")
@@ -243,7 +268,7 @@ class InspectionStore:
             "清单版本": CHECKLIST_VERSION,
             "检查项": [{"规则编号": item["id"], "检查结果": "待检查"} for item in CHECKLIST],
         })
-        events = append_event(self.events, "创建巡检", inspection["巡检编号"], summary=f"{store} / {inspector}")
+        events = append_event(self.events, "创建巡检", inspection["巡检编号"], inspection["记录SHA256"], summary=f"{store} / {inspector}")
         self._commit(self.inspections + [inspection], events)
         return inspection["巡检编号"]
 
@@ -266,7 +291,8 @@ class InspectionStore:
         if not found:
             raise ValueError("找不到所选检查项")
         updated["检查项"] = entries
-        events = append_event(self.events, "记录检查结果", inspection_id, rule_id, result)
+        updated = normalize_inspection(updated)
+        events = append_event(self.events, "记录检查结果", inspection_id, updated["记录SHA256"], rule_id, result)
         self._commit([updated if row["巡检编号"] == inspection_id else row for row in self.inspections], events)
 
     def close_finding(self, inspection_id, rule_id, resolution, *, reviewed_on=None):
@@ -291,7 +317,8 @@ class InspectionStore:
         if not found:
             raise ValueError("找不到所选检查项")
         updated["检查项"] = entries
-        events = append_event(self.events, "整改复查完成", inspection_id, rule_id, resolution[:120])
+        updated = normalize_inspection(updated)
+        events = append_event(self.events, "整改复查完成", inspection_id, updated["记录SHA256"], rule_id, resolution[:120])
         self._commit([updated if row["巡检编号"] == inspection_id else row for row in self.inspections], events)
 
     @staticmethod
@@ -388,7 +415,7 @@ class InspectionStore:
             raise ValueError("CSV 中包含已存在的巡检编号，未导入任何数据")
         events = list(self.events)
         for inspection in incoming:
-            events = append_event(events, "CSV 导入巡检", inspection["巡检编号"], summary=inspection["门店名称"])
+            events = append_event(events, "CSV 导入巡检", inspection["巡检编号"], inspection["记录SHA256"], summary=inspection["门店名称"])
         self._commit(self.inspections + incoming, events)
         return len(incoming)
 

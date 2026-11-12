@@ -292,19 +292,27 @@ class App:
         self.workflow = WorkflowStore(data_path().with_name("contract_workflow.json"))
         self.reviews = ReviewStore(data_path().with_name("contract_reviews.json"))
         bar = ttk.Frame(root, padding=8); bar.pack(fill="x")
-        for label, command in [("新增合同", self.add), ("编辑", self.edit), ("删除", self.delete),
-                               ("履约节点", self.manage_milestones), ("风险检查", self.show_risks),
-                               ("节点导入", self.import_milestones), ("节点导出", self.export_milestones),
-                               ("操作记录", self.show_audit), ("批量识别合同文件", self.import_documents), ("导入复核结果", self.import_review_results),
-                               ("复核记录", self.show_reviews), ("导出复核记录", self.export_reviews), ("导入 CSV", self.import_csv),
-                               ("导出筛选结果", self.export_csv), ("备份", self.backup), ("恢复", self.restore)]:
-            ttk.Button(bar, text=label, command=command).pack(side="left", padx=3)
+        toolbars = [
+            [("新增合同", self.add), ("编辑", self.edit), ("删除", self.delete),
+             ("履约节点", self.manage_milestones), ("风险检查", self.show_risks),
+             ("节点导入", self.import_milestones), ("节点导出", self.export_milestones),
+             ("操作记录", self.show_audit)],
+            [("批量识别合同文件", self.import_documents), ("导入复核结果", self.import_review_results),
+             ("复核记录", self.show_reviews), ("导出复核记录", self.export_reviews),
+             ("导入 CSV", self.import_csv), ("导出筛选结果", self.export_csv),
+             ("备份", self.backup), ("恢复", self.restore)],
+        ]
+        for actions in toolbars:
+            line = ttk.Frame(bar); line.pack(fill="x", pady=2)
+            for label, command in actions:
+                ttk.Button(line, text=label, command=command).pack(side="left", padx=3)
+        filters = ttk.Frame(bar); filters.pack(fill="x", pady=(4, 0))
         self.search = tk.StringVar()
-        ttk.Label(bar, text="搜索").pack(side="left", padx=(12, 3))
-        entry = ttk.Entry(bar, textvariable=self.search, width=24); entry.pack(side="left")
+        ttk.Label(filters, text="搜索").pack(side="left", padx=(3, 3))
+        entry = ttk.Entry(filters, textvariable=self.search, width=24); entry.pack(side="left")
         self.search.trace_add("write", lambda *_: self.refresh())
         self.only_due = tk.BooleanVar(value=False)
-        ttk.Checkbutton(bar, text="只看需要提醒", variable=self.only_due, command=self.refresh).pack(side="left", padx=10)
+        ttk.Checkbutton(filters, text="只看需要提醒", variable=self.only_due, command=self.refresh).pack(side="left", padx=10)
         self.tree = ttk.Treeview(root, columns=FIELDS + ["提醒状态", "剩余天数"], show="headings")
         for col in FIELDS + ["提醒状态", "剩余天数"]:
             self.tree.heading(col, text=col); self.tree.column(col, width=105, stretch=True)

@@ -360,7 +360,7 @@ def test_repeat_issue_detection_is_scoped_to_the_same_store(tmp_path):
     fail(store, b1, "FS-001")
 
     assert store.repeated_findings(today=today) == []
-    assert store.repeated_findings_by_store(today=today) == []
+    assert store.repeated_findings_by_store(today=today) == {}
 
     a2 = store.create_inspection("门店 A", "复查员", inspected_on=today.isoformat())
     fail(store, a2, "FS-001")

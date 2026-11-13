@@ -69,7 +69,7 @@ def inspect_package(path: str | Path, *, expected_exes: int = 22, expected_manua
 
         description = archive.read("package/套餐说明.txt").decode("utf-8-sig")
         catalog = archive.read("package/分类套餐目录.md").decode("utf-8-sig")
-        combined = description + "\\n" + catalog
+        combined = description + "\n" + catalog
         missing_series = [label for label in SERIES_LABELS if label not in combined]
         if missing_series:
             raise ValueError("套餐目录缺少系列说明：" + "、".join(missing_series))
@@ -121,7 +121,7 @@ def main() -> int:
         )
         output = Path(args.report)
         output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+        output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print("MAINLAND_PACKAGE_INSPECTION_OK")
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0

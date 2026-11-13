@@ -179,7 +179,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt pyinstaller
       - name: Automated regression tests
-        run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py tests/test_mainland_series_packages.py
+        run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py tests/test_mainland_series_packages.py tests/test_mainland_package_inspection.py
       - name: Source self-test
         run: python "${{ matrix.source }}" --self-test
       - name: Build EXE with ReportLab support
@@ -281,12 +281,20 @@ jobs:
           cp release/README-大陆版.md release/套餐说明.txt release/package/
           cd release
           zip -r Phase1-Mainland-Windows-Tools.zip package
+      - name: Inspect customer ZIP contents, CRC and SHA256
+        run: >-
+          python tools/inspect_mainland_package.py
+          --package release/Phase1-Mainland-Windows-Tools.zip
+          --expected-exes 22
+          --expected-manuals 22
+          --report release/Phase1-Mainland-Windows-Tools.inspection.json
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-customer-package
           path: |
             release/Phase1-Mainland-Windows-Tools.zip
             release/README-大陆版.md
+            release/Phase1-Mainland-Windows-Tools.inspection.json
       - name: Create bounded download chunks and checksum manifest
         shell: bash
         run: |
@@ -309,6 +317,7 @@ jobs:
             release/Phase1-Mainland-Windows-Tools.zip.sha256
             release/Phase1-Mainland-Windows-Tools.zip.bytes
             release/Phase1-Mainland-Windows-Tools.manifest.txt
+            release/Phase1-Mainland-Windows-Tools.inspection.json
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-parts

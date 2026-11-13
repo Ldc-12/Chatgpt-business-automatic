@@ -1,6 +1,5 @@
 import importlib.util
 import struct
-import warnings
 import zipfile
 from pathlib import Path
 
@@ -26,7 +25,7 @@ def make_package(path, *, exe_count=22, manual_count=22, include_series=True):
         archive.writestr("package/README-大陆版.md", b"# Mainland package\n")
         archive.writestr("package/分类套餐目录.md", b"\n".join(
             f"系列 {letter}".encode("utf-8") for letter in ("ABCDEF" if include_series else "A")
-        ) if include_series else b"系列 A")
+        ) if include_series else "系列 A".encode("utf-8"))
         archive.writestr(
             "package/套餐说明.txt",
             ("\n".join(f"系列 {letter}｜建议售价 29.9 元" for letter in ("ABCDEF" if include_series else "A"))

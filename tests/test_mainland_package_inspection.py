@@ -45,7 +45,7 @@ def test_inspector_reports_counts_crc_hash_bundle_labels_and_timestamps(tmp_path
     assert len(report["manuals"]) == 22
     assert len(report["sha256"]) == 64
     assert report["bundle_descriptions"] == [
-        f"系列 {letter}｜建议售价 29.9 元" for letter in ("ABCDEF" if include_series else "A")
+        f"系列 {letter}｜建议售价 29.9 元" for letter in "ABCDEF"
     ]
     assert report["timestamp_min"] is not None
     assert report["timestamp_max"] is not None

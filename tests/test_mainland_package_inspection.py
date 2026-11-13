@@ -1,4 +1,5 @@
 import importlib.util
+import stat
 import struct
 import zipfile
 from pathlib import Path
@@ -92,4 +93,68 @@ def test_inspector_rejects_crc_corruption(tmp_path):
     data[data_offset] ^= 0x01
     package.write_bytes(data)
     with pytest.raises(ValueError, match="CRC 校验失败"):
+        MODULE.inspect_package(package)
+
+
+
+@pytest.mark.parametrize(
+    "unsafe_name",
+    [
+        "C:/outside.txt",
+        "package/readme.txt:payload",
+        "package/trailing-dot./file.txt",
+        "package/CON.txt",
+    ],
+)
+def test_inspector_rejects_windows_unsafe_paths(tmp_path, unsafe_name):
+    package = tmp_path / "windows-unsafe.zip"
+    make_package(package)
+    with zipfile.ZipFile(package, "a") as archive:
+        archive.writestr(unsafe_name, b"unsafe")
+    with pytest.raises(ValueError, match="不安全路径"):
+        MODULE.inspect_package(package)
+
+
+def test_inspector_rejects_case_insensitive_path_collisions(tmp_path):
+    package = tmp_path / "case-collision.zip"
+    make_package(package)
+    with zipfile.ZipFile(package, "a") as archive:
+        archive.writestr("package/tool00.EXE", b"MZduplicate")
+    with pytest.raises(ValueError, match="Windows 路径冲突"):
+        MODULE.inspect_package(package)
+
+
+def test_inspector_rejects_unicode_normalization_collisions(tmp_path):
+    package = tmp_path / "unicode-collision.zip"
+    make_package(package)
+    with zipfile.ZipFile(package, "a") as archive:
+        archive.writestr("package/cafe\u0301.txt", b"one")
+        archive.writestr("package/caf\u00e9.txt", b"two")
+    with pytest.raises(ValueError, match="Windows 路径冲突"):
+        MODULE.inspect_package(package)
+
+
+def test_inspector_rejects_symbolic_link_entries(tmp_path):
+    package = tmp_path / "symlink.zip"
+    make_package(package)
+    link = zipfile.ZipInfo("package/link.txt")
+    link.create_system = 3
+    link.external_attr = (stat.S_IFLNK | 0o777) << 16
+    with zipfile.ZipFile(package, "a") as archive:
+        archive.writestr(link, "target.txt")
+    with pytest.raises(ValueError, match="特殊文件"):
+        MODULE.inspect_package(package)
+
+
+
+def test_inspector_rejects_raw_backslash_paths(tmp_path):
+    package = tmp_path / "raw-backslash.zip"
+    make_package(package)
+    with zipfile.ZipFile(package, "a") as archive:
+        archive.writestr("package/outside.txt", b"unsafe")
+    data = package.read_bytes().replace(
+        b"package/outside.txt", b"package\\outside.txt"
+    )
+    package.write_bytes(data)
+    with pytest.raises(ValueError, match="不安全路径"):
         MODULE.inspect_package(package)

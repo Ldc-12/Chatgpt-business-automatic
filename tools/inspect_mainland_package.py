@@ -4,7 +4,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import stat
 import sys
+import unicodedata
 import zipfile
 from pathlib import Path, PurePosixPath
 
@@ -33,12 +35,48 @@ def inspect_package(path: str | Path, *, expected_exes: int = 22, expected_manua
     with zipfile.ZipFile(archive_path) as archive:
         infos = archive.infolist()
         names = [item.filename for item in infos]
-        if len(names) != len(set(names)):
-            raise ValueError("客户 ZIP 存在重复文件路径")
-        for name in names:
-            member = PurePosixPath(name)
-            if member.is_absolute() or ".." in member.parts or "\\" in name:
+        normalized_names = set()
+        reserved_names = {"CON", "PRN", "AUX", "NUL"} | {
+            f"COM{number}" for number in range(1, 10)
+        } | {f"LPT{number}" for number in range(1, 10)}
+        for info in infos:
+            name = info.orig_filename
+            is_directory = info.is_dir()
+            raw_parts = name.split("/")
+            if is_directory and raw_parts and raw_parts[-1] == "":
+                raw_parts = raw_parts[:-1]
+            if (
+                not name
+                or "\x00" in name
+                or "\\" in name
+                or not raw_parts
+                or any(part in {"", ".", ".."} for part in raw_parts)
+            ):
                 raise ValueError(f"客户 ZIP 存在不安全路径：{name}")
+            member = PurePosixPath(name)
+            if member.is_absolute():
+                raise ValueError(f"客户 ZIP 存在不安全路径：{name}")
+            for part in raw_parts:
+                device_stem = part.split(".", 1)[0].rstrip(" .").upper()
+                if (
+                    ":" in part
+                    or part.endswith((" ", "."))
+                    or device_stem in reserved_names
+                ):
+                    raise ValueError(f"客户 ZIP 存在不安全路径：{name}")
+            unix_mode = (info.external_attr >> 16) & 0xFFFF
+            file_type = stat.S_IFMT(unix_mode)
+            if stat.S_ISLNK(unix_mode) or file_type not in {
+                0, stat.S_IFREG, stat.S_IFDIR
+            }:
+                raise ValueError(f"客户 ZIP 存在不安全路径或特殊文件：{name}")
+            normalized = "/".join(
+                unicodedata.normalize("NFC", part).rstrip(" .").casefold()
+                for part in raw_parts
+            )
+            if normalized in normalized_names:
+                raise ValueError(f"客户 ZIP 存在重复或 Windows 路径冲突：{name}")
+            normalized_names.add(normalized)
         bad_member = archive.testzip()
         if bad_member is not None:
             raise ValueError(f"客户 ZIP CRC 校验失败：{bad_member}")

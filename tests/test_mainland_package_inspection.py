@@ -25,11 +25,11 @@ def make_package(path, *, exe_count=22, manual_count=22, include_series=True):
         archive.writestr("package/说明书/README.md", b"# Manual index\n")
         archive.writestr("package/README-大陆版.md", b"# Mainland package\n")
         archive.writestr("package/分类套餐目录.md", b"\n".join(
-            f"系列 {letter}".encode("utf-8") for letter in "ABCDEF"
+            f"系列 {letter}".encode("utf-8") for letter in ("ABCDEF" if include_series else "A")
         ) if include_series else b"系列 A")
         archive.writestr(
             "package/套餐说明.txt",
-            ("\n".join(f"系列 {letter}｜建议售价 29.9 元" for letter in "ABCDEF")
+            ("\n".join(f"系列 {letter}｜建议售价 29.9 元" for letter in ("ABCDEF" if include_series else "A"))
              + "\n以上均为待市场验证的建议售价。").encode("utf-8"),
         )
 
@@ -46,7 +46,7 @@ def test_inspector_reports_counts_crc_hash_bundle_labels_and_timestamps(tmp_path
     assert len(report["manuals"]) == 22
     assert len(report["sha256"]) == 64
     assert report["bundle_descriptions"] == [
-        f"系列 {letter}｜建议售价 29.9 元" for letter in "ABCDEF"
+        f"系列 {letter}｜建议售价 29.9 元" for letter in ("ABCDEF" if include_series else "A")
     ]
     assert report["timestamp_min"] is not None
     assert report["timestamp_max"] is not None

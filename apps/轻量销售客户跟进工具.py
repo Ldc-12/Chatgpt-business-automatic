@@ -1,4 +1,4 @@
-import csv, datetime as dt, json, os, shutil, sys, tempfile, tkinter as tk
+import csv, datetime as dt, io, json, math, os, shutil, sys, tempfile, tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.license import require_license
@@ -9,11 +9,109 @@ STAGES=["新线索","已联系","需求确认","报价中","谈判中","成交",
 
 def today(): return dt.date.today().isoformat()
 def num(v):
-    s=str(v).strip().replace(",","").replace("，","").replace("￥","").replace("¥","")
-    return float(s) if s else 0.0
+    s = str(v).strip().replace(",", "").replace("，", "").replace("￥", "").replace("¥", "")
+    value = float(s) if s else 0.0
+    if not math.isfinite(value):
+        raise ValueError("金额必须是有限数字")
+    return value
 def due(v):
     try:return (dt.date.fromisoformat(str(v))-dt.date.today()).days
     except:return None
+
+MAX_CSV_BYTES = 25 * 1024 * 1024
+MAX_CSV_ROWS = 50000
+
+
+def spreadsheet_safe_cell(value):
+    text = "" if value is None else str(value)
+    if text.lstrip(" \\t\\r\\n").startswith(("=", "+", "-", "@")):
+        return "'" + text
+    return text
+
+
+def restore_spreadsheet_safe_cell(value):
+    text = "" if value is None else str(value)
+    if text.startswith("'") and text[1:].lstrip(" \\t\\r\\n").startswith(("=", "+", "-", "@")):
+        return text[1:]
+    return text
+
+
+def atomic_write_text(path, content):
+    target = os.path.abspath(path)
+    directory = os.path.dirname(target)
+    os.makedirs(directory, exist_ok=True)
+    fd, temp_path = tempfile.mkstemp(prefix=os.path.basename(target) + ".", suffix=".tmp", dir=directory)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_path, target)
+    except Exception:
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass
+        raise
+
+
+def export_csv(path, rows):
+    clean = validate_rows(rows)
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=FIELDS, extrasaction="raise")
+    writer.writeheader()
+    for row in clean:
+        writer.writerow({field: spreadsheet_safe_cell(row[field]) for field in FIELDS})
+    atomic_write_text(path, "\\ufeff" + buffer.getvalue())
+
+
+def read_csv_rows(path):
+    if os.path.getsize(path) > MAX_CSV_BYTES:
+        raise ValueError("CSV 超过 25 MiB 安全上限")
+    imported = []
+    with open(path, encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        headers = reader.fieldnames
+        if not headers:
+            raise ValueError("CSV 缺少表头")
+        if len(headers) != len(set(headers)):
+            raise ValueError("CSV 存在重复字段名")
+        missing = [field for field in FIELDS if field not in headers]
+        extra = [field for field in headers if field not in FIELDS]
+        if missing or extra:
+            details = []
+            if missing:
+                details.append("缺少字段：" + "、".join(missing))
+            if extra:
+                details.append("存在未支持字段：" + "、".join(extra))
+            raise ValueError("；".join(details))
+        for line, row in enumerate(reader, start=2):
+            if None in row:
+                raise ValueError(f"CSV 第 {line} 行包含多余列")
+            values = list(row.values())
+            if not values or all(value in (None, "") for value in values):
+                continue
+            if any(value is None for value in values):
+                raise ValueError(f"CSV 第 {line} 行字段数量不足")
+            if len(imported) >= MAX_CSV_ROWS:
+                raise ValueError("CSV 超过 50000 条记录上限")
+            imported.append({field: restore_spreadsheet_safe_cell(row[field]) for field in FIELDS})
+    return validate_rows(imported)
+
+
+def replace_rows_with_backup(data_path, imported_rows, current_rows):
+    clean = validate_rows(imported_rows)
+    backup_path = None
+    if os.path.exists(data_path):
+        stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        backup_path = data_path + ".before-csv-import-" + stamp + ".json"
+        suffix = 1
+        while os.path.exists(backup_path):
+            backup_path = data_path + ".before-csv-import-" + stamp + f"-{suffix}.json"
+            suffix += 1
+        save_rows(backup_path, current_rows)
+    save_rows(data_path, clean)
+    return backup_path
 
 
 def validate_rows(rows):
@@ -149,22 +247,38 @@ class App(tk.Tk):
         self.rows=[r for r in self.rows if [r.get(x,"") for x in FIELDS] not in vals];self.save();self.refresh()
     def imp(self):
         if not self.ensure_writable(): return
-        p=filedialog.askopenfilename(filetypes=[("CSV","*.csv")])
-        if not p:return
+        p = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
+        if not p:
+            return
         try:
-            with open(p,encoding="utf-8-sig",newline="") as f:
-                rd=csv.DictReader(f); missing=[x for x in FIELDS if x not in (rd.fieldnames or [])]
-                if missing:raise ValueError("缺少字段："+",".join(missing))
-                imported = validate_rows([{x:r.get(x,"") for x in FIELDS} for r in rd])
-            save_rows(self.path, imported)
+            imported = read_csv_rows(p)
+        except Exception as exc:
+            messagebox.showerror("导入失败", str(exc), parent=self)
+            return
+        if not messagebox.askyesno(
+            "确认替换客户数据",
+            f"CSV 已通过校验，共 {len(imported)} 条客户记录。\\n导入会替换当前全部 {len(self.rows)} 条记录；程序会先自动备份当前数据。是否继续？",
+            parent=self,
+        ):
+            return
+        try:
+            backup_path = replace_rows_with_backup(self.path, imported, self.rows)
             self.rows = imported
             self.refresh()
-        except Exception as e:messagebox.showerror("导入失败",str(e))
+            detail = f"\\n原数据备份：{backup_path}" if backup_path else "\\n当前没有旧数据文件，无需创建导入前备份。"
+            messagebox.showinfo("导入完成", f"已导入 {len(imported)} 条客户记录。{detail}", parent=self)
+        except Exception as exc:
+            messagebox.showerror("导入失败", f"当前数据未被替换：{exc}", parent=self)
+
     def exp(self):
-        p=filedialog.asksaveasfilename(defaultextension=".csv",filetypes=[("CSV","*.csv")])
-        if not p:return
-        with open(p,"w",encoding="utf-8-sig",newline="") as f:w=csv.DictWriter(f,fieldnames=FIELDS);w.writeheader();w.writerows(self.rows)
-        messagebox.showinfo("完成","已导出客户数据")
+        p = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+        if not p:
+            return
+        try:
+            export_csv(p, self.rows)
+            messagebox.showinfo("导出完成", "客户数据已安全导出（UTF-8 BOM、公式防护、原子替换）。", parent=self)
+        except Exception as exc:
+            messagebox.showerror("导出失败", str(exc), parent=self)
     def backup_json(self):
         path = filedialog.asksaveasfilename(
             defaultextension=".json",

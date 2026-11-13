@@ -82,7 +82,7 @@ def write_csv(path, headers, rows):
 def test_sales_csv_export_is_formula_safe_atomic_and_roundtrips(tmp_path):
     row = sample_customer(
         客户=' =HYPERLINK("https://example.invalid")',
-        备注="\\t+CMD|' /C calc'!A0",
+        备注=chr(9) + "+CMD|' /C calc'!A0",
     )
     target = tmp_path / "exports" / "sales.csv"
 

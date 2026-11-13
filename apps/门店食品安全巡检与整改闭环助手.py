@@ -703,4 +703,7 @@ def main():
 
 
 if __name__ == "__main__":
+    if os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
+        self_test()
+        os._exit(0)
     raise SystemExit(main())

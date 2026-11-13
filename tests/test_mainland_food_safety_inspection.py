@@ -320,3 +320,32 @@ def test_oversized_csv_is_rejected_before_import(tmp_path, monkeypatch):
     assert store.inspections == before_rows
     assert store.events == before_events
     assert store.get_inspection(inspection_id) is not None
+
+
+def test_create_respects_inspection_count_limit_without_partial_write(tmp_path, monkeypatch):
+    store = MODULE.InspectionStore(tmp_path / "data.json")
+    monkeypatch.setattr(MODULE, "MAX_INSPECTIONS", 0)
+    try:
+        store.create_inspection("超限门店", "检查人")
+    except ValueError as exc:
+        assert "10000 条安全上限" in str(exc)
+    else:
+        raise AssertionError("inspection count limit should be enforced")
+    assert store.inspections == []
+    assert store.events == []
+    assert not store.path.exists()
+
+
+def test_oversized_backup_is_rejected_without_replacing_existing_file(tmp_path, monkeypatch):
+    store = MODULE.InspectionStore(tmp_path / "data.json")
+    create(store)
+    destination = tmp_path / "backup.json"
+    destination.write_bytes(b"previous-backup")
+    monkeypatch.setattr(MODULE, "MAX_BACKUP_BYTES", 10)
+    try:
+        store.backup(destination)
+    except ValueError as exc:
+        assert "100 MiB" in str(exc)
+    else:
+        raise AssertionError("oversized backup should be rejected")
+    assert destination.read_bytes() == b"previous-backup"

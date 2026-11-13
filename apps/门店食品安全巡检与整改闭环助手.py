@@ -263,10 +263,15 @@ class InspectionStore:
     def _commit(self, inspections, events):
         normalized = [normalize_inspection(row) for row in inspections]
         self._unique_inspections(normalized)
+        if len(normalized) > MAX_INSPECTIONS:
+            raise ValueError("巡检记录超过 10000 条安全上限")
         verify_event_chain(events)
         self.verify_snapshot_links(normalized, events)
         payload = self._make_payload(normalized, events)
-        atomic_write_text(self.path, json.dumps(payload, ensure_ascii=False, indent=2))
+        serialized = json.dumps(payload, ensure_ascii=False, indent=2)
+        if len(serialized.encode("utf-8")) > MAX_BACKUP_BYTES:
+            raise ValueError("本地巡检数据超过 100 MiB 安全上限")
+        atomic_write_text(self.path, serialized)
         self.inspections, self.events = normalized, list(events)
 
     def get_inspection(self, inspection_id):
@@ -440,7 +445,10 @@ class InspectionStore:
 
     def backup(self, path):
         payload = self._make_payload(self.inspections, self.events)
-        atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2))
+        serialized = json.dumps(payload, ensure_ascii=False, indent=2)
+        if len(serialized.encode("utf-8")) > MAX_BACKUP_BYTES:
+            raise ValueError("巡检备份超过 100 MiB 安全上限")
+        atomic_write_text(path, serialized)
 
     def restore(self, path):
         source = Path(path)

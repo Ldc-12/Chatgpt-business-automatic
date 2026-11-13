@@ -278,3 +278,16 @@ def test_food_safety_inspection_product_is_in_build_matrix_launcher_license_and_
     assert "门店食品安全巡检与整改闭环助手" in license_tests
     assert '"food-safety-inspection"' in series_builder
     assert len(APP_ENTRYPOINTS) == 22
+
+
+def test_customer_zip_inspection_runs_before_artifact_upload_and_is_retained():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    inspection_step = workflow.index("Inspect customer ZIP contents, CRC and SHA256")
+    customer_upload = workflow.index("name: mainland-phase1-customer-package")
+    assert inspection_step < customer_upload
+    assert "tools/inspect_mainland_package.py" in workflow
+    assert "--expected-exes 22" in workflow
+    assert "--expected-manuals 22" in workflow
+    report = "release/Phase1-Mainland-Windows-Tools.inspection.json"
+    assert workflow.count(report) >= 2
+    assert "tests/test_mainland_package_inspection.py" in workflow

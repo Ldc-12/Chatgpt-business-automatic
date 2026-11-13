@@ -932,3 +932,29 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 本轮没有读取、上传、生成、猜测、替换或轮换任何生产私钥/公钥。卖家私钥不在仓库。
 - **最新 main 客户包仍为“待最终验收”，不是可正式销售版。** CI 的冻结 EXE 自测不等同于用户真实 Windows GUI、真实授权签发/激活和退出重启后复验。还需在可信 Windows 电脑用本机原有卖家私钥导出公钥 PEM 或 SHA256 指纹供比对；只需要公钥或指纹，绝不上传私钥。
 
+## 2026-11-13 PR #41 Windows ZIP 路径安全加固与 main run #355
+
+### PR #41：客户 ZIP Windows 路径碰撞防护
+- PR [#41 Harden customer ZIP inspection for Windows path collisions](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/41) 已合并，squash merge commit：`b82904efb6fff98c4b20a37e7b54ecd9e8919dd0`。当前 main HEAD 为该提交；当前 open PR：0。
+- 变更文件：`tools/inspect_mainland_package.py`、`tests/test_mainland_package_inspection.py`。检查器现在基于 ZIP 原始成员名校验，拒绝盘符路径、NTFS ADS、Windows 保留设备名、尾随点/空格、反斜杠路径、符号链接和特殊文件；重复路径按 Unicode NFC + casefold 检测，避免 Windows 大小写/Unicode 归一化碰撞。
+- PR #41 最终候选 head `61148c74d7ded66e760c52be3c874a676258159c` 的 Windows run #354：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43417107641)，23/23 jobs success（22 个产品/启动器构建 + 1 个客户包任务）；客户包检查、上传、重新下载及复检全部通过。食品安全巡检 job #131857668336：`81 passed in 1.72s`，源码自测 `SELF_TEST_OK`，冻结 EXE 自测 `FROZEN_EXE_SELF_TEST_OK`，退出码 0。
+- PR #41 的失败修复记录：run #351 的 11 个产品 job 因检查器重构时误删仍被使用的 `names` 列表而报 `NameError: names is not defined`；恢复名称列表后继续验证。run #353 的 22 个产品 job 因 Windows Python 的 `zipfile.ZipInfo.filename` 在读取时会把反斜杠归一化为正斜杠，普通 `writestr` 测试没有保留原始反斜杠而未触发拒绝逻辑；修正为检查 `orig_filename`，并通过修改 ZIP local/central header 构造真实反斜杠归档回归测试。run #352 是更新提交后取消的旧矩阵。最终 run #354 完整通过后才合并。
+- PR #41 候选包 artifact ID `14032407221` 属于 PR 分支，不作为当前 main 客户包来源。
+
+### 合并后 main Mainland Windows EXE run #355
+- [Mainland Windows EXE run #355](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43417597085)，head SHA `b82904efb6fff98c4b20a37e7b54ecd9e8919dd0`，23/23 jobs success（22 个产品/启动器构建 + 1 个客户交付包任务），无失败 job。
+- 食品安全巡检 job #131859327520：`81 passed in 1.58s`；源码自测 `SELF_TEST_OK`；冻结 EXE 自测 `FROZEN_EXE_SELF_TEST_OK`，退出码 0。该软件 EXE artifact ID `14032966197`。
+- 客户包 job #131860225939：五个分类包构建、客户 ZIP 检查、上传、重新下载、重新校验、分片和 manifest 全部 success。新 Windows 路径检查器已在真实 22-EXE 客户包上运行通过。
+- 最新 main 客户包 artifact `mainland-phase1-customer-package` ID `14032577421`，366,204,051 bytes；外层 ZIP SHA256 `d35ec0048ad794e714d5570d05e8ccde8845a1e19e8483b0538d0c2687a613a0`，CRC 通过。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：366,098,667 bytes；SHA256 `497507467d2855d7b688042feac461db7bdb0affdaad6870ca2e780dda6b6a6c`；ZIP CRC 通过。
+- 内层 50 个条目（48 个文件、2 个目录）：22 个 EXE（21 款业务软件 + 工具箱启动器）、22 份逐款中文说明书、1 份说明书索引、1 份大陆版 README、1 份分类套餐目录、1 份套餐说明 TXT、1 份 inspection JSON。全部内层文件时间戳为 2026-11-13 11:32:54 UTC（北京时间 19:32:54）；artifact 创建时间 11:33:13 UTC（北京时间 19:33:13）。
+- inspection JSON 确认 EXE=22、manual=22、entry_count=50、CRC passed；包含 A–F 六个套餐说明。F 为 21 款业务软件 + 启动器的完整客户包，不是额外分类 ZIP。
+- Manifest artifact ID `14032906169`，2,564 bytes；声明内层 ZIP 为 366,098,667 bytes、SHA256 `497507467d2855d7b688042feac461db7bdb0affdaad6870ca2e780dda6b6a6c`、20 个分片、每片 18 MiB；与实际下载内层包字节数和 SHA256 完全一致，manifest ZIP CRC 通过。
+- 分类套餐 artifact ID `14033190905`，351,516,921 bytes；外层 ZIP CRC 通过，五个分类 ZIP 均 CRC 通过并逐一核验：A 办公效率 5 EXE/5 说明书；B 门店经营 7/7；C 财务与交易 4/4；D 合同工程物业 3/3；E 客户与个人事务 2/2。B 系列已包含食品安全巡检工具。价格仍是待市场验证建议价，不是成交数据。
+- 本轮三份最新 main 文件均已真实下载并核验：客户包、manifest、五个分类套餐；没有用 PR 候选包或历史包冒充最新 main。
+
+### 最新 Autonomous Business Engine run #432
+- [ABE run #432](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43417597116)，head SHA 与 main 一致，build/deploy 2/2 success。
+- build job #131859325838：`325 passed in 2.22s`；生成 12 个 Stripe 产品页和 12 个闲鱼目录条目；本次 `error: null`，未触发外部 API fallback。
+- Pages artifact ID `14033050972`，47,778 bytes；已下载核验，外层 ZIP CRC 通过，内部 TAR 198 个条目，其中 17 个 product.json、12 个闲鱼 listing.txt；deploy job 成功。
+

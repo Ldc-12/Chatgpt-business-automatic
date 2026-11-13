@@ -295,6 +295,26 @@ jobs:
             release/Phase1-Mainland-Windows-Tools.zip
             release/README-大陆版.md
             release/Phase1-Mainland-Windows-Tools.inspection.json
+      - name: Re-download uploaded customer package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mainland-phase1-customer-package
+          path: release/downloaded-artifact
+      - name: Verify re-downloaded customer package
+        shell: bash
+        run: |
+          python tools/inspect_mainland_package.py --package release/downloaded-artifact/Phase1-Mainland-Windows-Tools.zip --expected-exes 22 --expected-manuals 22 --report release/downloaded-artifact/reinspection.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          original = json.loads(Path("release/Phase1-Mainland-Windows-Tools.inspection.json").read_text(encoding="utf-8"))
+          downloaded = json.loads(Path("release/downloaded-artifact/reinspection.json").read_text(encoding="utf-8"))
+          fields = ("size_bytes", "sha256", "crc", "entry_count", "exe_count", "manual_count", "executables", "manuals", "bundle_descriptions", "bundle_catalog", "timestamp_min", "timestamp_max")
+          differences = [field for field in fields if original[field] != downloaded[field]]
+          if differences:
+              raise SystemExit("Re-downloaded package differs from uploaded source: " + ", ".join(differences))
+          print("POST_UPLOAD_PACKAGE_REDOWNLOAD_OK: uploaded artifact contents match the inspected ZIP byte-for-byte.")
+          PY
       - name: Create bounded download chunks and checksum manifest
         shell: bash
         run: |

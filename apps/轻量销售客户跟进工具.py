@@ -24,14 +24,14 @@ MAX_CSV_ROWS = 50000
 
 def spreadsheet_safe_cell(value):
     text = "" if value is None else str(value)
-    if text.lstrip(" \\t\\r\\n").startswith(("=", "+", "-", "@")):
+    if text.lstrip(" " + chr(9) + chr(13) + chr(10)).startswith(("=", "+", "-", "@")):
         return "'" + text
     return text
 
 
 def restore_spreadsheet_safe_cell(value):
     text = "" if value is None else str(value)
-    if text.startswith("'") and text[1:].lstrip(" \\t\\r\\n").startswith(("=", "+", "-", "@")):
+    if text.startswith("'") and text[1:].lstrip(" " + chr(9) + chr(13) + chr(10)).startswith(("=", "+", "-", "@")):
         return text[1:]
     return text
 
@@ -62,7 +62,7 @@ def export_csv(path, rows):
     writer.writeheader()
     for row in clean:
         writer.writerow({field: spreadsheet_safe_cell(row[field]) for field in FIELDS})
-    atomic_write_text(path, "\\ufeff" + buffer.getvalue())
+    atomic_write_text(path, chr(65279) + buffer.getvalue())
 
 
 def read_csv_rows(path):

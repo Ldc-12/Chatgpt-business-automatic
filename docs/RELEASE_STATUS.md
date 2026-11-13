@@ -1,3 +1,41 @@
+# 2026-11-13 main 最新发布复核：销售 CSV 安全升级与 run #359
+
+- 本轮 main 最新代码提交：`7b42d530ca3da41c747d4b5f1b83bc30334c9040`（PR #42 squash merge）；当前代码 PR 已全部合并，文档更新 PR 另行记录。
+- PR #42：[`Harden sales follow-up CSV import and export`](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/42)，已合并。代码改动仅涉及轻量销售客户跟进工具、对应回归测试和中文说明书；未更改授权密钥。
+- PR 验证 run #358：[`43420709979`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43420709979)，23/23 jobs success。销售工具测试 `70 passed`，源码自测通过，冻结 EXE 自测退出码 0，客户包检查及重新下载比对通过。
+- PR 初次验证 run #357 曾失败：销售工具测试 3 项失败，根因为 Windows `PathLike` 与字符串拼接不兼容，以及“缺少末尾字段”的测试行全空而被正确当作空行跳过。已修复为 `os.fspath` 路径规范化，并让回归样本保留一个非空字段；最终 run #358 通过。
+- 合并后的 main push Mainland Windows EXE run #359：[`43421227851`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43421227851)，22 个产品/启动器矩阵 job + 1 个客户包 job，共 23/23 success。销售工具 job `131871445006`：`70 passed in 1.05s`，PyInstaller 构建成功，冻结 EXE 日志为 `FROZEN_EXE_SELF_TEST_OK`，退出码 0。
+- 同一 main commit 的 Windows EXE Build run #175：[`43421227900`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43421227900)，test/build 均 success。
+- Autonomous Business Engine run #435：[`43421227859`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43421227859)，build/deploy 均 success，`334 passed`；外部数据请求返回 HTTP 502，按既有 fallback 继续完成，日志明确记录 `fallback: HTTPError`，不得把外部 API 描述为成功。Pages artifact ID：`14034586133`（47,791 bytes）。
+
+## run #359 main 客户包下载核验
+
+- 客户包 artifact：`mainland-phase1-customer-package`，ID `14034337030`；外层 artifact ZIP：366,209,095 bytes，SHA256 `e8ba60f0c3bf79b9eb8c7b2dcd3ba575aab2754f1404573b9bbc05eb1e06bc63`。
+- 已下载并解压核验内层 `Phase1-Mainland-Windows-Tools.zip`：366,103,639 bytes，SHA256 `5d1fb7b76df420addddc7e3f0f7be0ab8847be10322b77da7949f567e12601b1`；外层、内层 ZIP CRC 均通过。
+- 内层 ZIP：50 个条目（48 个文件、2 个目录），22 个 EXE（21 款业务软件 + 工具箱启动器）、22 份产品中文说明书、1 份说明书索引、1 份大陆版 README、1 份套餐说明 TXT、1 份分类套餐目录。工作流 inspection JSON 的 `exe_count=22`、`manual_count=22`、`crc=passed`。
+- 内层文件时间戳：2026-11-13 12:00:32 UTC（北京时间 20:00:32）；客户包 artifact 创建时间 12:00:50 UTC（北京时间 20:00:50）。
+- manifest artifact ID：`14033773375`；声明内层 ZIP bytes `366103639`、SHA256 `5d1fb7b76df420addddc7e3f0f7be0ab8847be10322b77da7949f567e12601b1`、`parts=20`、每片 18 MiB，与实际内层 ZIP 完全一致。
+- 分类套餐 artifact ID：`14033569217`，5 个独立 ZIP 均 CRC 通过：A 办公效率 5 款、B 门店经营 7 款、C 财务与交易 4 款、D 合同工程物业 3 款、E 客户与个人事务 2 款；各自均包含对应数量的 EXE 和说明书。F 综合套餐为 21 款业务软件 + 工具箱启动器。
+- 套餐建议价仍只是待市场验证价格：A–D 各 29.9 元、E 19.9 元、F 39.9 元；没有闲鱼成交证据，不得写成已验证成交价。
+- 分片 artifact ID：`14034172517`。
+
+## 销售客户跟进工具本轮改进
+
+- CSV 导出增加 Excel/WPS 公式注入防护，UTF-8 BOM，先完整生成再同目录临时文件写入、flush/fsync 和原子替换；替换失败保留原文件。
+- CSV 导入改为严格表头与行宽校验：拒绝重复字段、额外字段、多余列、缺少单元格、非法/非有限金额；单文件限制 25 MiB、最多 50,000 条。
+- 本软件导出的公式安全前缀在重新导入时还原，保持客户资料往返一致。
+- CSV 导入显示全量替换确认；现有数据会先生成 `sales.json.before-csv-import-时间戳.json`，再原子替换主数据。备份或替换失败时原数据保持不变。
+- 新增回归覆盖：公式安全往返、UTF-8 BOM、原子导出失败、重复/额外表头、行宽异常、NaN/Infinity、自动导入前备份、主数据替换失败保留原数据。
+
+## 授权与最终验收状态
+
+- 授权代码未进行密钥猜测、替换或轮换；卖家私钥仍不在仓库，也不应上传。
+- 仓库两份公钥仍存在既有指纹差异：客户端内嵌公钥 SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；config 公钥 SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。
+- **交付状态仍为待最终验收。** run #359 证明 Windows CI 构建、冻结 EXE 非交互自测和 ZIP 结构/哈希核验通过；不等于真实 Windows GUI、真实卖家密钥签发、授权激活及重启后持续有效已经验收。不得标注为正式可销售授权版。
+- 最终用户操作仍只有一项：在可信 Windows 电脑用本地私钥导出公钥 PEM 或 SHA256 指纹，仅提供公钥或指纹；绝不上传私钥。完成匹配后再做真实签发/激活/重启测试。
+
+---
+
 # 第一批大陆版发布状态
 
 ## 最近一次可复现构建（2026-11-03 20:46，中国标准时间）

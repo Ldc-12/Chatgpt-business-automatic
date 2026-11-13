@@ -101,7 +101,6 @@ def test_inspector_rejects_crc_corruption(tmp_path):
     "unsafe_name",
     [
         "C:/outside.txt",
-        "package\\outside.txt",
         "package/readme.txt:payload",
         "package/trailing-dot./file.txt",
         "package/CON.txt",
@@ -144,4 +143,18 @@ def test_inspector_rejects_symbolic_link_entries(tmp_path):
     with zipfile.ZipFile(package, "a") as archive:
         archive.writestr(link, "target.txt")
     with pytest.raises(ValueError, match="特殊文件"):
+        MODULE.inspect_package(package)
+
+
+
+def test_inspector_rejects_raw_backslash_paths(tmp_path):
+    package = tmp_path / "raw-backslash.zip"
+    make_package(package)
+    with zipfile.ZipFile(package, "a") as archive:
+        archive.writestr("package/outside.txt", b"unsafe")
+    data = package.read_bytes().replace(
+        b"package/outside.txt", b"package\\outside.txt"
+    )
+    package.write_bytes(data)
+    with pytest.raises(ValueError, match="不安全路径"):
         MODULE.inspect_package(package)

@@ -34,6 +34,7 @@ def inspect_package(path: str | Path, *, expected_exes: int = 22, expected_manua
 
     with zipfile.ZipFile(archive_path) as archive:
         infos = archive.infolist()
+        names = [item.filename for item in infos]
         normalized_names = set()
         reserved_names = {"CON", "PRN", "AUX", "NUL"} | {
             f"COM{number}" for number in range(1, 10)

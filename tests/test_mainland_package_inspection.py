@@ -101,7 +101,7 @@ def test_inspector_rejects_crc_corruption(tmp_path):
     "unsafe_name",
     [
         "C:/outside.txt",
-        "package\\\\outside.txt",
+        "package\\outside.txt",
         "package/readme.txt:payload",
         "package/trailing-dot./file.txt",
         "package/CON.txt",

@@ -291,3 +291,15 @@ def test_customer_zip_inspection_runs_before_artifact_upload_and_is_retained():
     report = "release/Phase1-Mainland-Windows-Tools.inspection.json"
     assert workflow.count(report) >= 2
     assert "tests/test_mainland_package_inspection.py" in workflow
+
+
+def test_uploaded_customer_package_is_downloaded_and_reinspected_before_manifest():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    upload = workflow.index("name: mainland-phase1-customer-package")
+    redownload = workflow.index("Re-download uploaded customer package artifact")
+    reinspection = workflow.index("POST_UPLOAD_PACKAGE_REDOWNLOAD_OK")
+    manifest = workflow.index("Create bounded download chunks and checksum manifest")
+    assert upload < redownload < reinspection < manifest
+    assert "actions/download-artifact@v4" in workflow[redownload:reinspection]
+    assert "release/downloaded-artifact/Phase1-Mainland-Windows-Tools.zip" in workflow
+    assert "original[field] != downloaded[field]" in workflow

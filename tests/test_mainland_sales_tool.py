@@ -118,7 +118,7 @@ def test_sales_csv_export_preserves_existing_file_when_replace_fails(tmp_path, m
         (m.FIELDS + ["额外字段"], [[*[""] * len(m.FIELDS), "ignored"]], "未支持字段"),
         (m.FIELDS + ["客户"], [[*[""] * (len(m.FIELDS) + 1)]], "重复字段名"),
         (m.FIELDS, [[*[""] * (len(m.FIELDS) + 1)]], "多余列"),
-        (m.FIELDS, [[*[""] * (len(m.FIELDS) - 1)]], "字段数量不足"),
+        (m.FIELDS, [["客户", *[""] * (len(m.FIELDS) - 2)]], "字段数量不足"),
     ],
 )
 def test_sales_csv_import_rejects_ambiguous_or_malformed_rows(tmp_path, headers, rows, message):

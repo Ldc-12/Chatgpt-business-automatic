@@ -349,3 +349,70 @@ def test_oversized_backup_is_rejected_without_replacing_existing_file(tmp_path, 
     else:
         raise AssertionError("oversized backup should be rejected")
     assert destination.read_bytes() == b"previous-backup"
+
+
+def test_repeat_issue_detection_is_scoped_to_the_same_store(tmp_path):
+    store = MODULE.InspectionStore(tmp_path / "data.json")
+    today = date.today()
+    a1 = store.create_inspection("门店 A", "检查员", inspected_on=today.isoformat())
+    b1 = store.create_inspection("门店 B", "检查员", inspected_on=today.isoformat())
+    fail(store, a1, "FS-001")
+    fail(store, b1, "FS-001")
+
+    assert store.repeated_findings(today=today) == []
+    assert store.repeated_findings_by_store(today=today) == []
+
+    a2 = store.create_inspection("门店 A", "复查员", inspected_on=today.isoformat())
+    fail(store, a2, "FS-001")
+    assert store.repeated_findings(today=today) == ["FS-001"]
+    assert store.repeated_findings_by_store(today=today) == {"门店 A": ["FS-001"]}
+
+
+def test_store_risk_report_prioritizes_overdue_and_high_risk_work(tmp_path):
+    store = MODULE.InspectionStore(tmp_path / "data.json")
+    today = date.today()
+    urgent = store.create_inspection("重点门店", "检查员", inspected_on=today.isoformat())
+    normal = store.create_inspection("普通门店", "检查员", inspected_on=today.isoformat())
+    fail(store, urgent, "FS-001", due=(today - timedelta(days=1)).isoformat())
+    fail(store, normal, "FS-009", due=(today + timedelta(days=2)).isoformat())
+
+    rows = store.store_risk_report(today=today)
+    assert [row["门店名称"] for row in rows] == ["重点门店", "普通门店"]
+    assert rows[0]["关注等级"] == "重点关注"
+    assert rows[0]["逾期整改"] == 1
+    assert rows[0]["高风险待整改"] == 1
+    assert rows[1]["关注等级"] == "跟进整改"
+    assert rows[1]["逾期整改"] == 0
+
+
+def test_store_risk_csv_is_formula_safe_and_keeps_original_store_name(tmp_path):
+    store = MODULE.InspectionStore(tmp_path / "data.json")
+    create(store, name='=HYPERLINK("x")')
+    output = tmp_path / "store-risk.csv"
+    store.export_store_risk_csv(output)
+    raw = output.read_text(encoding="utf-8-sig")
+    assert "'=HYPERLINK" in raw
+    rows = list(csv.DictReader(output.open(encoding="utf-8-sig", newline="")))
+    assert rows[0]["关注等级"] == "暂无待整改"
+    assert rows[0]["90天重复规则"] == ""
+
+
+def test_store_risk_csv_preserves_existing_file_when_atomic_replace_fails(tmp_path, monkeypatch):
+    store = MODULE.InspectionStore(tmp_path / "data.json")
+    create(store)
+    destination = tmp_path / "store-risk.csv"
+    destination.write_bytes(b"previous-report")
+
+    def fail_replace(source, target):
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr(MODULE.os, "replace", fail_replace)
+    try:
+        store.export_store_risk_csv(destination)
+    except OSError as exc:
+        assert "simulated replace failure" in str(exc)
+    else:
+        raise AssertionError("failed atomic replace should be reported")
+
+    assert destination.read_bytes() == b"previous-report"
+    assert not list(tmp_path.glob("store-risk.csv.*.tmp"))

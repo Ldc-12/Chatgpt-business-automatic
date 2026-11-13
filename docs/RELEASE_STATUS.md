@@ -900,3 +900,35 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 ### 当前授权与销售状态
 - 生产公钥不一致问题未改变：客户端内嵌公钥 DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；配置公钥 DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。
 - 未读取、上传、生成、猜测、替换或轮换生产私钥/公钥。客户包仍为 **待最终验收**，不是可正式销售版；真实 Windows GUI、卖家公钥匹配、签发/激活和退出重启后复验尚未完成。
+
+## 2026-11-13 PR #40 合并与 main run #350 客户包核验
+
+### 主线、PR 与失败记录
+- PR [#40 Add offline food safety inspection and corrective-action closure assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/40) 已合并，squash merge commit：`2b5a8e85c6eaf858184029e55e1c6fa67e381633`。合并后 main HEAD 与该提交一致；当前 open PR：0。
+- PR #40 最新候选 head：`f43fb02da9544c62a9023485a10eaa417f513204`；Mainland Windows EXE run #349：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43362609854)，23/23 jobs success（22 个产品/启动器 Windows 构建 + 1 个客户包任务）。门店食品安全巡检 job #131681124695：`73 passed`，源码自测 `SELF_TEST_OK`，冻结 EXE 自测 `FROZEN_EXE_SELF_TEST_OK`，退出码 0；客户包预上传检查和上传后重新下载复检均通过。
+- PR #40 早期 run #342 中多个产品 job 因同一个共享测试夹具错误失败。失败日志定位到 `tests/test_mainland_package_inspection.py:48`：断言引用未定义变量 `include_series`，报 `NameError`；食品安全 job 为 1 failed / 67 passed，文件整理 job 为 1 failed / 50 passed。修正测试后，run #349 完整通过才合并。run #341 没有生成 job；run #347/#348 是分支更新后取消的旧矩阵，不计为通过。
+- PR #40 新增离线“门店食品安全巡检与整改闭环助手”：17 项版本化清单、风险加权内部管理分、同门店同规则 90 天重复问题识别、责任人/整改期限约束、整改复查闭环、哈希链审计、多门店风险报表、CSV 导入导出、原子写入和备份恢复；新增独立中文说明书、启动器入口、授权路径测试及 ZIP 预上传检查器。它不依赖 VPN、ChatGPT 或外部 AI；清单及分数仅供内部管理，不是监管合规结论。
+- PR #40 候选 artifact ID `14009157370` 曾下载核验，但它是 PR 候选包，不作为 main 当前交付来源。合并后的 main 客户包以下以 run #350 为唯一当前来源。
+
+### 合并后 main Mainland Windows EXE run #350
+- [Mainland Windows EXE run #350](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43415683885)，head SHA `2b5a8e85c6eaf858184029e55e1c6fa67e381633`，23/23 jobs success（22 个产品/启动器构建 + 1 个客户交付包任务），无失败 job。
+- 食品安全巡检 job #131852856512：`73 passed in 1.63s`；源码自测 `SELF_TEST_OK`；冻结 EXE 自测 `FROZEN_EXE_SELF_TEST_OK`，退出码 0。其 Windows 独立 EXE artifact ID `14030818767`。
+- 客户包 job #131853769287：分类套餐构建、客户 ZIP 检查、上传、重新下载、复检、分片和 manifest 生成均 success。日志两次出现 `MAINLAND_PACKAGE_INSPECTION_OK`，上传后重下载复检得到相同的内层 SHA256。
+- 最新 main 客户包 artifact `mainland-phase1-customer-package` ID `14031796993`，366,196,186 bytes；外层 ZIP SHA256 `911aa3f4504ede772d8a30cf89b65d0188af521f07b9ba8f82934e221b81960a`，CRC 通过。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：366,091,032 bytes；SHA256 `a8fd43c910b8f618f242f0cd55a542c630dcd4411c582873bbd92c14ac5ef629`；ZIP CRC 通过。
+- 内层共 50 个条目（48 个文件、2 个目录）：22 个 EXE（21 款业务软件 + 工具箱启动器）、22 份逐款中文说明书、1 份说明书索引、1 份大陆版 README、1 份分类套餐目录、1 份套餐说明 TXT、1 份客户包 inspection JSON。全部内层文件时间戳为 2026-11-13 11:18:42 UTC（北京时间 19:18:42）；artifact 创建时间 11:19:00 UTC（北京时间 19:19:00）。
+- inspection JSON 确认 EXE=22、manual=22、entry_count=50、CRC passed；包含 A–F 六个套餐说明，价格均标注为待市场验证建议价。F 为 21 款业务软件 + 启动器的完整客户包，不是额外第六个分类 ZIP。
+- Manifest artifact ID `14031348882`，2,567 bytes；声明内层 ZIP 为 366,091,032 bytes、SHA256 `a8fd43c910b8f618f242f0cd55a542c630dcd4411c582873bbd92c14ac5ef629`、20 个分片、每片 18 MiB；与下载内层包字节数及 SHA256 完全一致。Manifest ZIP CRC 通过。
+- 分类套餐 artifact ID `14032355108`，351,512,109 bytes；外层 ZIP CRC 通过。五个分类 ZIP 均单独解压核验且 CRC 通过：A 办公效率 5 EXE/5 说明书；B 门店经营 7/7；C 财务与交易 4/4；D 合同工程物业 3/3；E 客户与个人事务 2/2。分类目录和套餐说明均包含新增食品安全巡检工具；F 完整包包含全部 21 款业务工具和启动器。
+- 客户包、manifest、分类套餐均为合并后 main run #350 的真实 artifact，已下载、核对 ZIP 文件列表、CRC、EXE/说明书数量、套餐说明、文件时间戳和 SHA256；未使用 PR 候选包或历史包替代。
+
+### 合并后 Autonomous Business Engine run #430
+- [ABE run #430](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43415683925)，head SHA 与 main 一致，build/deploy 2/2 success。
+- build job #131852855648：`317 passed in 2.43s`；Pages artifact ID `14031985656`，47,764 bytes；已下载核验，外层 ZIP CRC 通过，内部 TAR 198 个条目，包含 17 个 product.json 和 12 个闲鱼 listing.txt。
+- 本轮机会数据实时请求返回 HTTP 502，日志明确为 `fallback: HTTPError`，引擎使用已有 fallback 数据完成后续产品页构建和部署；因此 ABE workflow success 不代表实时 API 请求成功。deploy job #131853002289 已报告 Pages deployment success。
+
+### 授权与销售验收
+- 客户端内嵌 Ed25519 公钥 DER SHA256 仍为 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；配置公钥 DER SHA256 仍为 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，两者不一致。
+- 本轮没有读取、上传、生成、猜测、替换或轮换任何生产私钥/公钥。卖家私钥不在仓库。
+- **最新 main 客户包仍为“待最终验收”，不是可正式销售版。** CI 的冻结 EXE 自测不等同于用户真实 Windows GUI、真实授权签发/激活和退出重启后复验。还需在可信 Windows 电脑用本机原有卖家私钥导出公钥 PEM 或 SHA256 指纹供比对；只需要公钥或指纹，绝不上传私钥。
+

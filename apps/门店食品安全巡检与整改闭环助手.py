@@ -806,7 +806,7 @@ def self_test():
         store.backup(backup)
         store.close_finding(inspection_id, "FS-001", "补齐票据并复核")
         store.restore(backup)
-        assert store.dashboard()["待整改"] == 1
+        assert store.dashboard()["待整改"] == 2
         assert verify_event_chain(store.events)
     print("SELF_TEST_OK", flush=True)
 

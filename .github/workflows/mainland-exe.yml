@@ -112,6 +112,12 @@ jobs:
             test: tests/test_mainland_food_batch.py
             exe: MainlandFoodBatchExpiryAssistant
             manual: 19-食品批次与保质期追踪助手-用户说明书.md
+          - key: food-safety-inspection
+            product: "门店食品安全巡检与整改闭环助手"
+            source: apps/门店食品安全巡检与整改闭环助手.py
+            test: tests/test_mainland_food_safety_inspection.py
+            exe: MainlandFoodSafetyInspectionAssistant
+            manual: 21-门店食品安全巡检与整改闭环助手-用户说明书.md
           - key: purchase-compare
             product: "供应商采购比价助手"
             source: apps/供应商采购比价助手.py
@@ -173,7 +179,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt pyinstaller
       - name: Automated regression tests
-        run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py tests/test_mainland_series_packages.py
+        run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py tests/test_mainland_series_packages.py tests/test_mainland_package_inspection.py
       - name: Source self-test
         run: python "${{ matrix.source }}" --self-test
       - name: Build EXE with ReportLab support
@@ -240,11 +246,11 @@ jobs:
           cat > release/README-大陆版.md <<'EOF'
           # 第一阶段 Windows 工具包
 
-          本包包含 21 款 Windows EXE（20 款业务工具及工具箱启动器）。
+          本包包含 22 款 Windows EXE（21 款业务工具及工具箱启动器）。
           使用方式：双击对应 EXE 即可运行。
           数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
           工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。
-          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“小店库存盘点助手.json”“食品批次与保质期追踪助手.json”“售后纠纷证据链管理助手.json”“供应商采购比价助手.json”“报价单生成器.json”“费用报销管理助手.json”“售后维修工单管理助手.json”“门店排班考勤助手.json”“合同台账与到期提醒助手.json”“装修工程签证与进度款管理助手.json”“物业租金与押金管理助手.json”）。每款产品的授权文件分开保存。
+          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“小店库存盘点助手.json”“食品批次与保质期追踪助手.json”“门店食品安全巡检与整改闭环助手.json”“售后纠纷证据链管理助手.json”“供应商采购比价助手.json”“报价单生成器.json”“费用报销管理助手.json”“售后维修工单管理助手.json”“门店排班考勤助手.json”“合同台账与到期提醒助手.json”“装修工程签证与进度款管理助手.json”“物业租金与押金管理助手.json”）。每款产品的授权文件分开保存。
           EOF
           mkdir -p release/package
           mkdir -p release/package/说明书
@@ -255,7 +261,7 @@ jobs:
           文件整理助手 Pro、图片批量处理助手 Pro、PDF 批量工具 Pro、会议行动项管理、SOP 项目执行管理。
 
           系列 B｜门店经营系列｜建议售价 29.9 元
-          小店库存盘点助手、食品批次与保质期追踪助手、供应商采购比价助手、售后维修工单管理助手、售后纠纷证据链管理助手、门店排班考勤助手。
+          小店库存盘点助手、食品批次与保质期追踪助手、门店食品安全巡检与整改闭环助手、供应商采购比价助手、售后维修工单管理助手、售后纠纷证据链管理助手、门店排班考勤助手。
 
           系列 C｜财务与交易系列｜建议售价 29.9 元
           自由职业催款管理工具、小微企业经营收支管理、报价单生成器、费用报销管理助手。
@@ -267,7 +273,7 @@ jobs:
           轻量销售客户跟进工具、求职申请管理 Pro。
 
           系列 F｜全系列综合套餐｜建议售价 39.9 元
-          全部 20 款业务工具 + 工具箱启动器。
+          全部 21 款业务工具 + 工具箱启动器。
 
           以上均为待市场验证的建议售价，不代表实际成交价。分类 ZIP 独立提供，每款软件附对应中文说明书；全系列包保留全部软件及说明书。
           EOF
@@ -275,12 +281,40 @@ jobs:
           cp release/README-大陆版.md release/套餐说明.txt release/package/
           cd release
           zip -r Phase1-Mainland-Windows-Tools.zip package
+      - name: Inspect customer ZIP contents, CRC and SHA256
+        run: >-
+          python tools/inspect_mainland_package.py
+          --package release/Phase1-Mainland-Windows-Tools.zip
+          --expected-exes 22
+          --expected-manuals 22
+          --report release/Phase1-Mainland-Windows-Tools.inspection.json
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-customer-package
           path: |
             release/Phase1-Mainland-Windows-Tools.zip
             release/README-大陆版.md
+            release/Phase1-Mainland-Windows-Tools.inspection.json
+      - name: Re-download uploaded customer package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mainland-phase1-customer-package
+          path: release/downloaded-artifact
+      - name: Verify re-downloaded customer package
+        shell: bash
+        run: |
+          python tools/inspect_mainland_package.py --package release/downloaded-artifact/Phase1-Mainland-Windows-Tools.zip --expected-exes 22 --expected-manuals 22 --report release/downloaded-artifact/reinspection.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          original = json.loads(Path("release/Phase1-Mainland-Windows-Tools.inspection.json").read_text(encoding="utf-8"))
+          downloaded = json.loads(Path("release/downloaded-artifact/reinspection.json").read_text(encoding="utf-8"))
+          fields = ("size_bytes", "sha256", "crc", "entry_count", "exe_count", "manual_count", "executables", "manuals", "bundle_descriptions", "bundle_catalog", "timestamp_min", "timestamp_max")
+          differences = [field for field in fields if original[field] != downloaded[field]]
+          if differences:
+              raise SystemExit("Re-downloaded package differs from uploaded source: " + ", ".join(differences))
+          print("POST_UPLOAD_PACKAGE_REDOWNLOAD_OK: uploaded artifact contents match the inspected ZIP byte-for-byte.")
+          PY
       - name: Create bounded download chunks and checksum manifest
         shell: bash
         run: |
@@ -303,6 +337,7 @@ jobs:
             release/Phase1-Mainland-Windows-Tools.zip.sha256
             release/Phase1-Mainland-Windows-Tools.zip.bytes
             release/Phase1-Mainland-Windows-Tools.manifest.txt
+            release/Phase1-Mainland-Windows-Tools.inspection.json
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-parts

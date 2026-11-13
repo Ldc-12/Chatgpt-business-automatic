@@ -40,7 +40,7 @@ def inspect_package(path: str | Path, *, expected_exes: int = 22, expected_manua
             f"COM{number}" for number in range(1, 10)
         } | {f"LPT{number}" for number in range(1, 10)}
         for info in infos:
-            name = info.filename
+            name = info.orig_filename
             is_directory = info.is_dir()
             raw_parts = name.split("/")
             if is_directory and raw_parts and raw_parts[-1] == "":

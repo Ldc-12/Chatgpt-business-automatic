@@ -935,7 +935,7 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 ## 2026-11-13 PR #41 Windows ZIP 路径安全加固与 main run #355
 
 ### PR #41：客户 ZIP Windows 路径碰撞防护
-- PR [#41 Harden customer ZIP inspection for Windows path collisions](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/41) 已合并，squash merge commit：`b82904efb6fff98c4b20a37e7b54ecd9e8919dd0`。当前 main HEAD 为该提交；当前 open PR：0。
+- PR [#41 Harden customer ZIP inspection for Windows path collisions](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/41) 已合并，squash merge commit：`b82904efb6fff98c4b20a37e7b54ecd9e8919dd0`（本节对应的软件代码发布提交）；当前 open PR：0。随后 RELEASE_STATUS 文档提交另行更新，不改变本次 EXE 内容。
 - 变更文件：`tools/inspect_mainland_package.py`、`tests/test_mainland_package_inspection.py`。检查器现在基于 ZIP 原始成员名校验，拒绝盘符路径、NTFS ADS、Windows 保留设备名、尾随点/空格、反斜杠路径、符号链接和特殊文件；重复路径按 Unicode NFC + casefold 检测，避免 Windows 大小写/Unicode 归一化碰撞。
 - PR #41 最终候选 head `61148c74d7ded66e760c52be3c874a676258159c` 的 Windows run #354：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43417107641)，23/23 jobs success（22 个产品/启动器构建 + 1 个客户包任务）；客户包检查、上传、重新下载及复检全部通过。食品安全巡检 job #131857668336：`81 passed in 1.72s`，源码自测 `SELF_TEST_OK`，冻结 EXE 自测 `FROZEN_EXE_SELF_TEST_OK`，退出码 0。
 - PR #41 的失败修复记录：run #351 的 11 个产品 job 因检查器重构时误删仍被使用的 `names` 列表而报 `NameError: names is not defined`；恢复名称列表后继续验证。run #353 的 22 个产品 job 因 Windows Python 的 `zipfile.ZipInfo.filename` 在读取时会把反斜杠归一化为正斜杠，普通 `writestr` 测试没有保留原始反斜杠而未触发拒绝逻辑；修正为检查 `orig_filename`，并通过修改 ZIP local/central header 构造真实反斜杠归档回归测试。run #352 是更新提交后取消的旧矩阵。最终 run #354 完整通过后才合并。
@@ -958,3 +958,7 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - build job #131859325838：`325 passed in 2.22s`；生成 12 个 Stripe 产品页和 12 个闲鱼目录条目；本次 `error: null`，未触发外部 API fallback。
 - Pages artifact ID `14033050972`，47,778 bytes；已下载核验，外层 ZIP CRC 通过，内部 TAR 198 个条目，其中 17 个 product.json、12 个闲鱼 listing.txt；deploy job 成功。
 
+### 文档提交触发的最新 Autonomous Business Engine run #433
+- [ABE run #433](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43418203059)，head SHA `86551c1797ad97520a3e5286d0317501f756dd8f`，build/deploy 2/2 success。
+- build job #131861313381：`325 passed in 1.86s`，生成 12 个产品页面和 12 个闲鱼目录条目；`error: null`，没有外部 API fallback。
+- Pages artifact ID `14032637487`，47,775 bytes；已下载核验，ZIP CRC 通过，内部 TAR 198 个条目、17 个 product.json、12 个 listing.txt；deploy success。

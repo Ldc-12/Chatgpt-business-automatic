@@ -100,6 +100,7 @@ def read_csv_rows(path):
 
 
 def replace_rows_with_backup(data_path, imported_rows, current_rows):
+    data_path = os.fspath(data_path)
     clean = validate_rows(imported_rows)
     backup_path = None
     if os.path.exists(data_path):

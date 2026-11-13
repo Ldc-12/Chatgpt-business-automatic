@@ -358,7 +358,8 @@ class InspectionStore:
         today = today or date.today()
         return [row for row in self.open_findings() if date.fromisoformat(row["整改期限"]) < today]
 
-    def repeated_findings(self, *, today=None, window_days=90):
+    def repeated_findings_by_store(self, *, today=None, window_days=90):
+        """Count recurrence within each store; never combine unrelated stores."""
         today = today or date.today()
         cutoff = today - timedelta(days=window_days)
         occurrences = {}
@@ -366,10 +367,64 @@ class InspectionStore:
             inspected_on = date.fromisoformat(inspection["巡检日期"])
             if inspected_on < cutoff or inspected_on > today:
                 continue
+            store = inspection["门店名称"]
             for entry in inspection["检查项"]:
                 if entry["检查结果"] == "不合格":
-                    occurrences.setdefault(entry["规则编号"], set()).add(inspection["巡检编号"])
-        return sorted(rule_id for rule_id, ids in occurrences.items() if len(ids) >= 2)
+                    key = (store, entry["规则编号"])
+                    occurrences.setdefault(key, set()).add(inspection["巡检编号"])
+        repeated = {}
+        for (store, rule_id), inspection_ids in occurrences.items():
+            if len(inspection_ids) >= 2:
+                repeated.setdefault(store, []).append(rule_id)
+        return {store: sorted(rule_ids) for store, rule_ids in sorted(repeated.items())}
+
+    def repeated_findings(self, *, today=None, window_days=90):
+        return sorted({
+            rule_id
+            for rule_ids in self.repeated_findings_by_store(today=today, window_days=window_days).values()
+            for rule_id in rule_ids
+        })
+
+    def store_risk_report(self, *, today=None, window_days=90):
+        """Return explainable per-store workload and risk indicators."""
+        today = today or date.today()
+        repeated = self.repeated_findings_by_store(today=today, window_days=window_days)
+        report = []
+        for store in sorted({row["门店名称"] for row in self.inspections}):
+            inspections = [row for row in self.inspections if row["门店名称"] == store]
+            open_rows = [
+                {**entry, "巡检编号": inspection["巡检编号"], "门店名称": store}
+                for inspection in inspections for entry in inspection["检查项"]
+                if entry["检查结果"] == "不合格" and entry["整改状态"] == "待整改"
+            ]
+            overdue = [row for row in open_rows if date.fromisoformat(row["整改期限"]) < today]
+            high_risk = [row for row in open_rows if row["风险等级"] == "高"]
+            repeated_rules = repeated.get(store, [])
+            scores = [self.score(row) for row in inspections]
+            scores = [value for value in scores if value is not None]
+            if overdue or high_risk or repeated_rules:
+                attention, priority = "重点关注", 3
+            elif open_rows:
+                attention, priority = "跟进整改", 2
+            else:
+                attention, priority = "暂无待整改", 1
+            report.append({
+                "门店名称": store,
+                "巡检次数": len(inspections),
+                "最近巡检日期": max(row["巡检日期"] for row in inspections),
+                "待整改": len(open_rows),
+                "逾期整改": len(overdue),
+                "高风险待整改": len(high_risk),
+                "重复规则": "、".join(repeated_rules),
+                "平均内部管理分": round(sum(scores) / len(scores), 1) if scores else None,
+                "关注等级": attention,
+                "_priority": priority,
+            })
+        report.sort(key=lambda row: (
+            -row["_priority"], -row["逾期整改"], -row["高风险待整改"],
+            -len([item for item in row["重复规则"].split("、") if item]), row["门店名称"]
+        ))
+        return [{key: value for key, value in row.items() if not key.startswith("_")} for row in report]
 
     def dashboard(self, *, today=None):
         open_rows = self.open_findings()
@@ -396,6 +451,23 @@ class InspectionStore:
                     "清单版本": inspection["清单版本"], **entry,
                 }
                 writer.writerow({key: csv_safe_cell(row.get(key, "")) for key in CSV_FIELDS})
+        atomic_write_text(path, "\ufeff" + buffer.getvalue())
+
+    def export_store_risk_csv(self, path, *, today=None):
+        fields = [
+            "门店名称", "巡检次数", "最近巡检日期", "待整改", "逾期整改",
+            "高风险待整改", "90天重复规则", "平均内部管理分", "关注等级",
+        ]
+        buffer = io.StringIO(newline="")
+        writer = csv.DictWriter(buffer, fieldnames=fields)
+        writer.writeheader()
+        for row in self.store_risk_report(today=today):
+            values = {
+                **row,
+                "90天重复规则": row["重复规则"],
+                "平均内部管理分": "" if row["平均内部管理分"] is None else f"{row['平均内部管理分']:.1f}",
+            }
+            writer.writerow({key: csv_safe_cell(values.get(key, "")) for key in fields})
         atomic_write_text(path, "\ufeff" + buffer.getvalue())
 
     def import_csv(self, path):
@@ -484,7 +556,9 @@ class App(tk.Tk):
         for label, command in [
             ("新建巡检", self.new_inspection), ("录入检查结果", self.edit_check),
             ("整改闭环", self.close_finding), ("风险复盘", self.show_dashboard),
+            ("多门店风险分析", self.show_store_risk_report),
             ("导入 CSV", self.import_csv), ("导出 CSV", self.export_csv),
+            ("导出门店风险 CSV", self.export_store_risk_csv),
             ("备份", self.backup), ("恢复", self.restore),
         ]:
             ttk.Button(actions, text=label, command=command).pack(side="left", padx=3, pady=3)
@@ -632,6 +706,46 @@ class App(tk.Tk):
             f"平均内部管理分：{score}\n\n该分数仅供门店内部趋势比较，不是监管评分或合规结论。",
             parent=self)
 
+    def show_store_risk_report(self):
+        rows = self.store.store_risk_report()
+        if not rows:
+            messagebox.showinfo("多门店风险分析", "暂无巡检记录。", parent=self)
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("多门店风险分析")
+        dialog.geometry("940x460")
+        columns = ("store", "level", "count", "latest", "open", "overdue", "high", "repeat", "score")
+        tree = ttk.Treeview(dialog, columns=columns, show="headings")
+        headings = [
+            ("store", "门店", 150), ("level", "关注等级", 105), ("count", "巡检次数", 75),
+            ("latest", "最近巡检", 105), ("open", "待整改", 70), ("overdue", "逾期", 65),
+            ("high", "高风险", 70), ("repeat", "90天重复规则", 150), ("score", "平均内部管理分", 115),
+        ]
+        for key, title, width in headings:
+            tree.heading(key, text=title)
+            tree.column(key, width=width, anchor="center")
+        scrollbar = ttk.Scrollbar(dialog, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        tree.pack(side="left", fill="both", expand=True, padx=(10, 0), pady=10)
+        scrollbar.pack(side="right", fill="y", padx=(0, 10), pady=10)
+        for row in rows:
+            score = "暂无" if row["平均内部管理分"] is None else f"{row['平均内部管理分']:.1f}"
+            tree.insert("", "end", values=(
+                row["门店名称"], row["关注等级"], row["巡检次数"], row["最近巡检日期"],
+                row["待整改"], row["逾期整改"], row["高风险待整改"],
+                row["重复规则"] or "无", score,
+            ))
+
+    def export_store_risk_csv(self):
+        path = filedialog.asksaveasfilename(parent=self, defaultextension=".csv", filetypes=[("CSV 文件", "*.csv")])
+        if not path:
+            return
+        try:
+            self.store.export_store_risk_csv(path)
+            messagebox.showinfo("导出完成", f"已导出门店风险报表：{path}", parent=self)
+        except Exception as exc:
+            messagebox.showerror("导出失败", str(exc), parent=self)
+
     def import_csv(self):
         path = filedialog.askopenfilename(parent=self, filetypes=[("CSV 文件", "*.csv")])
         if not path:
@@ -682,7 +796,11 @@ def self_test():
         store = InspectionStore(Path(directory) / "inspection.json")
         inspection_id = store.create_inspection("测试门店", "测试检查人")
         store.update_check(inspection_id, "FS-001", "不合格", "票据缺失", "张三", date.today().isoformat())
-        assert store.dashboard()["待整改"] == 1
+        second_id = store.create_inspection("测试门店", "复查员")
+        store.update_check(second_id, "FS-001", "不合格", "复查仍缺失", "李四", date.today().isoformat())
+        assert store.repeated_findings() == ["FS-001"]
+        assert store.store_risk_report()[0]["重复规则"] == "FS-001"
+        assert store.dashboard()["待整改"] == 2
         assert store.score(store.get_inspection(inspection_id)) is not None
         backup = Path(directory) / "backup.json"
         store.backup(backup)

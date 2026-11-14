@@ -1,7 +1,7 @@
 # 2026-11-14 PR #47/#48 合并复核：报销 CSV 安全与备份恢复保护
 
 ## 当前主线与 PR
-- 当前 main HEAD：`948d853331ce06d3c91f0fbdb7d9cfbb2c0829af`（PR #48 squash merge）。
+- 本次产品代码 main merge commit：`948d853331ce06d3c91f0fbdb7d9cfbb2c0829af`（PR #48 squash merge）；本发布状态记录由 PR #49 合并，文档提交：`b759fa594d90f3397dbef6951a15f9b373533217`。
 - PR [#47 Harden expense reimbursement CSV import/export and atomic writes](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/47) 已合并，merge commit：`b522432eb286cf3327534ee3de213e3d49b91629`。PR run #368：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43592442790)，24/24 jobs success；报销工具 job `132439847360`：85 passed、`SELF_TEST_OK`、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。其 customer package artifact `14112374455` 属于 PR 验证产物，不是 main 发布包。
 - PR [#48 Validate reimbursement backups and preview restore details](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/48) 已合并，merge commit：`948d853331ce06d3c91f0fbdb7d9cfbb2c0829af`。最终分支 head：`f038e518a7d251d794b15e231924f9418c211507`。Mainland Windows run #371：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43593222403)，24/24 jobs success、无失败 job。报销工具 job `132442174892`：92 passed in 1.50s、`SELF_TEST_OK`、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。客户包 job `132442681058` 的预上传检查、上传、重新下载、复检和分片/manifest 生成全部成功。
 - PR #48 早期 run #370（`43592934925`）24/24 success，但随后增加了“新增/CSV 追加后也必须遵守 100,000 笔备份记录上限”的代码与回归测试；最终以 run #371 为准。

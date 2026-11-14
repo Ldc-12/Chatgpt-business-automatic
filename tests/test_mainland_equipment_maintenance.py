@@ -333,3 +333,114 @@ def test_history_view_helper_filters_by_asset_and_sorts_newest_first():
     other = log(None, "WB20260204-0001", **{"设备编号": "EQ-OTHER", "维护日期": "2026-02-04"})
     rows = MODULE.history_for_asset([first, second, other], "EQ-001")
     assert [row["记录编号"] for row in rows] == ["WB20260203-0001", "WB20260201-0001"]
+
+
+
+def test_cost_analysis_aggregates_asset_vendor_and_monthly_costs():
+    first = MODULE.normalize_asset(asset(None, "EQ-001"))
+    second = MODULE.normalize_asset(asset(None, "EQ-002", **{"设备名称": "制冰机"}))
+    assets = [first, second]
+    asset_map = {row["设备编号"]: row for row in assets}
+    logs = [
+        MODULE.normalize_log(log(None, "WB20260201-0001", **{
+            "服务商/人员": "甲维保", "费用(元)": "100", "停机时长(小时)": "1",
+        }), asset_map),
+        MODULE.normalize_log(log(None, "WB20260210-0001", **{
+            "维护日期": "2026-02-10", "服务商/人员": "乙维保",
+            "费用(元)": "50", "停机时长(小时)": "0.5",
+        }), asset_map),
+        MODULE.normalize_log(log(None, "WB20260301-0001", **{
+            "设备编号": "EQ-002", "维护日期": "2026-03-01", "服务商/人员": "甲维保",
+            "费用(元)": "200", "停机时长(小时)": "2",
+        }), asset_map),
+    ]
+
+    report = MODULE.analyze_maintenance_costs(assets, logs)
+
+    assert report["summary"] == {
+        "count": 3, "cost": Decimal("350.00"), "downtime": Decimal("3.50")
+    }
+    assert report["assets"][0]["设备编号"] == "EQ-002"
+    assert report["assets"][0]["单次平均费用(元)"] == "200.00"
+    assert report["assets"][0]["费用占比(%)"] == "57.14"
+    assert report["assets"][1]["累计维保费用(元)"] == "150.00"
+    assert report["vendors"][0]["服务商/人员"] == "甲维保"
+    assert report["vendors"][0]["累计维保费用(元)"] == "300.00"
+    assert report["vendors"][0]["涉及设备数"] == 2
+    assert report["months"] == [
+        {"月份": "2026-02", "维保次数": 2, "累计维保费用(元)": "150.00", "累计停机时长(小时)": "1.50"},
+        {"月份": "2026-03", "维保次数": 1, "累计维保费用(元)": "200.00", "累计停机时长(小时)": "2.00"},
+    ]
+
+
+def test_cost_analysis_date_filter_is_inclusive_and_keeps_zero_cost_assets():
+    assets = [
+        MODULE.normalize_asset(asset(None, "EQ-001")),
+        MODULE.normalize_asset(asset(None, "EQ-002")),
+        MODULE.normalize_asset(asset(None, "EQ-003")),
+    ]
+    asset_map = {row["设备编号"]: row for row in assets}
+    logs = [
+        MODULE.normalize_log(log(None, "WB20260201-0001", **{"费用(元)": "10"}), asset_map),
+        MODULE.normalize_log(log(None, "WB20260301-0001", **{
+            "维护日期": "2026-03-01", "费用(元)": "20",
+        }), asset_map),
+    ]
+
+    report = MODULE.analyze_maintenance_costs(
+        assets, logs, start_date="2026-02-01", end_date="2026-02-01"
+    )
+
+    assert report["summary"]["count"] == 1
+    assert report["summary"]["cost"] == Decimal("10.00")
+    assert report["start_date"] == report["end_date"] == "2026-02-01"
+    assert len(report["assets"]) == 3
+    zero = next(row for row in report["assets"] if row["设备编号"] == "EQ-003")
+    assert zero["维保次数"] == 0
+    assert zero["累计维保费用(元)"] == zero["费用占比(%)"] == "0.00"
+
+
+@pytest.mark.parametrize(
+    "start,end",
+    [("2026/02/01", "2026-02-28"), ("2026-03-01", "2026-02-01")],
+)
+def test_cost_analysis_rejects_invalid_or_reversed_date_ranges(start, end):
+    with pytest.raises(ValueError):
+        MODULE.analyze_maintenance_costs([], [], start_date=start, end_date=end)
+
+
+def test_cost_analysis_groups_blank_service_provider_and_zero_cost_share():
+    asset_row = MODULE.normalize_asset(asset(None))
+    row = MODULE.normalize_log(log(None, **{"服务商/人员": "", "费用(元)": "0"}), {"EQ-001": asset_row})
+    report = MODULE.analyze_maintenance_costs([asset_row], [row])
+
+    assert report["vendors"][0]["服务商/人员"] == "未填写"
+    assert report["vendors"][0]["费用占比(%)"] == "0.00"
+    assert report["assets"][0]["费用占比(%)"] == "0.00"
+
+
+def test_cost_report_export_keeps_formula_injection_prefix():
+    asset_row = MODULE.normalize_asset(asset(None))
+    row = MODULE.normalize_log(log(None, **{
+        "服务商/人员": "=HYPERLINK(\"https://bad.example\",\"click\")",
+    }), {"EQ-001": asset_row})
+    report = MODULE.analyze_maintenance_costs([asset_row], [row])
+    with pytest.MonkeyPatch.context() as patch:
+        # Use the real CSV writer: the formula is neutralized before Excel/WPS opens it.
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / "vendor-cost.csv"
+            MODULE._write_csv(target, MODULE.VENDOR_COST_FIELDS, report["vendors"])
+            content = target.read_text(encoding="utf-8-sig")
+            assert "'=HYPERLINK(" in content
+
+
+def test_cost_analysis_with_no_history_returns_zero_rows_for_registered_assets():
+    asset_row = MODULE.normalize_asset(asset(None))
+    report = MODULE.analyze_maintenance_costs([asset_row], [])
+
+    assert report["summary"]["count"] == 0
+    assert report["summary"]["cost"] == Decimal("0.00")
+    assert report["assets"][0]["累计维保费用(元)"] == "0.00"
+    assert report["vendors"] == report["months"] == []

@@ -80,8 +80,8 @@ def normalize_record(row):
 
 def _safe_csv_value(value):
     text = str(value if value is not None else "")
-    probe = text.lstrip(" \\t\\r\\n")
-    if probe.startswith(("=", "+", "-", "@")) or (text and text[0] in "\\t\\r\\n"):
+    probe = text.lstrip(" \t\r\n")
+    if probe.startswith(("=", "+", "-", "@")) or (text and text[0] in "\t\r\n"):
         return "'" + text
     return text
 
@@ -89,8 +89,8 @@ def _safe_csv_value(value):
 def _restore_csv_value(value):
     text = str(value if value is not None else "")
     if text.startswith("'") and (
-        text[1:].lstrip(" \\t\\r\\n").startswith(("=", "+", "-", "@"))
-        or (len(text) > 1 and text[1] in "\\t\\r\\n")
+        text[1:].lstrip(" \t\r\n").startswith(("=", "+", "-", "@"))
+        or (len(text) > 1 and text[1] in "\t\r\n")
     ):
         return text[1:]
     return text
@@ -249,12 +249,13 @@ class ExpenseStore:
         output = io.StringIO(newline="")
         writer = csv.DictWriter(output, fieldnames=FIELDS, extrasaction="ignore")
         writer.writeheader()
-        for row in self.rows if rows is None else rows:
+        source_rows = self.rows if rows is None else rows
+        for row in source_rows:
             writer.writerow({
                 field: _safe_csv_value(row.get(field, ""))
                 for field in FIELDS
             })
-        atomic_write(path, "\\ufeff" + output.getvalue())
+        atomic_write(path, "\ufeff" + output.getvalue())
 
     def backup(self, path):
         payload = {

@@ -307,7 +307,7 @@ class EquipmentStore:
         asset = dict(old_asset)
         asset["最近保养日期"] = item["维护日期"]
         asset["下次保养日期"] = item["下次保养日期"]
-        if item["验收状态"] == "已验收":
+        if item["验收状态"] == "已验收" and asset["设备状态"] != "停用":
             asset["设备状态"] = "正常"
         elif item["验收状态"] == "不通过":
             asset["设备状态"] = "待检修"
@@ -381,7 +381,7 @@ def analyze_assets(assets, logs, today=None, lead_days=14):
     results = []
     for asset in assets:
         due = date.fromisoformat(asset["下次保养日期"])
-        overdue_days = max(0, (today - due).days)
+        overdue_days = 0 if asset["设备状态"] == "停用" else max(0, (today - due).days)
         reasons = []
         level = "正常"
         if asset["设备状态"] in ("维修中", "待检修"):

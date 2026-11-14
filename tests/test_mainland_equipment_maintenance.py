@@ -293,3 +293,25 @@ def test_risk_analysis_prioritizes_high_before_medium():
 
 def test_self_test_uses_temporary_data_and_covers_backup_restore():
     MODULE.self_test()
+
+
+def test_backdated_maintenance_cannot_move_schedule_backwards(tmp_path):
+    store = MODULE.EquipmentStore(tmp_path / "equipment.json")
+    store.add_asset(asset(store))
+    store.record_maintenance(log(store))
+    with pytest.raises(ValueError, match="不能早于最近一次"):
+        store.record_maintenance(log(store, "WB20260131-0001", **{"维护日期": "2026-01-31"}))
+    assert len(store.logs) == 1
+    assert store.assets[0]["最近保养日期"] == "2026-02-01"
+
+
+def test_retired_asset_is_not_flagged_for_routine_due_or_warranty(tmp_path):
+    row = MODULE.normalize_asset(asset(None, **{
+        "启用日期": "2025-01-01",
+        "保修到期日": "2025-06-01",
+        "下次保养日期": "2025-02-01",
+        "设备状态": "停用",
+    }))
+    result = MODULE.analyze_assets([row], [], today="2026-02-01")[0]
+    assert result["风险等级"] == "正常"
+    assert result["风险说明"] == "当前无到期或验收异常"

@@ -447,8 +447,9 @@ def analyze_maintenance_costs(assets, logs, start_date=None, end_date=None):
     if start and end and start > end:
         raise ValueError("开始日期不能晚于结束日期")
 
-    asset_map = {row["设备编号"]: row for row in assets}
-    if len(asset_map) != len(assets):
+    normalized_assets = [normalize_asset(row) for row in assets]
+    asset_map = {row["设备编号"]: row for row in normalized_assets}
+    if len(asset_map) != len(normalized_assets):
         raise ValueError("设备编号重复，无法生成成本分析")
     normalized_logs = [normalize_log(row, asset_map) for row in logs]
     selected = []
@@ -499,7 +500,7 @@ def analyze_maintenance_costs(assets, logs, start_date=None, end_date=None):
         return _report_money(value * Decimal("100") / totals["cost"])
 
     asset_rows = []
-    for asset in assets:
+    for asset in normalized_assets:
         group = asset_groups[asset["设备编号"]]
         count = group["count"]
         asset_rows.append({
@@ -865,6 +866,10 @@ class App:
                     self.store.assets, self.store.logs, start_var.get(), end_var.get()
                 )
             except ValueError as exc:
+                report_holder["value"] = None
+                summary_var.set("分析失败：请检查日期范围。")
+                for tree in trees.values():
+                    tree.delete(*tree.get_children())
                 messagebox.showerror("分析失败", str(exc), parent=win)
                 return
             report_holder["value"] = report

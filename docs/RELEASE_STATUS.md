@@ -1,23 +1,33 @@
-# 2026-11-14 main 发布复核：设备维保工具与 Mainland run #365
+# 2026-11-14 产品代码发布复核：PR #45 合并与 Mainland run #367
 
-- 当前 main HEAD：`e03561f5a22e30f99fef596969413b975b31565d`（设备维保巡检与保养计划助手）；复核时 open PR 为 0。
-- 最新 Mainland Windows EXE：run #365，[`43547805001`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43547805001)，push 事件，结论 success；23 个产品/启动器 build job + 1 个 package job，共 24/24 jobs success。设备维保 job ID `132303079503`：`95 passed`，源码自测通过，PyInstaller 构建成功，冻结 EXE 自测日志 `FROZEN_EXE_SELF_TEST_OK`，退出码 0。其余矩阵 job 与 package job 均 success，无失败 job。
-- 同一 main commit 的 Windows EXE Build run #181：[`43547805000`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43547805000)，test/build 2/2 success。
-- 最新 Autonomous Business Engine run #438：[`43547805003`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43547805003)，build/deploy 2/2 success，完整测试 `373 passed`；Pages artifact ID `14094666583`，47,753 bytes。日志未发现失败项或外部 API fallback 错误。
-- 客户包 artifact `mainland-phase1-customer-package` ID `14095480442`，380,964,755 bytes，artifact SHA256 `82b3b453f98fd3fce00d5b0fccd3adc45f41623b77d995811186220f0f6e8eb6`。已下载外层 ZIP，CRC 通过；外层含客户内层 ZIP、README 和 inspection JSON。
-- 内层 `Phase1-Mainland-Windows-Tools.zip`：380,855,169 bytes，SHA256 `0957dff7eb757789008f66a7725c9aaaeb1dc26084ddc379b62e9a64ee8177c2`；ZIP CRC 通过；52 个条目（50 文件、2 目录），23 个 EXE（22 款业务工具 + 工具箱启动器）、23 份产品说明书，另有说明书索引、README、套餐说明和分类目录。inspection JSON 的 `exe_count=23`、`manual_count=23`、`crc=passed` 与实际清单一致。
-- 内层文件时间戳：2026-11-14 02:45:42 UTC（北京时间 10:45:42）；artifact 创建时间 02:46:02 UTC（北京时间 10:46:02）。
-- manifest artifact ID `14094726787`；清单声明内层 ZIP `bytes=380855169`、SHA256 与实际下载一致、`parts=19`、每片 20 MiB。manifest artifact ZIP CRC 通过。
-- 分类套餐 artifact ID `14095375628`，366,281,387 bytes，SHA256 `61dd429753d12ccf4b437805b02d75441ae687ae1cb6879485a62e8a16fc29af`；外层 CRC 通过，A–E 五个内层 ZIP 均 CRC 通过，数量分别为 A 5 款、B 8 款、C 4 款、D 3 款、E 2 款，每款均含对应数量 EXE 和产品说明书。F 综合包在主客户 ZIP 内。
-- 套餐建议价仍未有闲鱼成交验证：A–D 29.9 元、E 19.9 元、F 39.9 元仅为测试建议价。
-- **待最终验收**：CI 冻结 EXE 非交互自测不等于真实 Windows GUI 全流程验收；客户端内嵌公钥与 config 公钥 SHA256 仍分别为 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741` 与 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。卖家公钥匹配、真实授权签发/激活/重启后复验及逐款 GUI/数据流程验收未完成；不得宣布可正式上架。卖家私钥不上传、不创建、不猜测、不替换。
+- 本次产品代码发布提交：`27a6a61fb16049dc30ad3bc928c4aa503c2ec673`；PR [#45 Add equipment maintenance cost attribution reports](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/45) 已 squash 合并，PR head `70a1ad0512273c30239017b8958f070aee1ba42d`。合并后代码 PR 无未解决项。
+- PR Windows 验证 run #366：[`43549562859`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43549562859)，24/24 jobs success（23 个产品/启动器 build + 1 个 customer package job）。设备维保 job `132308620606`：`102 passed`、`SELF_TEST_OK`、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。
+- 合并后的 main Mainland Windows EXE run #367：[`43549982263`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43549982263)，提交与 PR merge SHA 一致，24/24 jobs success（23 个 Windows 产品/启动器矩阵 job + 1 个客户包 job），无失败 job。设备维保 job `132309967123`：`102 passed in 1.25s`，源码自测通过，PyInstaller 构建成功，冻结 EXE 自测 `FROZEN_EXE_SELF_TEST_OK`、退出码 0。
+- 同一 main commit 的 Windows EXE Build run #184：[`43549982211`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43549982211)，test/build 2/2 success；test 日志 `2 passed`。
+- 同一 main commit 的 Autonomous Business Engine run #439：[`43549982247`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43549982247)，build/deploy 2/2 success，完整测试 `380 passed`；Pages artifact ID `14095409292`，47,766 bytes，部署日志 `Reported success!`，无失败 job。
 
-## 设备维保成本分析改进（PR 候选，待 Windows CI 验证）
+## run #367 main 客户包下载核验
 
-- 新增按设备、服务商/人员、月份三个维度归集维保次数、已登记费用、费用占比、单次平均费用、停机时长及最近维保日期；支持包含边界的日期区间筛选和每个视图独立 CSV 导出。
-- 报表只分析已录入的维保费用/停机时长，不把它冒充完整 TCO；不含采购价、能源、工资或停产损失。
-- 回归覆盖多设备归集、服务商排名、月份趋势、费用占比、零记录设备、日期边界、非法区间、空服务商、零费用和 CSV 公式注入防护。
-- 本 PR 尚未运行 Windows build matrix；候选代码不得混同 run #365 已验收主线包。
+- 客户包 artifact `mainland-phase1-customer-package` ID `14095099033`，380,983,865 bytes，外层 artifact SHA256 `941b7fbec2214ea7edebac617d9f873cddb853c7c53b15d61b126748be09254e`；已实际下载，外层 ZIP CRC 通过。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：380,874,536 bytes，SHA256 `46f8136932f4338e5378bb81ba5e57201a769f30507198ef79fb2caabcda6460`；ZIP CRC 通过。共 52 个条目（50 个文件、2 个目录），23 个 EXE（22 款业务软件 + 工具箱启动器）、23 份产品中文说明书；说明书索引 README 另计。包内设备维保说明书已包含“维保成本分析”新功能。
+- 工作流 inspection JSON 与实际 ZIP 一致：`exe_count=23`、`manual_count=23`、`crc=passed`。内层 ZIP 时间戳统一为 2026-11-14 03:10:30 UTC（北京时间 11:10:30）；客户包 artifact 创建于 03:10:52 UTC（北京时间 11:10:52）。
+- manifest artifact ID `14095389568`，2,605 bytes，artifact SHA256 `9169b44b33bce0378c66e01f1f81850230514b283996e5ff482de48e1288f88e`；清单声明内层 ZIP bytes `380874536`、SHA256 与实测一致、`parts=19`、每片 20 MiB。manifest ZIP CRC 通过。
+- 分片 artifact ID `14095940844`，380,877,864 bytes，artifact SHA256 `8ced8d08df98d28a816a45ab159a53ecbc46af502b0a7da1d4f72335de855141`。
+- 分类套餐 artifact ID `14094699964`，366,299,781 bytes，artifact SHA256 `a6d0a23649b925cf36b63a6323e7246535be1fe59954f1c916a013d6e76885a4`；外层及 A–E 五个内层 ZIP CRC 均通过，数量分别为 A 5 款、B 8 款、C 4 款、D 3 款、E 2 款，每个分类 ZIP 的 EXE 数与产品说明书数一致。F 综合套餐在主客户 ZIP 内。
+- CI 已重新下载刚上传的客户包并完成逐字节比对：`POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`。套餐说明含 A–F 六个系列；建议价 A–D 29.9 元、E 19.9 元、F 39.9 元仍只是待市场验证价格，不代表实际成交价。
+
+## 设备维保成本分析功能
+
+- 按设备、服务商/人员、月份三个维度统计已登记维保次数、费用、费用占比、单次平均费用、停机时长和最近维保日期；支持包含边界的日期区间筛选及每个视图独立 CSV 导出。
+- CSV 继续使用 UTF-8 BOM、公式注入防护和原子写入。新增回归覆盖多设备归集、服务商排名、月份趋势、费用占比、零记录设备、日期边界、非法区间、空服务商、零费用及公式注入。
+- 报表只分析软件中已登记的维保费用/停机时长，不包含采购价、能源、工资或停产损失；不是完整 TCO、会计入账依据或供应商质量定责结论。
+
+## 授权与最终验收状态
+
+- 授权代码未做密钥猜测、替换或轮换；卖家私钥未上传、未创建、未读取、未修改。
+- 客户端内嵌公钥 SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，仍不一致。
+- **交付状态仍为待最终验收，不可宣布可正式上架。** CI 冻结 EXE 非交互自测不等于真实 Windows GUI 全流程验收；卖家公钥匹配、真实授权签发/激活/退出重启后复验、逐款 GUI 使用与数据持久化/备份恢复验收尚未完成。
+- 唯一待用户操作：在可信 Windows 电脑本地导出卖家公钥 PEM 或 SHA256 指纹，只提供公钥或指纹用于比对；绝不发送私钥。密钥匹配后才可进行真实签发、激活及重启复验。
 
 ---
 

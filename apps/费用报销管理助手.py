@@ -25,6 +25,8 @@ INVOICE_STATES = ["有发票", "无发票", "待补票"]
 STATUSES = ["待提交", "已提交", "已批准", "已付款", "已驳回"]
 BACKUP_FORMAT = "mainland-expense-reimbursement-backup"
 BACKUP_VERSION = 1
+MAX_CSV_BYTES = 25 * 1024 * 1024
+MAX_CSV_ROWS = 50000
 
 
 def _date(value, field, required=False):
@@ -76,12 +78,40 @@ def normalize_record(row):
     return item
 
 
+def _safe_csv_value(value):
+    text = str(value if value is not None else "")
+    probe = text.lstrip(" \t\r\n")
+    if probe.startswith(("=", "+", "-", "@")) or (text and text[0] in "\t\r\n"):
+        return "'" + text
+    return text
+
+
+def _restore_csv_value(value):
+    text = str(value if value is not None else "")
+    if text.startswith("'") and (
+        text[1:].lstrip(" \t\r\n").startswith(("=", "+", "-", "@"))
+        or (len(text) > 1 and text[1] in "\t\r\n")
+    ):
+        return text[1:]
+    return text
+
+
 def atomic_write(path, content):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_name(path.name + ".tmp")
-    temp.write_text(content, encoding="utf-8", newline="")
-    temp.replace(path)
+    fd, temp_name = tempfile.mkstemp(
+        prefix=path.name + ".", suffix=".tmp", dir=path.parent
+    )
+    temp = Path(temp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp, path)
+    except Exception:
+        temp.unlink(missing_ok=True)
+        raise
 
 
 class ExpenseStore:
@@ -170,17 +200,34 @@ class ExpenseStore:
             raise
 
     def import_csv(self, path):
+        path = Path(path)
+        if path.stat().st_size > MAX_CSV_BYTES:
+            raise ValueError("CSV 文件超过 25 MiB 限制")
         incoming = []
-        with open(path, encoding="utf-8-sig", newline="") as handle:
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
             reader = csv.DictReader(handle)
             headers = reader.fieldnames or []
-            if len(headers) != len(FIELDS) or set(headers) != set(FIELDS):
+            if (
+                len(headers) != len(FIELDS)
+                or len(set(headers)) != len(headers)
+                or set(headers) != set(FIELDS)
+            ):
                 raise ValueError("CSV 必须且只能包含全部规定字段：" + "、".join(FIELDS))
             for line, row in enumerate(reader, start=2):
                 if None in row:
                     raise ValueError(f"第 {line} 行包含多余列")
+                if all(not str(value or "").strip() for value in row.values()):
+                    continue
+                if any(value is None for value in row.values()):
+                    raise ValueError(f"第 {line} 行字段数量不足")
+                if len(incoming) >= MAX_CSV_ROWS:
+                    raise ValueError("CSV 行数超过 50,000 条限制")
+                restored = {
+                    key: _restore_csv_value(value).strip()
+                    for key, value in row.items()
+                }
                 try:
-                    incoming.append(normalize_record(row))
+                    incoming.append(normalize_record(restored))
                 except ValueError as exc:
                     raise ValueError(f"第 {line} 行：{exc}") from exc
         self.check_unique(incoming)
@@ -200,9 +247,14 @@ class ExpenseStore:
 
     def export_csv(self, path, rows=None):
         output = io.StringIO(newline="")
-        writer = csv.DictWriter(output, fieldnames=FIELDS)
+        writer = csv.DictWriter(output, fieldnames=FIELDS, extrasaction="ignore")
         writer.writeheader()
-        writer.writerows(self.rows if rows is None else rows)
+        source_rows = self.rows if rows is None else rows
+        for row in source_rows:
+            writer.writerow({
+                field: _safe_csv_value(row.get(field, ""))
+                for field in FIELDS
+            })
         atomic_write(path, "\ufeff" + output.getvalue())
 
     def backup(self, path):

@@ -277,6 +277,41 @@ def test_restore_rejects_malformed_json_without_overwrite(tmp_path):
     assert module.ExpenseStore(tmp_path / "expenses.json").rows == before
 
 
+def test_add_rejects_record_count_over_backup_limit(tmp_path, monkeypatch):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    monkeypatch.setattr(module, "MAX_BACKUP_RECORDS", 1)
+    store.add(record(store, "BX20260102-0001"))
+    before = list(store.rows)
+    try:
+        store.add(record(store, "BX20260102-0002"))
+    except ValueError as exc:
+        assert "100,000" in str(exc)
+    else:
+        raise AssertionError("record count limit was ignored")
+    assert store.rows == before
+    assert module.ExpenseStore(tmp_path / "expenses.json").rows == before
+
+
+def test_csv_import_rejects_total_over_backup_record_limit(tmp_path, monkeypatch):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store, "BX20260102-0001"))
+    before = list(store.rows)
+    source = tmp_path / "one-more.csv"
+    with source.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=module.FIELDS)
+        writer.writeheader()
+        writer.writerow(record(store, "BX20260102-0002"))
+    monkeypatch.setattr(module, "MAX_BACKUP_RECORDS", 1)
+    try:
+        store.import_csv(source)
+    except ValueError as exc:
+        assert "100,000" in str(exc)
+    else:
+        raise AssertionError("CSV import exceeded backup record limit")
+    assert store.rows == before
+    assert module.ExpenseStore(tmp_path / "expenses.json").rows == before
+
+
 def test_backup_refuses_payload_over_size_limit_before_writing(tmp_path, monkeypatch):
     store = module.ExpenseStore(tmp_path / "expenses.json")
     store.add(record(store))

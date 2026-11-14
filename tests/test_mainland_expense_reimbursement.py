@@ -268,3 +268,97 @@ def test_add_rolls_back_memory_when_disk_write_fails(tmp_path, monkeypatch):
         raise AssertionError("simulated disk failure was ignored")
     assert store.rows == []
     assert not (tmp_path / "expenses.json").exists()
+
+def test_csv_export_guards_formula_cells_and_roundtrips_original_text(tmp_path):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    source = record(store, **{
+        "报销人": "=1+1",
+        "部门/项目": "+SUM(A1:A2)",
+        "费用说明": "@SUM(1,2)",
+        "备注": "-cmd|' /C calc'!A0",
+    })
+    store.add(source)
+    exported = tmp_path / "formula-safe.csv"
+    store.export_csv(exported)
+    raw = exported.read_text(encoding="utf-8-sig")
+    assert "'=1+1" in raw
+    assert "'+SUM(A1:A2)" in raw
+    assert "'@SUM(1,2)" in raw
+    assert "'-cmd|" in raw
+
+    target = module.ExpenseStore(tmp_path / "target.json")
+    assert target.import_csv(exported) == 1
+    assert target.rows == store.rows
+
+
+def test_csv_import_rejects_file_over_size_limit_without_mutation(tmp_path, monkeypatch):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store))
+    before = list(store.rows)
+    source = tmp_path / "oversized.csv"
+    source.write_text("123456789", encoding="utf-8")
+    monkeypatch.setattr(module, "MAX_CSV_BYTES", 8)
+
+    try:
+        store.import_csv(source)
+    except ValueError as exc:
+        assert "25 MiB" in str(exc)
+    else:
+        raise AssertionError("oversized CSV accepted")
+    assert store.rows == before
+
+
+def test_csv_import_rejects_more_than_row_limit_without_mutation(tmp_path, monkeypatch):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    source = tmp_path / "too-many.csv"
+    with source.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=module.FIELDS)
+        writer.writeheader()
+        writer.writerow(record(store, "BX20260102-0001"))
+        writer.writerow(record(store, "BX20260102-0002"))
+    monkeypatch.setattr(module, "MAX_CSV_ROWS", 1)
+
+    try:
+        store.import_csv(source)
+    except ValueError as exc:
+        assert "50,000" in str(exc)
+    else:
+        raise AssertionError("CSV row limit was ignored")
+    assert store.rows == []
+
+
+def test_csv_import_rejects_missing_optional_cells_without_mutation(tmp_path):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    source = tmp_path / "missing-cell.csv"
+    row = record(store)
+    with source.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(module.FIELDS)
+        writer.writerow([row[field] for field in module.FIELDS[:-1]])
+
+    try:
+        store.import_csv(source)
+    except ValueError as exc:
+        assert "第 2 行字段数量不足" in str(exc)
+    else:
+        raise AssertionError("CSV row with missing trailing cell accepted")
+    assert store.rows == []
+
+
+def test_atomic_write_preserves_existing_file_and_cleans_temp_on_replace_failure(tmp_path, monkeypatch):
+    target = tmp_path / "expenses.json"
+    target.write_text("original", encoding="utf-8")
+
+    def fail_replace(*args, **kwargs):
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr(module.os, "replace", fail_replace)
+    try:
+        module.atomic_write(target, "replacement")
+    except OSError as exc:
+        assert "replace failure" in str(exc)
+    else:
+        raise AssertionError("replace failure was ignored")
+
+    assert target.read_text(encoding="utf-8") == "original"
+    assert list(tmp_path.glob("expenses.json.*.tmp")) == []

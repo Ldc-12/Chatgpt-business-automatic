@@ -322,3 +322,12 @@ def test_equipment_maintenance_product_is_in_build_matrix_launcher_license_and_s
     assert "设备维保巡检与保养计划助手" in license_tests
     assert '"equipment-maintenance"' in series_builder
     assert len(APP_ENTRYPOINTS) == 23
+
+
+
+def test_equipment_maintenance_readme_discloses_internal_reminder_limits():
+    text = module.render_mainland_readme("设备维保巡检与保养计划助手")
+    assert "可调整的周期提醒默认值" in text
+    assert "不是法定检验要求或厂家标准" in text
+    assert "待验收" in text
+    assert "不作安全鉴定" in text

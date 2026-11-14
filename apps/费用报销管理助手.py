@@ -27,6 +27,8 @@ BACKUP_FORMAT = "mainland-expense-reimbursement-backup"
 BACKUP_VERSION = 1
 MAX_CSV_BYTES = 25 * 1024 * 1024
 MAX_CSV_ROWS = 50000
+MAX_BACKUP_BYTES = 100 * 1024 * 1024
+MAX_BACKUP_RECORDS = 100000
 
 
 def _date(value, field, required=False):

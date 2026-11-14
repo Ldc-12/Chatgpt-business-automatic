@@ -64,8 +64,8 @@ def test_frozen_exe_build_includes_license_module_and_checks_real_exit_code():
 def test_package_chunking_uploads_only_actual_split_parts():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
     assert 'if [ "$parts_count" -gt 20 ]; then' in workflow
-    assert "Package exceeds the supported 20 x 18 MiB chunk size." in workflow
-    assert "split -b 18m" in workflow
+    assert "Package exceeds the supported 20 x 20 MiB chunk size." in workflow
+    assert "split -b 20m" in workflow
     assert "parts_count=${#parts[@]}" in workflow
     assert "parts=%s" in workflow
     assert "name: mainland-phase1-package-parts" in workflow

@@ -1,3 +1,26 @@
+# 2026-11-14 main 发布复核：设备维保工具与 Mainland run #365
+
+- 当前 main HEAD：`e03561f5a22e30f99fef596969413b975b31565d`（设备维保巡检与保养计划助手）；复核时 open PR 为 0。
+- 最新 Mainland Windows EXE：run #365，[`43547805001`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43547805001)，push 事件，结论 success；23 个产品/启动器 build job + 1 个 package job，共 24/24 jobs success。设备维保 job ID `132303079503`：`95 passed`，源码自测通过，PyInstaller 构建成功，冻结 EXE 自测日志 `FROZEN_EXE_SELF_TEST_OK`，退出码 0。其余矩阵 job 与 package job 均 success，无失败 job。
+- 同一 main commit 的 Windows EXE Build run #181：[`43547805000`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43547805000)，test/build 2/2 success。
+- 最新 Autonomous Business Engine run #438：[`43547805003`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43547805003)，build/deploy 2/2 success，完整测试 `373 passed`；Pages artifact ID `14094666583`，47,753 bytes。日志未发现失败项或外部 API fallback 错误。
+- 客户包 artifact `mainland-phase1-customer-package` ID `14095480442`，380,964,755 bytes，artifact SHA256 `82b3b453f98fd3fce00d5b0fccd3adc45f41623b77d995811186220f0f6e8eb6`。已下载外层 ZIP，CRC 通过；外层含客户内层 ZIP、README 和 inspection JSON。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：380,855,169 bytes，SHA256 `0957dff7eb757789008f66a7725c9aaaeb1dc26084ddc379b62e9a64ee8177c2`；ZIP CRC 通过；52 个条目（50 文件、2 目录），23 个 EXE（22 款业务工具 + 工具箱启动器）、23 份产品说明书，另有说明书索引、README、套餐说明和分类目录。inspection JSON 的 `exe_count=23`、`manual_count=23`、`crc=passed` 与实际清单一致。
+- 内层文件时间戳：2026-11-14 02:45:42 UTC（北京时间 10:45:42）；artifact 创建时间 02:46:02 UTC（北京时间 10:46:02）。
+- manifest artifact ID `14094726787`；清单声明内层 ZIP `bytes=380855169`、SHA256 与实际下载一致、`parts=19`、每片 20 MiB。manifest artifact ZIP CRC 通过。
+- 分类套餐 artifact ID `14095375628`，366,281,387 bytes，SHA256 `61dd429753d12ccf4b437805b02d75441ae687ae1cb6879485a62e8a16fc29af`；外层 CRC 通过，A–E 五个内层 ZIP 均 CRC 通过，数量分别为 A 5 款、B 8 款、C 4 款、D 3 款、E 2 款，每款均含对应数量 EXE 和产品说明书。F 综合包在主客户 ZIP 内。
+- 套餐建议价仍未有闲鱼成交验证：A–D 29.9 元、E 19.9 元、F 39.9 元仅为测试建议价。
+- **待最终验收**：CI 冻结 EXE 非交互自测不等于真实 Windows GUI 全流程验收；客户端内嵌公钥与 config 公钥 SHA256 仍分别为 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741` 与 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。卖家公钥匹配、真实授权签发/激活/重启后复验及逐款 GUI/数据流程验收未完成；不得宣布可正式上架。卖家私钥不上传、不创建、不猜测、不替换。
+
+## 设备维保成本分析改进（PR 候选，待 Windows CI 验证）
+
+- 新增按设备、服务商/人员、月份三个维度归集维保次数、已登记费用、费用占比、单次平均费用、停机时长及最近维保日期；支持包含边界的日期区间筛选和每个视图独立 CSV 导出。
+- 报表只分析已录入的维保费用/停机时长，不把它冒充完整 TCO；不含采购价、能源、工资或停产损失。
+- 回归覆盖多设备归集、服务商排名、月份趋势、费用占比、零记录设备、日期边界、非法区间、空服务商、零费用和 CSV 公式注入防护。
+- 本 PR 尚未运行 Windows build matrix；候选代码不得混同 run #365 已验收主线包。
+
+---
+
 # 2026-11-13 main 最新发布复核：销售 CSV 安全升级与 run #359
 
 - 本轮 main 最新代码提交：`7b42d530ca3da41c747d4b5f1b83bc30334c9040`（PR #42 squash merge）；当前代码 PR 已全部合并，文档更新 PR 另行记录。

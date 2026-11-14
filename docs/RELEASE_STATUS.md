@@ -1,3 +1,46 @@
+# 2026-11-14 PR #47/#48 合并复核：报销 CSV 安全与备份恢复保护
+
+## 当前主线与 PR
+- 当前 main HEAD：`948d853331ce06d3c91f0fbdb7d9cfbb2c0829af`（PR #48 squash merge）。
+- PR [#47 Harden expense reimbursement CSV import/export and atomic writes](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/47) 已合并，merge commit：`b522432eb286cf3327534ee3de213e3d49b91629`。PR run #368：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43592442790)，24/24 jobs success；报销工具 job `132439847360`：85 passed、`SELF_TEST_OK`、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。其 customer package artifact `14112374455` 属于 PR 验证产物，不是 main 发布包。
+- PR [#48 Validate reimbursement backups and preview restore details](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/48) 已合并，merge commit：`948d853331ce06d3c91f0fbdb7d9cfbb2c0829af`。最终分支 head：`f038e518a7d251d794b15e231924f9418c211507`。Mainland Windows run #371：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43593222403)，24/24 jobs success、无失败 job。报销工具 job `132442174892`：92 passed in 1.50s、`SELF_TEST_OK`、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。客户包 job `132442681058` 的预上传检查、上传、重新下载、复检和分片/manifest 生成全部成功。
+- PR #48 早期 run #370（`43592934925`）24/24 success，但随后增加了“新增/CSV 追加后也必须遵守 100,000 笔备份记录上限”的代码与回归测试；最终以 run #371 为准。
+- PR #48 合并后代码 PR 数量为 0；本次发布状态文档另由 PR #49 提交。main push 触发的 post-merge run 与 main artifact 尚未在本记录中取得可独立核验的 run/artifact ID；因此下面的 PR #48 package 只标为候选包，不冒充 main 发布包。
+
+## 报销管理助手改进
+- CSV 导入/导出：Excel/WPS 公式注入保护、UTF-8 BOM、25 MiB/50,000 条 CSV 限制、严格表头/行宽校验、重复报销单号整批拒绝、原子写入及失败保留原文件。
+- 备份创建和恢复统一限制为最多 100,000 笔、100 MiB；新增和 CSV 追加导入也会阻止突破 100,000 笔上限，避免产生无法备份/恢复的数据集。
+- 恢复前先检查文件大小、JSON 可读性、备份格式/版本、记录字段和单号唯一性；界面先显示备份时间与记录数量，再由用户确认替换本机数据。验证失败不会覆盖现有数据。
+- 新增回归覆盖：备份预览、超大文件、超量记录、损坏 JSON、超限新增/导入、备份写入限制和原数据保留。中文说明书已同步更新。
+- 本批次没有修改任何授权公钥、私钥、签名材料或产品 ID。
+
+## PR #48 候选客户包（非 main artifact）
+- Artifact `mainland-phase1-customer-package` ID `14113935219`，380,981,187 bytes；已实际下载，外层 ZIP CRC 通过。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：380,872,011 bytes，SHA256 `628dd7dccb1480658de4692709c86c193b24479b11e461a443aea857b038a1d7`；ZIP CRC 通过。共 52 个条目（50 个文件、2 个目录），23 个 EXE（22 款业务软件 + 工具箱启动器）、23 份产品说明书；另含说明书索引、README、套餐说明和分类目录。
+- 内层 ZIP 文件时间：2026-11-14 12:09:36 UTC（北京时间 20:09:36）；candidate artifact 创建时间：12:09:52 UTC。
+- Manifest artifact ID `14112992950`，2,603 bytes；声明内层 ZIP 380,872,011 bytes、SHA256 与实测一致、19 个分片、每片 20 MiB。
+- 分类套餐 artifact ID `14113670763`，366,300,236 bytes；外层 ZIP CRC 通过；A/B/C/D/E 分别为 5/8/4/3/2 款，五个 ZIP 的 CRC 均通过，每包 EXE 数与说明书数一致。套餐建议价 A–D 29.9 元、E 19.9 元、F 39.9 元，仍仅为待市场验证建议价。
+- 以上均为 PR #48 run #371 候选产物；不可写成 post-merge main artifact，也不能替代 main push 后的独立复核。
+
+## 最近已核验的 main 客户包（PR #47/#48 之前）
+- 最新已实际下载的 main package 仍是 run #367：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43549982263)，对应 PR #45 产品代码提交 `27a6a61fb16049dc30ad3bc928c4aa503c2ec673`。该 run 24/24 jobs success；设备维保 job `132309967123`：102 passed、源码自测通过、冻结 EXE 自测退出码 0。
+- Main customer package artifact ID `14095099033`，380,983,865 bytes；已在本轮再次下载核验，外层 ZIP CRC 通过。内层 ZIP 380,874,536 bytes，SHA256 `46f8136932f4338e5378bb81ba5e57201a769f30507198ef79fb2caabcda6460`，CRC 通过；52 个条目、23 个 EXE、23 份产品说明书；内层时间 2026-11-14 03:10:30 UTC。
+- Manifest artifact ID `14095389568`，声明 bytes 与 SHA256 和实测完全一致；分类套餐 artifact ID `14094699964`，A/B/C/D/E 为 5/8/4/3/2 款，全部 CRC 通过。
+- **run #367 的 main 包不包含 PR #47/#48 的报销 CSV/备份改进，不能作为当前 main 代码的最新交付包。** 必须等待并核验 post-merge main customer package 后，才可将其标为最新 main 客户包。
+
+## Autonomous Business Engine 与独立 EXE Build
+- ABE run #439：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43549982247)，build/deploy 2/2 success，380 passed in 2.42s；build 日志 `error: null`，无外部 API fallback；deploy 日志 `Reported success!`。
+- ABE Pages artifact ID `14095409292`，47,766 bytes；本轮已下载，外层 ZIP CRC 通过，内部 TAR 198 个条目（152 个文件），含 17 个 `product.json`、12 个闲鱼 `listing.txt`、32 个 `index.html`。
+- Windows EXE Build run #184：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43549982211)，test/build 2/2 success；test 日志 `2 passed in 0.23s`；独立 Freelancer EXE artifact ID `14094679753`，11,126,514 bytes，PyInstaller build 与 smoke check 成功。
+
+## 授权与最终验收
+- 客户端内嵌公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`。
+- `config/mainland_license_public_key.pem` DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。两者仍不一致。
+- 本批次没有猜测、替换、生成或轮换任何生产密钥；卖家私钥仍不在仓库，也未要求用户上传私钥。
+- **当前交付仍为待最终验收，不可宣称已正式可销售。** 尚缺 post-merge main 包独立核验、真实 Windows GUI 全流程、卖家公钥匹配、真实签发/激活以及退出重启后的持续有效性复验。用户最终只需在可信 Windows 电脑本地导出公钥 PEM 或 SHA256 指纹用于比对；绝不提供私钥。
+
+---
+
 # 2026-11-14 产品代码发布复核：PR #45 合并与 Mainland run #367
 
 - 本次产品代码发布提交：`27a6a61fb16049dc30ad3bc928c4aa503c2ec673`；PR [#45 Add equipment maintenance cost attribution reports](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/45) 已 squash 合并，PR head `70a1ad0512273c30239017b8958f070aee1ba42d`。合并后代码 PR 无未解决项。

@@ -309,7 +309,7 @@ jobs:
       - name: Verify re-downloaded customer package
         shell: bash
         run: |
-          python tools/inspect_mainland_package.py --package release/downloaded-artifact/Phase1-Mainland-Windows-Tools.zip --expected-exes 22 --expected-manuals 22 --report release/downloaded-artifact/reinspection.json
+          python tools/inspect_mainland_package.py --package release/downloaded-artifact/Phase1-Mainland-Windows-Tools.zip --expected-exes 23 --expected-manuals 23 --report release/downloaded-artifact/reinspection.json
           python - <<'PY'
           import json
           from pathlib import Path

@@ -166,6 +166,8 @@ class ExpenseStore:
         item = normalize_record(row)
         if any(existing["报销单号"] == item["报销单号"] for existing in self.rows):
             raise ValueError("报销单号已存在")
+        if len(self.rows) >= MAX_BACKUP_RECORDS:
+            raise ValueError("报销记录达到 100,000 笔上限，无法继续新增")
         previous = self.rows
         self.rows = previous + [item]
         try:
@@ -237,6 +239,8 @@ class ExpenseStore:
         duplicates = existing.intersection(row["报销单号"] for row in incoming)
         if duplicates:
             raise ValueError("导入包含已存在报销单号，未导入任何数据：" + "、".join(sorted(duplicates)))
+        if len(self.rows) + len(incoming) > MAX_BACKUP_RECORDS:
+            raise ValueError("导入后报销记录将超过 100,000 笔上限，未导入任何数据")
         if incoming:
             previous = self.rows
             self.rows = previous + incoming

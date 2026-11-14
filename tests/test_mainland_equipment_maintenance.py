@@ -425,15 +425,14 @@ def test_cost_report_export_keeps_formula_injection_prefix():
         "服务商/人员": "=HYPERLINK(\"https://bad.example\",\"click\")",
     }), {"EQ-001": asset_row})
     report = MODULE.analyze_maintenance_costs([asset_row], [row])
-    with pytest.MonkeyPatch.context() as patch:
-        # Use the real CSV writer: the formula is neutralized before Excel/WPS opens it.
-        import tempfile
-        from pathlib import Path
-        with tempfile.TemporaryDirectory() as folder:
-            target = Path(folder) / "vendor-cost.csv"
-            MODULE._write_csv(target, MODULE.VENDOR_COST_FIELDS, report["vendors"])
-            content = target.read_text(encoding="utf-8-sig")
-            assert "'=HYPERLINK(" in content
+    # Use the real CSV writer: the formula is neutralized before Excel/WPS opens it.
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory() as folder:
+        target = Path(folder) / "vendor-cost.csv"
+        MODULE._write_csv(target, MODULE.VENDOR_COST_FIELDS, report["vendors"])
+        content = target.read_text(encoding="utf-8-sig")
+        assert "'=HYPERLINK(" in content
 
 
 def test_cost_analysis_with_no_history_returns_zero_rows_for_registered_assets():

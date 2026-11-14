@@ -315,3 +315,12 @@ def test_retired_asset_is_not_flagged_for_routine_due_or_warranty(tmp_path):
     result = MODULE.analyze_assets([row], [], today="2026-02-01")[0]
     assert result["风险等级"] == "正常"
     assert result["风险说明"] == "当前无到期或验收异常"
+    assert result["逾期天数"] == 0
+
+
+
+def test_accepted_service_does_not_reactivate_retired_equipment(tmp_path):
+    store = MODULE.EquipmentStore(tmp_path / "equipment.json")
+    store.add_asset(asset(store, **{"设备状态": "停用"}))
+    store.record_maintenance(log(store))
+    assert store.assets[0]["设备状态"] == "停用"

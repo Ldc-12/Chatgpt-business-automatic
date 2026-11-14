@@ -27,6 +27,8 @@ BACKUP_FORMAT = "mainland-expense-reimbursement-backup"
 BACKUP_VERSION = 1
 MAX_CSV_BYTES = 25 * 1024 * 1024
 MAX_CSV_ROWS = 50000
+MAX_BACKUP_BYTES = 100 * 1024 * 1024
+MAX_BACKUP_RECORDS = 100000
 
 
 def _date(value, field, required=False):
@@ -164,6 +166,8 @@ class ExpenseStore:
         item = normalize_record(row)
         if any(existing["报销单号"] == item["报销单号"] for existing in self.rows):
             raise ValueError("报销单号已存在")
+        if len(self.rows) >= MAX_BACKUP_RECORDS:
+            raise ValueError("报销记录达到 100,000 笔上限，无法继续新增")
         previous = self.rows
         self.rows = previous + [item]
         try:
@@ -235,6 +239,8 @@ class ExpenseStore:
         duplicates = existing.intersection(row["报销单号"] for row in incoming)
         if duplicates:
             raise ValueError("导入包含已存在报销单号，未导入任何数据：" + "、".join(sorted(duplicates)))
+        if len(self.rows) + len(incoming) > MAX_BACKUP_RECORDS:
+            raise ValueError("导入后报销记录将超过 100,000 笔上限，未导入任何数据")
         if incoming:
             previous = self.rows
             self.rows = previous + incoming
@@ -258,23 +264,53 @@ class ExpenseStore:
         atomic_write(path, "\ufeff" + output.getvalue())
 
     def backup(self, path):
+        if len(self.rows) > MAX_BACKUP_RECORDS:
+            raise ValueError("报销记录超过 100,000 笔，无法生成受支持的备份文件")
         payload = {
             "format": BACKUP_FORMAT,
             "version": BACKUP_VERSION,
             "created_at": datetime.now().isoformat(timespec="seconds"),
             "records": self.rows,
         }
-        atomic_write(path, json.dumps(payload, ensure_ascii=False, indent=2))
+        content = json.dumps(payload, ensure_ascii=False, indent=2)
+        if len(content.encode("utf-8")) > MAX_BACKUP_BYTES:
+            raise ValueError("备份文件超过 100 MiB 限制，请先分批整理数据")
+        atomic_write(path, content)
 
-    def restore(self, path):
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    @staticmethod
+    def _read_backup(path):
+        path = Path(path)
+        try:
+            size = path.stat().st_size
+        except OSError as exc:
+            raise ValueError(f"无法读取备份文件：{exc}") from exc
+        if size > MAX_BACKUP_BYTES:
+            raise ValueError("备份文件超过 100 MiB 限制")
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"备份文件无法读取或 JSON 格式错误：{exc}") from exc
         if not isinstance(payload, dict) or payload.get("format") != BACKUP_FORMAT or payload.get("version") != BACKUP_VERSION:
             raise ValueError("备份文件版本或格式不受支持")
         source = payload.get("records")
         if not isinstance(source, list):
             raise ValueError("备份记录列表格式错误")
-        rows = [normalize_record(row) for row in source]
-        self.check_unique(rows)
+        if len(source) > MAX_BACKUP_RECORDS:
+            raise ValueError("备份记录超过 100,000 笔限制")
+        try:
+            rows = [normalize_record(row) for row in source]
+            ExpenseStore.check_unique(rows)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"备份记录校验失败：{exc}") from exc
+        return payload, rows
+
+    def preview_backup(self, path):
+        payload, rows = self._read_backup(path)
+        created_at = str(payload.get("created_at") or "未记录")[:64]
+        return {"count": len(rows), "created_at": created_at}
+
+    def restore(self, path):
+        _, rows = self._read_backup(path)
         previous = self.rows
         self.rows = rows
         try:
@@ -507,14 +543,27 @@ class App:
 
     def restore(self):
         path = filedialog.askopenfilename(filetypes=[("JSON 备份", "*.json")])
-        if path and messagebox.askyesno("确认恢复", "恢复将替换本机全部报销记录，建议先备份。继续？"):
-            try:
-                self.store.restore(path)
-                self.clear_filters()
-                self.refresh()
-                messagebox.showinfo("恢复完成", "报销数据已恢复")
-            except (ValueError, OSError, json.JSONDecodeError) as exc:
-                messagebox.showerror("恢复失败", str(exc))
+        if not path:
+            return
+        try:
+            info = self.store.preview_backup(path)
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("备份校验失败", str(exc))
+            return
+        message = (
+            f"备份时间：{info['created_at']}\n"
+            f"记录数量：{info['count']} 笔\n\n"
+            "恢复将替换本机全部报销记录，建议先备份当前数据。是否继续？"
+        )
+        if not messagebox.askyesno("确认恢复", message):
+            return
+        try:
+            self.store.restore(path)
+            self.clear_filters()
+            self.refresh()
+            messagebox.showinfo("恢复完成", f"已恢复 {info['count']} 笔报销记录")
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("恢复失败", str(exc))
 
 
 def self_test():

@@ -5,7 +5,7 @@
 - PR [#47 Harden expense reimbursement CSV import/export and atomic writes](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/47) 已合并，merge commit：`b522432eb286cf3327534ee3de213e3d49b91629`。PR run #368：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43592442790)，24/24 jobs success；报销工具 job `132439847360`：85 passed、`SELF_TEST_OK`、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。其 customer package artifact `14112374455` 属于 PR 验证产物，不是 main 发布包。
 - PR [#48 Validate reimbursement backups and preview restore details](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/48) 已合并，merge commit：`948d853331ce06d3c91f0fbdb7d9cfbb2c0829af`。最终分支 head：`f038e518a7d251d794b15e231924f9418c211507`。Mainland Windows run #371：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43593222403)，24/24 jobs success、无失败 job。报销工具 job `132442174892`：92 passed in 1.50s、`SELF_TEST_OK`、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。客户包 job `132442681058` 的预上传检查、上传、重新下载、复检和分片/manifest 生成全部成功。
 - PR #48 早期 run #370（`43592934925`）24/24 success，但随后增加了“新增/CSV 追加后也必须遵守 100,000 笔备份记录上限”的代码与回归测试；最终以 run #371 为准。
-- PR #48 合并后当前 open PR：0。main push 触发的 post-merge run 与 main artifact 尚未在本记录中取得可独立核验的 run/artifact ID；因此下面的 PR #48 package 只标为候选包，不冒充 main 发布包。
+- PR #48 合并后代码 PR 数量为 0；本次发布状态文档另由 PR #49 提交。main push 触发的 post-merge run 与 main artifact 尚未在本记录中取得可独立核验的 run/artifact ID；因此下面的 PR #48 package 只标为候选包，不冒充 main 发布包。
 
 ## 报销管理助手改进
 - CSV 导入/导出：Excel/WPS 公式注入保护、UTF-8 BOM、25 MiB/50,000 条 CSV 限制、严格表头/行宽校验、重复报销单号整批拒绝、原子写入及失败保留原文件。

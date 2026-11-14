@@ -428,6 +428,11 @@ def maintenance_totals(logs):
     return {"count": len(logs), "cost": cost, "downtime": downtime}
 
 
+def history_for_asset(logs, asset_id):
+    rows = [row for row in logs if row["设备编号"] == asset_id]
+    return sorted(rows, key=lambda row: (row["维护日期"], row["记录编号"]), reverse=True)
+
+
 def default_data_path():
     base = os.getenv("LOCALAPPDATA") or str(Path.home())
     return Path(base) / "MainlandBusinessTools" / "equipment_maintenance.json"
@@ -444,7 +449,7 @@ class App:
         toolbar.pack(fill="x")
         for label, command in [
             ("新增设备", self.add_asset), ("编辑设备", self.edit_asset), ("删除设备", self.delete_asset),
-            ("登记维保", self.record_maintenance), ("导入设备 CSV", self.import_csv),
+            ("登记维保", self.record_maintenance), ("查看维保历史", self.show_history), ("导入设备 CSV", self.import_csv),
             ("导出设备 CSV", self.export_csv), ("导出维保记录", self.export_logs),
             ("导出风险清单", self.export_risks), ("备份", self.backup), ("恢复备份", self.restore),
         ]:
@@ -649,6 +654,39 @@ class App:
                 messagebox.showerror("保存失败", str(exc), parent=win)
 
         ttk.Button(win, text="保存维保记录", command=save).grid(row=len(labels)+1, column=0, columnspan=2, pady=10)
+
+    def show_history(self):
+        asset = self.selected_asset()
+        if not asset:
+            return
+        rows = history_for_asset(self.store.logs, asset["设备编号"])
+        win = tk.Toplevel(self.root)
+        win.title(f"维保历史｜{asset['设备编号']} {asset['设备名称']}")
+        win.geometry("1180x520")
+        frame = ttk.Frame(win, padding=8)
+        frame.pack(fill="both", expand=True)
+        tree = ttk.Treeview(frame, columns=LOG_FIELDS, show="headings")
+        widths = [155, 110, 100, 100, 220, 120, 110, 100, 110, 90, 160]
+        for field, width in zip(LOG_FIELDS, widths):
+            tree.heading(field, text=field)
+            tree.column(field, width=width, minwidth=70, stretch=True)
+        yscroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+        xscroll = ttk.Scrollbar(frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=yscroll.set, xscrollcommand=xscroll.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        yscroll.grid(row=0, column=1, sticky="ns")
+        xscroll.grid(row=1, column=0, sticky="ew")
+        frame.rowconfigure(0, weight=1)
+        frame.columnconfigure(0, weight=1)
+        for row in rows:
+            tree.insert("", "end", values=[row[field] for field in LOG_FIELDS])
+        totals = maintenance_totals(rows)
+        ttk.Label(
+            win,
+            text=f"共 {totals['count']} 条记录｜累计费用 ¥{totals['cost']:.2f}｜累计停机 {totals['downtime']:.2f} 小时",
+            anchor="w",
+            padding=8,
+        ).pack(fill="x")
 
     def import_csv(self):
         path = filedialog.askopenfilename(parent=self.root, filetypes=[("CSV 文件", "*.csv")])

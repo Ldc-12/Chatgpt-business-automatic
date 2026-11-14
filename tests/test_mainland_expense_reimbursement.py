@@ -208,6 +208,89 @@ def test_restore_rejects_wrong_format_without_overwrite(tmp_path):
     assert module.ExpenseStore(tmp_path / "expenses.json").rows == before
 
 
+def test_restore_preview_reports_backup_time_and_record_count(tmp_path):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store))
+    backup = tmp_path / "backup.json"
+    store.backup(backup)
+    preview = store.preview_backup(backup)
+    assert preview["count"] == 1
+    assert preview["created_at"] != "未记录"
+
+
+def test_restore_rejects_backup_over_size_limit_without_overwrite(tmp_path, monkeypatch):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store))
+    before = list(store.rows)
+    backup = tmp_path / "backup.json"
+    store.backup(backup)
+    monkeypatch.setattr(module, "MAX_BACKUP_BYTES", 8)
+    try:
+        store.restore(backup)
+    except ValueError as exc:
+        assert "100 MiB" in str(exc)
+    else:
+        raise AssertionError("oversized backup accepted")
+    assert store.rows == before
+    assert module.ExpenseStore(tmp_path / "expenses.json").rows == before
+
+
+def test_restore_rejects_too_many_records_without_overwrite(tmp_path, monkeypatch):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store))
+    before = list(store.rows)
+    payload = {
+        "format": module.BACKUP_FORMAT,
+        "version": module.BACKUP_VERSION,
+        "created_at": "2026-11-14T12:00:00",
+        "records": [
+            record(store, "BX20260102-0001"),
+            record(store, "BX20260102-0002"),
+        ],
+    }
+    backup = tmp_path / "too-many-records.json"
+    backup.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(module, "MAX_BACKUP_RECORDS", 1)
+    try:
+        store.restore(backup)
+    except ValueError as exc:
+        assert "100,000" in str(exc)
+    else:
+        raise AssertionError("backup record limit was ignored")
+    assert store.rows == before
+    assert module.ExpenseStore(tmp_path / "expenses.json").rows == before
+
+
+def test_restore_rejects_malformed_json_without_overwrite(tmp_path):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store))
+    before = list(store.rows)
+    backup = tmp_path / "broken.json"
+    backup.write_text('{"format":', encoding="utf-8")
+    try:
+        store.restore(backup)
+    except ValueError as exc:
+        assert "JSON 格式错误" in str(exc)
+    else:
+        raise AssertionError("malformed JSON backup accepted")
+    assert store.rows == before
+    assert module.ExpenseStore(tmp_path / "expenses.json").rows == before
+
+
+def test_backup_refuses_payload_over_size_limit_before_writing(tmp_path, monkeypatch):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store))
+    backup = tmp_path / "too-large.json"
+    monkeypatch.setattr(module, "MAX_BACKUP_BYTES", 8)
+    try:
+        store.backup(backup)
+    except ValueError as exc:
+        assert "100 MiB" in str(exc)
+    else:
+        raise AssertionError("oversized backup was written")
+    assert not backup.exists()
+
+
 def test_restore_rejects_duplicate_ids_without_overwrite(tmp_path):
     store = module.ExpenseStore(tmp_path / "expenses.json")
     store.add(record(store))

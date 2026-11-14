@@ -324,3 +324,12 @@ def test_accepted_service_does_not_reactivate_retired_equipment(tmp_path):
     store.add_asset(asset(store, **{"设备状态": "停用"}))
     store.record_maintenance(log(store))
     assert store.assets[0]["设备状态"] == "停用"
+
+
+
+def test_history_view_helper_filters_by_asset_and_sorts_newest_first():
+    first = log(None, "WB20260201-0001")
+    second = log(None, "WB20260203-0001", **{"维护日期": "2026-02-03"})
+    other = log(None, "WB20260204-0001", **{"设备编号": "EQ-OTHER", "维护日期": "2026-02-04"})
+    rows = MODULE.history_for_asset([first, second, other], "EQ-001")
+    assert [row["记录编号"] for row in rows] == ["WB20260203-0001", "WB20260201-0001"]

@@ -20,11 +20,11 @@ def _make_inputs(tmp_path):
     return release, manuals, output
 
 
-def test_series_catalog_covers_all_21_products_once():
+def test_series_catalog_covers_all_22_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 21
-    assert len(assigned) == 21
+    assert len(MODULE.PRODUCTS) == 22
+    assert len(assigned) == 22
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "21 款业务软件 + 工具箱启动器" in catalog
+    assert "22 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -100,3 +100,11 @@ def test_store_series_contains_food_safety_inspection_closure_assistant():
     assert "food-safety-inspection" in store_series["products"]
     assert MODULE.PRODUCTS["food-safety-inspection"][1] == "MainlandFoodSafetyInspectionAssistant.exe"
     assert MODULE.PRODUCTS["food-safety-inspection"][2] == "21-门店食品安全巡检与整改闭环助手-用户说明书.md"
+
+
+
+def test_store_series_contains_equipment_maintenance_planner():
+    store_series = next(item for item in MODULE.SERIES if item["code"] == "B")
+    assert "equipment-maintenance" in store_series["products"]
+    assert MODULE.PRODUCTS["equipment-maintenance"][1] == "MainlandEquipmentMaintenanceAssistant.exe"
+    assert MODULE.PRODUCTS["equipment-maintenance"][2] == "22-设备维保巡检与保养计划助手-用户说明书.md"

@@ -300,6 +300,8 @@ class EquipmentStore:
             raise ValueError("维保记录编号已存在")
         index = next(i for i, asset in enumerate(self.assets) if asset["设备编号"] == item["设备编号"])
         old_asset = dict(self.assets[index])
+        if old_asset["最近保养日期"] and item["维护日期"] < old_asset["最近保养日期"]:
+            raise ValueError("维护日期不能早于最近一次维保日期")
         old_logs = self.logs
         self.logs = old_logs + [item]
         asset = dict(old_asset)
@@ -385,10 +387,10 @@ def analyze_assets(assets, logs, today=None, lead_days=14):
         if asset["设备状态"] in ("维修中", "待检修"):
             level = "高风险"
             reasons.append("设备状态为" + asset["设备状态"])
-        elif overdue_days > 0:
+        elif asset["设备状态"] != "停用" and overdue_days > 0:
             level = "高风险"
             reasons.append(f"保养已逾期 {overdue_days} 天")
-        elif due <= today + timedelta(days=lead_days):
+        elif asset["设备状态"] != "停用" and due <= today + timedelta(days=lead_days):
             level = "中风险"
             reasons.append(f"将在 {max(0, (due - today).days)} 天内到期")
         history = by_asset.get(asset["设备编号"], [])
@@ -398,7 +400,7 @@ def analyze_assets(assets, logs, today=None, lead_days=14):
             latest = max(failed, key=lambda row: (row["维护日期"], row["记录编号"]))
             reasons.append("存在未通过或待验收的维保记录：" + latest["记录编号"])
         warranty = asset["保修到期日"]
-        if warranty:
+        if warranty and asset["设备状态"] != "停用":
             warranty_date = date.fromisoformat(warranty)
             if today <= warranty_date <= today + timedelta(days=30):
                 if level == "正常":

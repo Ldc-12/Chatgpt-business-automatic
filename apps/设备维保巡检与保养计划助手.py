@@ -23,6 +23,14 @@ LOG_FIELDS = [
     "记录编号", "设备编号", "维护日期", "维护类型", "维护内容", "服务商/人员",
     "停机时长(小时)", "费用(元)", "下次保养日期", "验收状态", "备注",
 ]
+ASSET_COST_FIELDS = [
+    "设备编号", "设备名称", "设备类别", "安装位置", "维保次数", "累计维保费用(元)",
+    "费用占比(%)", "单次平均费用(元)", "累计停机时长(小时)", "最近维保日期",
+]
+VENDOR_COST_FIELDS = [
+    "服务商/人员", "维保次数", "涉及设备数", "累计维保费用(元)", "费用占比(%)", "累计停机时长(小时)",
+]
+MONTH_COST_FIELDS = ["月份", "维保次数", "累计维保费用(元)", "累计停机时长(小时)"]
 CATEGORIES = ["空调通风", "冷藏冷冻", "厨房设备", "办公设备", "水泵机电", "消防设施", "其他"]
 DEFAULT_INTERVALS = {
     "空调通风": 90, "冷藏冷冻": 30, "厨房设备": 90, "办公设备": 180,
@@ -428,6 +436,117 @@ def maintenance_totals(logs):
     return {"count": len(logs), "cost": cost, "downtime": downtime}
 
 
+def _report_money(value):
+    return format(value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP), "f")
+
+
+def analyze_maintenance_costs(assets, logs, start_date=None, end_date=None):
+    """Aggregate recorded maintenance spend by asset, service provider and month."""
+    start = date.fromisoformat(_date(start_date, "开始日期", required=True)) if start_date else None
+    end = date.fromisoformat(_date(end_date, "结束日期", required=True)) if end_date else None
+    if start and end and start > end:
+        raise ValueError("开始日期不能晚于结束日期")
+
+    asset_map = {row["设备编号"]: row for row in assets}
+    if len(asset_map) != len(assets):
+        raise ValueError("设备编号重复，无法生成成本分析")
+    normalized_logs = [normalize_log(row, asset_map) for row in logs]
+    selected = []
+    for row in normalized_logs:
+        day = date.fromisoformat(row["维护日期"])
+        if start and day < start:
+            continue
+        if end and day > end:
+            continue
+        selected.append(row)
+
+    totals = maintenance_totals(selected)
+    asset_groups = {
+        asset_id: {"count": 0, "cost": Decimal("0.00"), "downtime": Decimal("0.00"), "dates": []}
+        for asset_id in asset_map
+    }
+    vendor_groups = {}
+    month_groups = {}
+    for row in selected:
+        amount = Decimal(row["费用(元)"])
+        downtime = Decimal(row["停机时长(小时)"])
+        asset_group = asset_groups[row["设备编号"]]
+        asset_group["count"] += 1
+        asset_group["cost"] += amount
+        asset_group["downtime"] += downtime
+        asset_group["dates"].append(row["维护日期"])
+
+        vendor = row["服务商/人员"].strip() or "未填写"
+        vendor_group = vendor_groups.setdefault(vendor, {
+            "count": 0, "cost": Decimal("0.00"), "downtime": Decimal("0.00"), "assets": set()
+        })
+        vendor_group["count"] += 1
+        vendor_group["cost"] += amount
+        vendor_group["downtime"] += downtime
+        vendor_group["assets"].add(row["设备编号"])
+
+        month = row["维护日期"][:7]
+        month_group = month_groups.setdefault(month, {
+            "count": 0, "cost": Decimal("0.00"), "downtime": Decimal("0.00")
+        })
+        month_group["count"] += 1
+        month_group["cost"] += amount
+        month_group["downtime"] += downtime
+
+    def share(value):
+        if totals["cost"] <= 0:
+            return "0.00"
+        return _report_money(value * Decimal("100") / totals["cost"])
+
+    asset_rows = []
+    for asset in assets:
+        group = asset_groups[asset["设备编号"]]
+        count = group["count"]
+        asset_rows.append({
+            "设备编号": asset["设备编号"],
+            "设备名称": asset["设备名称"],
+            "设备类别": asset["设备类别"],
+            "安装位置": asset["安装位置"],
+            "维保次数": count,
+            "累计维保费用(元)": _report_money(group["cost"]),
+            "费用占比(%)": share(group["cost"]),
+            "单次平均费用(元)": _report_money(group["cost"] / count) if count else "0.00",
+            "累计停机时长(小时)": _report_money(group["downtime"]),
+            "最近维保日期": max(group["dates"], default=""),
+        })
+    asset_rows.sort(key=lambda row: (-Decimal(row["累计维保费用(元)"]), row["设备编号"]))
+
+    vendor_rows = []
+    for vendor, group in vendor_groups.items():
+        vendor_rows.append({
+            "服务商/人员": vendor,
+            "维保次数": group["count"],
+            "涉及设备数": len(group["assets"]),
+            "累计维保费用(元)": _report_money(group["cost"]),
+            "费用占比(%)": share(group["cost"]),
+            "累计停机时长(小时)": _report_money(group["downtime"]),
+        })
+    vendor_rows.sort(key=lambda row: (-Decimal(row["累计维保费用(元)"]), row["服务商/人员"]))
+
+    month_rows = [
+        {
+            "月份": month,
+            "维保次数": group["count"],
+            "累计维保费用(元)": _report_money(group["cost"]),
+            "累计停机时长(小时)": _report_money(group["downtime"]),
+        }
+        for month, group in sorted(month_groups.items())
+    ]
+    return {
+        "assets": asset_rows,
+        "vendors": vendor_rows,
+        "months": month_rows,
+        "summary": totals,
+        "start_date": start.isoformat() if start else "",
+        "end_date": end.isoformat() if end else "",
+    }
+
+
 def history_for_asset(logs, asset_id):
     rows = [row for row in logs if row["设备编号"] == asset_id]
     return sorted(rows, key=lambda row: (row["维护日期"], row["记录编号"]), reverse=True)
@@ -451,7 +570,8 @@ class App:
             ("新增设备", self.add_asset), ("编辑设备", self.edit_asset), ("删除设备", self.delete_asset),
             ("登记维保", self.record_maintenance), ("查看维保历史", self.show_history), ("导入设备 CSV", self.import_csv),
             ("导出设备 CSV", self.export_csv), ("导出维保记录", self.export_logs),
-            ("导出风险清单", self.export_risks), ("备份", self.backup), ("恢复备份", self.restore),
+            ("导出风险清单", self.export_risks), ("维保成本分析", self.show_cost_analysis),
+            ("备份", self.backup), ("恢复备份", self.restore),
         ]:
             ttk.Button(toolbar, text=label, command=command).pack(side="left", padx=2)
 
@@ -688,6 +808,101 @@ class App:
             padding=8,
         ).pack(fill="x")
 
+    def show_cost_analysis(self):
+        win = tk.Toplevel(self.root)
+        win.title("设备维保成本分析")
+        win.geometry("1280x700")
+
+        filters = ttk.Frame(win, padding=8)
+        filters.pack(fill="x")
+        start_var = tk.StringVar()
+        end_var = tk.StringVar()
+        ttk.Label(filters, text="开始日期（可留空）").pack(side="left")
+        ttk.Entry(filters, textvariable=start_var, width=13).pack(side="left", padx=(4, 12))
+        ttk.Label(filters, text="结束日期（可留空）").pack(side="left")
+        ttk.Entry(filters, textvariable=end_var, width=13).pack(side="left", padx=(4, 12))
+        summary_var = tk.StringVar()
+        ttk.Label(win, textvariable=summary_var, anchor="w", padding=8).pack(fill="x")
+
+        notebook = ttk.Notebook(win)
+        notebook.pack(fill="both", expand=True, padx=8, pady=4)
+        specs = [
+            ("按设备", "assets", ASSET_COST_FIELDS),
+            ("按服务商/人员", "vendors", VENDOR_COST_FIELDS),
+            ("按月份", "months", MONTH_COST_FIELDS),
+        ]
+        trees = {}
+        report_holder = {"value": None}
+        for title, key, fields in specs:
+            page = ttk.Frame(notebook, padding=6)
+            notebook.add(page, text=title)
+            table_frame = ttk.Frame(page)
+            table_frame.pack(fill="both", expand=True)
+            tree = ttk.Treeview(table_frame, columns=fields, show="headings")
+            for field in fields:
+                tree.heading(field, text=field)
+                tree.column(field, width=135, minwidth=85, stretch=True)
+            yscroll = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
+            xscroll = ttk.Scrollbar(table_frame, orient="horizontal", command=tree.xview)
+            tree.configure(yscrollcommand=yscroll.set, xscrollcommand=xscroll.set)
+            tree.grid(row=0, column=0, sticky="nsew")
+            yscroll.grid(row=0, column=1, sticky="ns")
+            xscroll.grid(row=1, column=0, sticky="ew")
+            table_frame.rowconfigure(0, weight=1)
+            table_frame.columnconfigure(0, weight=1)
+            trees[key] = tree
+            ttk.Button(
+                page,
+                text="导出本页 CSV",
+                command=lambda report_key=key, report_fields=fields: self.export_cost_report(
+                    report_holder["value"], report_key, report_fields
+                ),
+            ).pack(anchor="e", pady=(6, 0))
+
+        def generate():
+            try:
+                report = analyze_maintenance_costs(
+                    self.store.assets, self.store.logs, start_var.get(), end_var.get()
+                )
+            except ValueError as exc:
+                messagebox.showerror("分析失败", str(exc), parent=win)
+                return
+            report_holder["value"] = report
+            totals = report["summary"]
+            period = "全部历史" if not report["start_date"] and not report["end_date"] else (
+                f"{report['start_date'] or '最早记录'} 至 {report['end_date'] or '最新记录'}"
+            )
+            summary_var.set(
+                f"统计范围：{period}｜维保记录 {totals['count']} 条｜"
+                f"记录费用合计 ¥{totals['cost']:.2f}｜累计停机 {totals['downtime']:.2f} 小时"
+            )
+            for key, tree in trees.items():
+                tree.delete(*tree.get_children())
+                fields = next(item[2] for item in specs if item[1] == key)
+                for row in report[key]:
+                    tree.insert("", "end", values=[row[field] for field in fields])
+
+        ttk.Button(filters, text="生成分析", command=generate).pack(side="left")
+        generate()
+
+    def export_cost_report(self, report, key, fields):
+        if report is None:
+            return
+        names = {"assets": "设备维保成本", "vendors": "服务商维保费用", "months": "月度维保成本"}
+        path = filedialog.asksaveasfilename(
+            parent=self.root,
+            defaultextension=".csv",
+            initialfile=names[key] + ".csv",
+            filetypes=[("CSV 文件", "*.csv")],
+        )
+        if not path:
+            return
+        try:
+            _write_csv(path, fields, report[key])
+            messagebox.showinfo("导出完成", f"已导出 {len(report[key])} 条分析记录。", parent=self.root)
+        except OSError as exc:
+            messagebox.showerror("导出失败", str(exc), parent=self.root)
+
     def import_csv(self):
         path = filedialog.askopenfilename(parent=self.root, filetypes=[("CSV 文件", "*.csv")])
         if not path:
@@ -778,6 +993,12 @@ def self_test():
         risks = analyze_assets(restored.assets, restored.logs, today="2026-02-02")
         assert risks[0]["风险等级"] == "正常"
         assert maintenance_totals(restored.logs)["cost"] == Decimal("80.00")
+        report = analyze_maintenance_costs(
+            restored.assets, restored.logs, start_date="2026-02-01", end_date="2026-02-01"
+        )
+        assert report["assets"][0]["累计维保费用(元)"] == "80.00"
+        assert report["vendors"][0]["服务商/人员"] == "内部"
+        assert report["months"][0]["月份"] == "2026-02"
     if sys.stdout is not None:
         print("SELF_TEST_OK", flush=True)
 

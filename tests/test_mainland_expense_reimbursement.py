@@ -628,7 +628,7 @@ def test_risk_csv_export_uses_bom_and_formula_safe_text(tmp_path):
     module.export_risk_csv(target, [finding])
 
     raw = target.read_bytes()
-    assert raw.startswith(b"\\xef\\xbb\\xbf")
+    assert raw.startswith(b"\xef\xbb\xbf")
     decoded = raw.decode("utf-8-sig")
     assert "'=HYPERLINK(" in decoded
     assert "'@SUM(1,2)" in decoded

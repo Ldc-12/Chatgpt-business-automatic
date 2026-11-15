@@ -29,8 +29,17 @@ def verify_license(product, path=None):
     p=Path(path) if path else default_license_path(product)
     if not p.exists(): raise LicenseError(f"未找到授权文件。\n设备码：{device_id(product)}\n授权文件：{p}")
     try:
-        data=json.loads(p.read_text(encoding="utf-8")); payload=data["payload"]; signature=data["signature"]
-    except Exception as exc: raise LicenseError(f"授权文件格式无效：{exc}")
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("授权文件顶层必须是 JSON 对象")
+        payload = data.get("payload")
+        signature = data.get("signature")
+        if not isinstance(payload, dict):
+            raise ValueError("授权 payload 必须是 JSON 对象")
+        if not isinstance(signature, str) or not signature.strip():
+            raise ValueError("授权签名必须是非空字符串")
+    except Exception as exc:
+        raise LicenseError(f"授权文件格式无效：{exc}")
     if payload.get("product") != product: raise LicenseError("该授权文件不属于此产品。")
     if payload.get("device_hash") != device_id(product): raise LicenseError(f"该授权已绑定其他电脑。\n本机设备码：{device_id(product)}")
     expires=str(payload.get("expires_at","2099-12-31"))

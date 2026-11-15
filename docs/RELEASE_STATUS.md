@@ -1,3 +1,43 @@
+# 2026-11-15 PR #51 合并与 main run #375 发布复核
+
+## 当前主线与 PR
+- PR [#51 Add offline expense reimbursement risk audit and report export](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/51) 已于 2026-11-15 11:24:31 UTC squash 合并；产品代码 main merge commit：`9800b9df9b619aa8f3b259b67ca5167e74bfe0c7`，PR head：`de6b6d806eb9c95a354ced65ba2a7196a38b128f`。
+- PR #51 验证 run #374：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43668220108)，24/24 jobs success、无失败 job。费用报销工具 job `132672278785`：102 passed in 2.11s、`SELF_TEST_OK`、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。
+- PR #51 候选客户包 artifact ID `14143387870`（380,991,317 bytes），仅作为 PR 验证产物；内层 ZIP SHA256 `53e92b9357cabc95d0b5117b7c74f9d8e902ec72d61e3cd2498f91fd023114c8`，23 个 EXE、23 份产品说明书，已下载核验。它不是 main 发布包，不替代下方 main run #375。
+
+## PR #51 功能
+- 新增完全离线、确定性的报销风险核验规则集 `CN-EXPENSE-2026.11.1`：疑似重复候选、无发票、待补票、待处理超期、付款日期早于费用日期。
+- 每条命中包含规则编号、风险等级、核验依据和建议动作；疑似重复只作人工复核线索，不认定舞弊；30 天/60 天是内部管理提醒，不是法律、税务或监管期限。
+- 主界面按当前筛选范围核验，支持 UTF-8 BOM CSV 风险报告导出、公式注入防护和原子替换；空结果也可导出只有表头的报告。
+- 中文说明书已更新。未增加网络、AI、云端、VPN 或外部 API 依赖；未改动任何授权密钥。
+
+## 合并后的 main Mainland Windows EXE run #375
+- [Actions run #375](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43708780189)，event=push，head SHA 与 main 产品代码提交一致：`9800b9df9b619aa8f3b259b67ca5167e74bfe0c7`；24/24 jobs success（23 个产品/启动器 build + 1 个客户包 job），无失败 job。
+- 费用报销工具 job `132795599936`：102 passed in 1.96s、`SELF_TEST_OK`、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。
+- 供应商采购比价助手 job `132795600038`：70 passed in 1.13s、源码自测通过、冻结 EXE 自测退出码 0。
+- 客户包 job `132796096751` 的分类套餐生成、预上传检查、上传、重新下载、复检、分片和 manifest 步骤全部成功；日志明确记录 `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`。
+
+## run #375 main 客户包下载核验
+- main artifact `mainland-phase1-customer-package` ID `14159408627`，380,985,894 bytes；外层 ZIP SHA256 `95eed3c28314b6e73f639b84b428d60cb371d09e4d54c1e58102eb3891162e48`，已实际下载，外层 CRC 通过。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：380,876,562 bytes，SHA256 `c266187be2f0a90f385198240a7c1c6c50b476e5fb319238d616de642d6ba2b4`；ZIP CRC 通过。52 个条目（50 个文件、2 个目录），23 个 EXE（22 款业务软件 + 工具箱启动器）、23 份独立产品说明书；另含说明书索引、README、套餐说明和 inspection JSON。inspection 的 exe_count/manual_count 与实际清单一致。
+- 内层 ZIP 时间戳范围：2026-11-15 11:27:08–11:27:10 UTC；客户包 artifact 创建时间 11:27:29 UTC。说明书 `13-费用报销管理助手-用户说明书.md` 已包含风险核验章节和规则版本 `CN-EXPENSE-2026.11.1`。
+- Manifest artifact ID `14159543477`，2,605 bytes；已下载核验，声明内层 ZIP 380,876,562 bytes、SHA256 与实测一致、19 个分片、每片 20 MiB。
+- 分类套餐 artifact ID `14158913489`，366,301,996 bytes；外层及 A–E 五个内层 ZIP CRC 均通过，A/B/C/D/E 分别为 5/8/4/3/2 款，每包 EXE 数与说明书数一致。F 全系列套餐包含 22 款业务工具 + 启动器，位于主客户包。
+- 分片 artifact ID `14158974912`，380,879,890 bytes。套餐建议价 A–D 29.9 元、E 19.9 元、F 39.9 元仍为待市场验证价格，不代表实际成交价。
+
+## Autonomous Business Engine 与独立 Windows EXE Build
+- ABE run #449：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43708780200)，head SHA 为 `9800b9df9b619aa8f3b259b67ca5167e74bfe0c7`，build/deploy 2/2 success；build job `132795599692`：402 passed in 2.65s，产品工厂日志 `"error": null`，无 fallback 记录；deploy job `132795716141` success。
+- Pages artifact ID `14159034388`，47,771 bytes，SHA256 `0cab89ce97dd16ec45fbfb5252ecf325a30e5984d9821cdf7688d3045476e979`；已下载，外层 ZIP CRC 通过，内部 TAR 198 个条目（17 个 product.json、12 个闲鱼 listing.txt、32 个 index.html）。
+- Windows EXE Build run #193：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43708780175)，test/build 2/2 success；测试 `2 passed in 0.52s`；FreelancerKit EXE artifact ID `14158989651`，11,126,516 bytes，PyInstaller build 与 smoke check 成功。
+
+## 授权与最终验收
+- 客户端内嵌公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`。
+- `config/mainland_license_public_key.pem` DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`；两者仍不一致。
+- 本批次未猜测、替换、创建或轮换生产密钥；卖家私钥不在仓库，也未要求用户上传私钥。
+- **交付仍为待最终验收，不可宣称已正式可销售。** 仍缺真实 Windows GUI 全流程、卖家公钥匹配、真实签发/激活和退出重启后的持续有效性复验。用户最终只需在可信 Windows 电脑本地导出公钥 PEM 或 SHA256 指纹用于比对，绝不提供私钥。
+
+---
+
 # 2026-11-14 PR #47/#48 合并复核：报销 CSV 安全与备份恢复保护
 
 ## 当前主线与 PR

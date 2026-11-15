@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import tempfile
+import unicodedata
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
@@ -19,6 +20,9 @@ FIELDS = [
     "报销单号", "发生日期", "报销人", "部门/项目", "费用类别", "费用说明",
     "金额(元)", "支付方式", "发票状态", "报销状态", "付款日期", "备注",
 ]
+RISK_FIELDS = ["规则版本", "报销单号", "规则编号", "风险等级", "问题说明", "核验依据", "建议动作"]
+RISK_RULESET_VERSION = "CN-EXPENSE-2026.11.1"
+DEFAULT_STALE_DAYS = 30
 CATEGORIES = ["差旅交通", "餐饮招待", "办公用品", "通讯网络", "住宿", "业务采购", "培训会议", "其他"]
 PAYMENT_METHODS = ["个人垫付", "公司转账", "现金", "银行卡", "微信/支付宝", "其他"]
 INVOICE_STATES = ["有发票", "无发票", "待补票"]
@@ -346,6 +350,114 @@ def summarize(rows):
     return {"count": len(rows), "total": total, "pending": pending, "paid": paid}
 
 
+def audit_expenses(rows, today=None, stale_days=DEFAULT_STALE_DAYS):
+    """Return explainable, deterministic reimbursement audit findings.
+
+    Duplicate matches are candidates for human review, not proof of fraud.
+    The aging threshold is an internal workflow rule, not a legal deadline.
+    """
+    if isinstance(stale_days, bool):
+        raise ValueError("逾期天数必须是非负整数")
+    try:
+        parsed_stale_days = int(stale_days)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("逾期天数必须是非负整数") from exc
+    if parsed_stale_days < 0 or str(parsed_stale_days) != str(stale_days).strip():
+        raise ValueError("逾期天数必须是非负整数")
+
+    if today is None:
+        as_of = date.today()
+    elif isinstance(today, datetime):
+        as_of = today.date()
+    elif isinstance(today, date):
+        as_of = today
+    else:
+        as_of = date.fromisoformat(_date(today, "核验日期", required=True))
+
+    findings = []
+    first_by_fingerprint = {}
+    pending_statuses = {"待提交", "已提交", "已批准"}
+
+    def add(row, rule_id, severity, issue, evidence, action):
+        findings.append({
+            "规则版本": RISK_RULESET_VERSION,
+            "报销单号": row["报销单号"],
+            "规则编号": rule_id,
+            "风险等级": severity,
+            "问题说明": issue,
+            "核验依据": evidence,
+            "建议动作": action,
+        })
+
+    for raw in rows:
+        row = normalize_record(raw)
+        expense_date = date.fromisoformat(row["发生日期"])
+        amount = Decimal(row["金额(元)"])
+        claimant = unicodedata.normalize("NFKC", row["报销人"]).casefold().strip()
+        description = " ".join(
+            unicodedata.normalize("NFKC", row["费用说明"]).casefold().split()
+        )
+        fingerprint = (
+            claimant, expense_date.isoformat(), row["费用类别"], amount, description
+        )
+        if fingerprint in first_by_fingerprint:
+            original_id = first_by_fingerprint[fingerprint]
+            add(
+                row, "DUPLICATE_CANDIDATE", "高",
+                "发现疑似重复报销记录（需人工核对）",
+                f"与报销单 {original_id} 的报销人、发生日期、费用类别、金额和说明一致",
+                "对照原始发票、支付凭证和业务场景；确认重复后再按内部流程处理",
+            )
+        else:
+            first_by_fingerprint[fingerprint] = row["报销单号"]
+
+        if row["发票状态"] == "无发票":
+            add(
+                row, "INVOICE_MISSING", "高", "该笔费用标记为无发票",
+                "发票状态为“无发票”",
+                "核对费用性质、内部制度及替代凭证要求；不要仅凭本提示直接认定违规",
+            )
+        elif row["发票状态"] == "待补票":
+            add(
+                row, "INVOICE_PENDING", "中", "该笔费用仍待补充发票",
+                "发票状态为“待补票”",
+                "登记补票责任人和期限，取得凭证后更新发票状态",
+            )
+
+        if row["报销状态"] in pending_statuses:
+            age_days = (as_of - expense_date).days
+            if age_days > parsed_stale_days:
+                severity = "高" if age_days > max(parsed_stale_days * 2, parsed_stale_days + 1) else "中"
+                add(
+                    row, "PENDING_TOO_LONG", severity,
+                    f"报销记录已超过内部关注期限 {parsed_stale_days} 天",
+                    f"发生日期 {row['发生日期']}；截至 {as_of.isoformat()} 已过 {age_days} 天；当前状态 {row['报销状态']}",
+                    "核对审批卡点、补充资料和付款安排；按本单位制度调整关注天数",
+                )
+
+        if row["付款日期"] and date.fromisoformat(row["付款日期"]) < expense_date:
+            add(
+                row, "PAYMENT_BEFORE_EXPENSE", "中",
+                "付款日期早于费用发生日期",
+                f"付款日期 {row['付款日期']}；发生日期 {row['发生日期']}",
+                "核对日期录入、预付款或冲销场景；确认无误后保留解释凭证",
+            )
+
+    return findings
+
+
+def export_risk_csv(path, findings):
+    output = io.StringIO(newline="")
+    writer = csv.DictWriter(output, fieldnames=RISK_FIELDS, extrasaction="ignore")
+    writer.writeheader()
+    for finding in findings:
+        writer.writerow({
+            field: _safe_csv_value(finding.get(field, ""))
+            for field in RISK_FIELDS
+        })
+    atomic_write(path, "\ufeff" + output.getvalue())
+
+
 def default_data_path():
     base = os.getenv("LOCALAPPDATA") or str(Path.home())
     return Path(base) / "MainlandBusinessTools" / "reimbursements.json"
@@ -364,6 +476,7 @@ class App:
             ("新增报销", self.add), ("编辑", self.edit), ("删除", self.delete),
             ("导入 CSV", self.import_csv), ("导出 CSV", self.export_csv),
             ("备份", self.backup), ("恢复备份", self.restore),
+            ("风险核验", self.audit), ("导出风险报告", self.export_risk_report),
         ]
         for label, command in actions:
             ttk.Button(toolbar, text=label, command=command).pack(side="left", padx=3)
@@ -532,6 +645,52 @@ class App:
             except OSError as exc:
                 messagebox.showerror("导出失败", str(exc))
 
+    def audit(self):
+        rows = self.visible_rows()
+        findings = audit_expenses(rows)
+        high = sum(item["风险等级"] == "高" for item in findings)
+        medium = sum(item["风险等级"] == "中" for item in findings)
+        if not findings:
+            messagebox.showinfo(
+                "风险核验",
+                f"规则集：{RISK_RULESET_VERSION}\n当前筛选 {len(rows)} 笔，未发现规则命中。",
+                parent=self.root,
+            )
+            return
+        preview = "\n".join(
+            f"{item['报销单号']}｜{item['风险等级']}｜{item['规则编号']}：{item['问题说明']}"
+            for item in findings[:10]
+        )
+        if len(findings) > 10:
+            preview += f"\n……另有 {len(findings) - 10} 条，请导出完整风险报告。"
+        messagebox.showwarning(
+            "风险核验结果",
+            f"规则集：{RISK_RULESET_VERSION}\n核验 {len(rows)} 笔，命中 {len(findings)} 条（高 {high} / 中 {medium}）。\n\n"
+            + preview
+            + "\n\n疑似重复仅为核对线索，不代表认定违规。",
+            parent=self.root,
+        )
+
+    def export_risk_report(self):
+        rows = self.visible_rows()
+        findings = audit_expenses(rows)
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV 风险报告", "*.csv")],
+            title="导出当前筛选范围的风险核验报告",
+        )
+        if not path:
+            return
+        try:
+            export_risk_csv(path, findings)
+            messagebox.showinfo(
+                "导出完成",
+                f"已导出 {len(findings)} 条风险核验结果；规则版本 {RISK_RULESET_VERSION}。",
+                parent=self.root,
+            )
+        except OSError as exc:
+            messagebox.showerror("导出失败", str(exc), parent=self.root)
+
     def backup(self):
         path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON 备份", "*.json")])
         if path:
@@ -585,6 +744,10 @@ def self_test():
         }
         store.add(record)
         assert store.rows[0]["金额(元)"] == "12.35"
+        duplicate = dict(store.rows[0])
+        duplicate["报销单号"] = "BX20260102-0002"
+        audit = audit_expenses([store.rows[0], duplicate], today="2026-01-03")
+        assert len(audit) == 1 and audit[0]["规则编号"] == "DUPLICATE_CANDIDATE"
         backup = Path(folder) / "backup.json"
         store.backup(backup)
         store.export_csv(Path(folder) / "expenses.csv")

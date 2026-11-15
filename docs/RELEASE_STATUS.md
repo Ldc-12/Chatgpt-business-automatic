@@ -5,7 +5,7 @@
 - PR [#47 Harden expense reimbursement CSV import/export and atomic writes](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/47) 已合并，merge commit：`b522432eb286cf3327534ee3de213e3d49b91629`。PR run #368：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43592442790)，24/24 jobs success；报销工具 job `132439847360`：85 passed、`SELF_TEST_OK`、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。其 customer package artifact `14112374455` 属于 PR 验证产物，不是 main 发布包。
 - PR [#48 Validate reimbursement backups and preview restore details](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/48) 已合并，merge commit：`948d853331ce06d3c91f0fbdb7d9cfbb2c0829af`。最终分支 head：`f038e518a7d251d794b15e231924f9418c211507`。Mainland Windows run #371：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43593222403)，24/24 jobs success、无失败 job。报销工具 job `132442174892`：92 passed in 1.50s、`SELF_TEST_OK`、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。客户包 job `132442681058` 的预上传检查、上传、重新下载、复检和分片/manifest 生成全部成功。
 - PR #48 早期 run #370（`43592934925`）24/24 success，但随后增加了“新增/CSV 追加后也必须遵守 100,000 笔备份记录上限”的代码与回归测试；最终以 run #371 为准。
-- PR #48 合并后代码 PR 数量为 0；本次发布状态文档另由 PR #49 提交。main push 触发的 post-merge run 与 main artifact 尚未在本记录中取得可独立核验的 run/artifact ID；因此下面的 PR #48 package 只标为候选包，不冒充 main 发布包。
+- PR #48 合并后代码 PR 数量为 0；本次发布状态文档另由 PR #49 提交。随后 main push run #372 已完成并独立核验；下方 PR #48 package 仍只标为候选包，不冒充 main 发布包。
 
 ## 报销管理助手改进
 - CSV 导入/导出：Excel/WPS 公式注入保护、UTF-8 BOM、25 MiB/50,000 条 CSV 限制、严格表头/行宽校验、重复报销单号整批拒绝、原子写入及失败保留原文件。
@@ -21,6 +21,22 @@
 - Manifest artifact ID `14112992950`，2,603 bytes；声明内层 ZIP 380,872,011 bytes、SHA256 与实测一致、19 个分片、每片 20 MiB。
 - 分类套餐 artifact ID `14113670763`，366,300,236 bytes；外层 ZIP CRC 通过；A/B/C/D/E 分别为 5/8/4/3/2 款，五个 ZIP 的 CRC 均通过，每包 EXE 数与说明书数一致。套餐建议价 A–D 29.9 元、E 19.9 元、F 39.9 元，仍仅为待市场验证建议价。
 - 以上均为 PR #48 run #371 候选产物；不可写成 post-merge main artifact，也不能替代 main push 后的独立复核。
+
+## PR #48 合并后的 main run #372：客户包独立复核
+
+- 当前 main HEAD：`a719104b7a3534720da4ff96ddbbd650b412b5f5`。Mainland Windows EXE run #372：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43593485595)，对应产品代码提交 `948d853331ce06d3c91f0fbdb7d9cfbb2c0829af`；HEAD 与构建提交相比仅多 2 个 `docs/RELEASE_STATUS.md` 文档提交（43 行新增，无产品源码变化）。
+- run #372 共 24/24 jobs success（23 个 Windows 产品/启动器 build + 1 个客户包 job），无失败 job。费用报销工具 job `132442973744`：`92 passed in 1.22s`、`SELF_TEST_OK`、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。客户包 job `132443514727` 的分类套餐、预上传检查、上传、重新下载、复检、分片和 manifest 步骤均成功。
+- 客户包 artifact ID `14113312345`，380,987,561 bytes；GitHub artifact digest / 实测外层 ZIP SHA256：`2b09106863e4be1fbcd6dbb54ae8227fbab93e248dff02dc3c11c85f5b5041f5`，外层 CRC 通过。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：380,878,567 bytes，SHA256 `9a4e7992d34d8d37bb410e75e2f8dbcd9504dd402bed9b61acbd6cfadc921b6d`，CRC 通过；52 个条目（50 个文件、2 个目录），23 个 EXE（22 款业务软件 + 工具箱启动器）、23 份产品中文说明书，另有说明书索引、README、套餐说明、分类目录和 inspection JSON。Inspection JSON 的 `exe_count=23`、`manual_count=23`、`entry_count=52`、`crc=passed` 与内层 ZIP 一致。内层 ZIP 文件时间戳统一为 2026-11-14 12:13:06 UTC；artifact 创建时间 12:13:29 UTC。
+- Manifest artifact ID `14113217581`，2,600 bytes；外层 CRC 通过，声明内层 ZIP 为 380,878,567 bytes、SHA256 与实测一致、19 个分片、每片 20 MiB。
+- 分类套餐 artifact ID `14113268554`，366,305,222 bytes；外层 CRC 通过，A–E 五个分类 ZIP 均单独检查且 CRC 通过：A 办公效率 5 EXE/5 说明书；B 门店经营 8/8；C 财务与交易 4/4；D 合同工程物业 3/3；E 客户与个人事务 2/2。系列目录确认 22 款业务工具无重复、无遗漏；F 全系列套餐由主客户包提供。建议售价仍为待市场验证价。
+- 本轮实际下载了客户包、manifest、分类套餐和 ABE Pages artifact；未将 PR #48 候选包作为 main 发布包。
+
+## 最新 Autonomous Business Engine run #447
+
+- [ABE run #447](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43648154753)，head SHA 与当前 main HEAD 一致，build/deploy 2/2 success。
+- build job `132610452859`：`392 passed in 2.01s`；产品工厂日志 `error: null`，没有外部 API fallback；deploy job `132610544974` 报告 Pages deployment success。
+- Pages artifact ID `14134059216`，47,759 bytes，外层 ZIP SHA256 `9f2571c90eaf1808af6b3496bcb3228bade6cce923f1c3df9f296a3418d8dd7d`，CRC 通过；内部 TAR 198 个条目，含 17 个 `product.json` 和 12 个闲鱼 `listing.txt`。
 
 ## 最近已核验的 main 客户包（PR #47/#48 之前）
 - 最新已实际下载的 main package 仍是 run #367：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43549982263)，对应 PR #45 产品代码提交 `27a6a61fb16049dc30ad3bc928c4aa503c2ec673`。该 run 24/24 jobs success；设备维保 job `132309967123`：102 passed、源码自测通过、冻结 EXE 自测退出码 0。

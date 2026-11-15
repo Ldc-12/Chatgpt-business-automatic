@@ -481,3 +481,178 @@ def test_atomic_write_preserves_existing_file_and_cleans_temp_on_replace_failure
 
     assert target.read_text(encoding="utf-8") == "original"
     assert list(tmp_path.glob("expenses.json.*.tmp")) == []
+
+
+def test_audit_marks_later_identical_record_as_duplicate_candidate(tmp_path):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    first = record(store, "BX20260102-0001")
+    second = record(store, "BX20260102-0002")
+    store.add(first)
+    store.add(second)
+
+    findings = module.audit_expenses(store.rows, today="2026-02-01")
+
+    assert len(findings) == 1
+    assert findings[0]["规则版本"] == module.RISK_RULESET_VERSION
+    assert findings[0]["报销单号"] == "BX20260102-0002"
+    assert findings[0]["规则编号"] == "DUPLICATE_CANDIDATE"
+    assert findings[0]["风险等级"] == "高"
+    assert "BX20260102-0001" in findings[0]["核验依据"]
+    assert "人工核对" in findings[0]["问题说明"]
+
+
+def test_audit_duplicate_fingerprint_normalizes_compatibility_width_and_spaces(tmp_path):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store, "BX20260102-0001", **{
+        "报销人": "Ａｌｉｃｅ", "费用说明": "  Ｐｒｉｎｔ   Paper  ",
+    }))
+    store.add(record(store, "BX20260102-0002", **{
+        "报销人": "Alice", "费用说明": "print paper",
+    }))
+
+    findings = module.audit_expenses(store.rows, today="2026-02-01")
+
+    assert [item["规则编号"] for item in findings] == ["DUPLICATE_CANDIDATE"]
+
+
+def test_audit_does_not_merge_records_with_different_fingerprint_fields(tmp_path):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store, "BX20260102-0001"))
+    store.add(record(store, "BX20260102-0002", **{"报销人": "李四"}))
+    store.add(record(store, "BX20260102-0003", **{"发生日期": "2026-01-03"}))
+    store.add(record(store, "BX20260102-0004", **{"费用类别": "餐饮招待"}))
+    store.add(record(store, "BX20260102-0005", **{"金额(元)": "13.00"}))
+    store.add(record(store, "BX20260102-0006", **{"费用说明": "网线"}))
+
+    findings = module.audit_expenses(store.rows, today="2026-02-01")
+
+    assert not any(item["规则编号"] == "DUPLICATE_CANDIDATE" for item in findings)
+
+
+def test_audit_reports_missing_and_pending_invoices_separately(tmp_path):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store, "BX20260102-0001", **{
+        "报销人": "张三", "发票状态": "无发票",
+    }))
+    store.add(record(store, "BX20260102-0002", **{
+        "报销人": "李四", "发票状态": "待补票",
+    }))
+    store.add(record(store, "BX20260102-0003", **{
+        "报销人": "王五", "发票状态": "有发票",
+    }))
+
+    findings = module.audit_expenses(store.rows, today="2026-01-03")
+
+    by_id = {item["报销单号"]: item for item in findings}
+    assert by_id["BX20260102-0001"]["规则编号"] == "INVOICE_MISSING"
+    assert by_id["BX20260102-0001"]["风险等级"] == "高"
+    assert by_id["BX20260102-0002"]["规则编号"] == "INVOICE_PENDING"
+    assert by_id["BX20260102-0002"]["风险等级"] == "中"
+    assert "BX20260102-0003" not in by_id
+
+
+def test_audit_pending_age_uses_strict_threshold_and_ignores_terminal_statuses(tmp_path):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store, "BX20260101-0001", **{
+        "发生日期": "2026-01-02", "报销人": "边界用户",
+    }))
+    store.add(record(store, "BX20260101-0002", **{
+        "发生日期": "2026-01-01", "报销人": "待处理用户",
+    }))
+    store.add(record(store, "BX20260101-0003", **{
+        "发生日期": "2026-01-01", "报销人": "已付款用户",
+        "报销状态": "已付款", "付款日期": "2026-01-05",
+    }))
+    store.add(record(store, "BX20260101-0004", **{
+        "发生日期": "2026-01-01", "报销人": "已驳回用户",
+        "报销状态": "已驳回",
+    }))
+
+    findings = module.audit_expenses(store.rows, today="2026-02-01", stale_days=30)
+
+    assert len(findings) == 1
+    assert findings[0]["报销单号"] == "BX20260101-0002"
+    assert findings[0]["规则编号"] == "PENDING_TOO_LONG"
+    assert findings[0]["风险等级"] == "中"
+    assert "31 天" in findings[0]["核验依据"]
+
+
+def test_audit_escalates_very_old_pending_records(tmp_path):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store, "BX20251101-0001", **{
+        "发生日期": "2025-12-01", "报销人": "长期待处理用户",
+    }))
+
+    findings = module.audit_expenses(store.rows, today="2026-02-01", stale_days=30)
+
+    assert len(findings) == 1
+    assert findings[0]["风险等级"] == "高"
+
+
+def test_audit_flags_payment_before_expense_date(tmp_path):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    store.add(record(store, "BX20260110-0001", **{
+        "发生日期": "2026-01-10", "报销状态": "已付款", "付款日期": "2026-01-05",
+    }))
+
+    findings = module.audit_expenses(store.rows, today="2026-01-11")
+
+    assert len(findings) == 1
+    assert findings[0]["规则编号"] == "PAYMENT_BEFORE_EXPENSE"
+    assert "2026-01-05" in findings[0]["核验依据"]
+
+
+def test_audit_rejects_invalid_stale_days(tmp_path):
+    store = module.ExpenseStore(tmp_path / "expenses.json")
+    for value in (-1, "30.5", True, "abc"):
+        try:
+            module.audit_expenses(store.rows, today="2026-01-01", stale_days=value)
+        except ValueError as exc:
+            assert "非负整数" in str(exc)
+        else:
+            raise AssertionError(f"invalid stale_days accepted: {value!r}")
+
+
+def test_risk_csv_export_uses_bom_and_formula_safe_text(tmp_path):
+    finding = {
+        "规则版本": module.RISK_RULESET_VERSION,
+        "报销单号": "BX1",
+        "规则编号": "CUSTOM",
+        "风险等级": "中",
+        "问题说明": "=HYPERLINK(\"https://example.invalid\",\"open\")",
+        "核验依据": "@SUM(1,2)",
+        "建议动作": "-cmd|' /C calc'!A0",
+    }
+    target = tmp_path / "risk-report.csv"
+
+    module.export_risk_csv(target, [finding])
+
+    raw = target.read_bytes()
+    assert raw.startswith(b"\xef\xbb\xbf")
+    decoded = raw.decode("utf-8-sig")
+    assert "'=HYPERLINK(" in decoded
+    assert "'@SUM(1,2)" in decoded
+    assert "'-cmd|" in decoded
+    rows = list(csv.DictReader(decoded.splitlines()))
+    assert rows[0]["报销单号"] == "BX1"
+    assert rows[0]["规则版本"] == module.RISK_RULESET_VERSION
+
+
+def test_risk_csv_export_is_atomic_on_replace_failure(tmp_path, monkeypatch):
+    target = tmp_path / "risk-report.csv"
+    target.write_text("previous report", encoding="utf-8")
+    finding = {"报销单号": "BX1", "规则编号": "CUSTOM"}
+
+    def fail_replace(*args, **kwargs):
+        raise OSError("simulated report replace failure")
+
+    monkeypatch.setattr(module.os, "replace", fail_replace)
+    try:
+        module.export_risk_csv(target, [finding])
+    except OSError as exc:
+        assert "replace failure" in str(exc)
+    else:
+        raise AssertionError("risk report replace failure was ignored")
+
+    assert target.read_text(encoding="utf-8") == "previous report"
+    assert list(tmp_path.glob("risk-report.csv.*.tmp")) == []

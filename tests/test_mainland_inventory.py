@@ -148,7 +148,7 @@ def test_failed_csv_export_preserves_previous_file(tmp_path, monkeypatch):
 
 def test_csv_export_protects_formulas_and_import_restores_text(tmp_path):
     store = module.InventoryStore(tmp_path / "inventory.json")
-    store.add(row(name="=HYPERLINK(""https://example.invalid"")", note="\t=1+1"))
+    store.add(row(name="=HYPERLINK('https://example.invalid')", note="=1+1"))
     exported = tmp_path / "safe.csv"
     store.export_csv(exported)
     raw = exported.read_bytes()
@@ -156,7 +156,8 @@ def test_csv_export_protects_formulas_and_import_restores_text(tmp_path):
     with exported.open(encoding="utf-8-sig", newline="") as handle:
         record = next(csv.DictReader(handle))
     assert record["商品名称"].startswith("'=")
-    assert record["备注"].startswith("'\t")
+    assert module._spreadsheet_safe("\t=1+1") == "'\t=1+1"
+    assert record["备注"].startswith("'=")
     restored = module.InventoryStore(tmp_path / "restored.json")
     assert restored.import_csv(exported) == 1
     assert restored.rows[0]["商品名称"] == store.rows[0]["商品名称"]

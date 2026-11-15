@@ -1,7 +1,7 @@
 # 2026-11-15 PR #55/#56/#57 合并与候选包复核
 
 ## 当前 main 与 PR
-- 当前 main HEAD：`a3d0f8339c5fb35e449beb858dba0cf7ee41e3f1`（PR #57 squash merge）；本次检查 open PR=0。
+- PR #57 合并后的产品代码 main commit：`a3d0f8339c5fb35e449beb858dba0cf7ee41e3f1`（squash merge）；PR #58 随后仅更新本发布状态文档；本次检查时 open PR=0。
 - PR [#55 Reject malformed offline license payloads safely](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/55) 已合并，代码提交 `8c0d044ac506c973bd288ccce89d488ae198d522`。PR Mainland Windows run #378：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43710059824)，24/24 jobs success、无失败 job；库存矩阵 job `132799462160` 为 66 passed、源码自测通过、PyInstaller build success、冻结 EXE 自测退出码 0。新增顶层 JSON 数组、非对象 payload、非字符串/空白签名的拒绝测试；没有修改生产密钥、产品 ID、设备绑定或签名算法。
 - PR [#56 Harden small-shop inventory persistence and CSV safety](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/56) 已合并，代码提交 `ea504665dad8c6a521998f4c06cf7cf815fc15ec`。PR Mainland Windows run #380：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43711588813)，24/24 jobs success、无失败 job；库存矩阵 job `132804123203` 为 75 passed、PyInstaller build success、冻结 EXE 自测退出码 0。
 - PR [#57 Recover safely when the local inventory file is unreadable](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/57) 已合并，main merge commit `a3d0f8339c5fb35e449beb858dba0cf7ee41e3f1`。PR Mainland Windows run #383：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43714027518)，24/24 jobs success、无失败 job；库存矩阵 job `132811581920` 为 78 passed in 1.58s、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。客户包 job `132812096494` 的分类套餐、ZIP 检查、上传、重新下载、逐项复检、分片和 manifest 均成功，并记录 `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`。

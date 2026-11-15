@@ -697,7 +697,7 @@ class App:
             try:
                 self.store.backup(path)
                 messagebox.showinfo("备份完成", "完整报销数据已备份")
-            except OSError as exc:
+            except (OSError, ValueError) as exc:
                 messagebox.showerror("备份失败", str(exc))
 
     def restore(self):

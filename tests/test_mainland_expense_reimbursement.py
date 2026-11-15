@@ -656,3 +656,28 @@ def test_risk_csv_export_is_atomic_on_replace_failure(tmp_path, monkeypatch):
 
     assert target.read_text(encoding="utf-8") == "previous report"
     assert list(tmp_path.glob("risk-report.csv.*.tmp")) == []
+
+
+def test_backup_ui_shows_record_or_size_limit_error(tmp_path, monkeypatch):
+    class FakeStore:
+        def backup(self, target):
+            raise ValueError("备份文件超过 100 MiB 限制")
+
+    class FakeApp:
+        store = FakeStore()
+
+    shown = []
+    monkeypatch.setattr(
+        module.filedialog,
+        "asksaveasfilename",
+        lambda **kwargs: str(tmp_path / "backup.json"),
+    )
+    monkeypatch.setattr(
+        module.messagebox,
+        "showerror",
+        lambda title, message: shown.append((title, message)),
+    )
+
+    module.App.backup(FakeApp())
+
+    assert shown == [("备份失败", "备份文件超过 100 MiB 限制")]

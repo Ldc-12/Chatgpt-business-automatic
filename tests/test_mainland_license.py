@@ -271,3 +271,21 @@ def test_tampered_signature_is_rejected(tmp_path, monkeypatch):
         assert "签名验证失败" in str(exc)
     else:
         raise AssertionError("tampered signature was accepted")
+
+
+def test_malformed_license_json_shapes_raise_license_error(tmp_path):
+    malformed = [
+        [],
+        {"payload": [], "signature": "not-base64"},
+        {"payload": {}, "signature": []},
+        {"payload": {}, "signature": "   "},
+    ]
+    for index, value in enumerate(malformed):
+        path = tmp_path / f"malformed-{index}.json"
+        path.write_text(json.dumps(value), encoding="utf-8")
+        try:
+            lic.verify_license("demo-product", path)
+        except lic.LicenseError as exc:
+            assert "授权文件格式无效" in str(exc)
+        else:
+            raise AssertionError(f"malformed license shape was not rejected: {value!r}")

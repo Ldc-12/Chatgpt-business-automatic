@@ -1,8 +1,10 @@
 """Offline inventory counting assistant for small shops (Windows/Tkinter)."""
 import csv
 import json
+import math
 import os
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 import tkinter as tk
@@ -15,6 +17,10 @@ PRODUCT = "小店库存盘点助手"
 FIELDS = ["商品编码", "商品名称", "分类", "单位", "库存数量", "预警下限", "进货单价", "备注"]
 NUMERIC_FIELDS = {"库存数量", "预警下限", "进货单价"}
 BACKUP_VERSION = 1
+MAX_ITEMS = 100_000
+MAX_BACKUP_BYTES = 100 * 1024 * 1024
+MAX_CSV_BYTES = 25 * 1024 * 1024
+MAX_CSV_ROWS = 50_000
 
 
 def number(value, field="数值"):
@@ -22,12 +28,16 @@ def number(value, field="数值"):
         result = float(str(value).replace(",", "").replace("，", "").strip() or "0")
     except (TypeError, ValueError):
         raise ValueError(f"{field}必须是数字")
+    if not math.isfinite(result):
+        raise ValueError(f"{field}必须是有限数字")
     if result < 0:
         raise ValueError(f"{field}不能为负数")
     return result
 
 
 def normalize_row(row):
+    if not isinstance(row, dict):
+        raise ValueError("商品记录必须是对象")
     result = {field: str(row.get(field, "")).strip() for field in FIELDS}
     if not result["商品编码"] or not result["商品名称"]:
         raise ValueError("商品编码和商品名称不能为空")
@@ -36,24 +46,54 @@ def normalize_row(row):
     return result
 
 
+def _atomic_write(path, write_callback, encoding="utf-8"):
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(
+        prefix=f".{target.name}.", suffix=".tmp", dir=str(target.parent)
+    )
+    try:
+        with os.fdopen(fd, "w", encoding=encoding, newline="") as handle:
+            write_callback(handle)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_name, target)
+    except Exception:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        try:
+            os.unlink(temp_name)
+        except OSError:
+            pass
+        raise
+
+
+def _spreadsheet_safe(value):
+    if not isinstance(value, str):
+        return value
+    stripped = value.lstrip(" \t\r\n")
+    if value[:1] in ("\t", "\r", "\n") or stripped[:1] in ("=", "+", "-", "@"):
+        return "'" + value
+    return value
+
+
+def _restore_spreadsheet_text(value):
+    if not isinstance(value, str) or not value.startswith("'"):
+        return value
+    original = value[1:]
+    stripped = original.lstrip(" \t\r\n")
+    if original[:1] in ("\t", "\r", "\n") or stripped[:1] in ("=", "+", "-", "@"):
+        return original
+    return value
+
+
 class InventoryStore:
     def __init__(self, path):
         self.path = Path(path)
         self.rows = []
         self.load()
-
-    def load(self):
-        if not self.path.exists():
-            self.rows = []
-            return
-        try:
-            data = json.loads(self.path.read_text(encoding="utf-8"))
-            if not isinstance(data, list):
-                raise ValueError("数据文件格式错误")
-            self.rows = [normalize_row(row) for row in data]
-            self._check_unique(self.rows)
-        except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
-            raise ValueError(f"库存数据无法读取，原文件未修改：{exc}") from exc
 
     @staticmethod
     def _check_unique(rows):
@@ -61,19 +101,48 @@ class InventoryStore:
         if len(codes) != len(set(codes)):
             raise ValueError("商品编码重复，请先修正重复编码")
 
+    def load(self):
+        if not self.path.exists():
+            self.rows = []
+            return
+        try:
+            if self.path.stat().st_size > MAX_BACKUP_BYTES:
+                raise ValueError("库存数据文件超过 100 MiB 限制")
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+            if not isinstance(data, list):
+                raise ValueError("数据文件格式错误")
+            if len(data) > MAX_ITEMS:
+                raise ValueError("库存记录超过 100,000 条限制")
+            rows = []
+            for index, row in enumerate(data, start=1):
+                try:
+                    rows.append(normalize_row(row))
+                except (TypeError, ValueError) as exc:
+                    raise ValueError(f"第 {index} 条商品记录无效：{exc}") from exc
+            self._check_unique(rows)
+            self.rows = rows
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError) as exc:
+            raise ValueError(f"库存数据无法读取，原文件未修改：{exc}") from exc
+
+    def _commit_rows(self, rows):
+        snapshot = [dict(row) for row in rows]
+        if len(snapshot) > MAX_ITEMS:
+            raise ValueError("库存记录超过 100,000 条限制")
+        self._check_unique(snapshot)
+        content = json.dumps(snapshot, ensure_ascii=False, indent=2)
+        if len(content.encode("utf-8")) > MAX_BACKUP_BYTES:
+            raise ValueError("库存数据超过 100 MiB 限制")
+        _atomic_write(self.path, lambda handle: handle.write(content))
+        self.rows = snapshot
+
     def save(self):
-        self._check_unique(self.rows)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temp = self.path.with_suffix(self.path.suffix + ".tmp")
-        temp.write_text(json.dumps(self.rows, ensure_ascii=False, indent=2), encoding="utf-8")
-        temp.replace(self.path)
+        self._commit_rows(self.rows)
 
     def add(self, row):
         item = normalize_row(row)
         if any(r["商品编码"] == item["商品编码"] for r in self.rows):
             raise ValueError("商品编码已存在")
-        self.rows.append(item)
-        self.save()
+        self._commit_rows([*self.rows, item])
 
     def update(self, old_code, row):
         item = normalize_row(row)
@@ -82,52 +151,98 @@ class InventoryStore:
         index = next((i for i, r in enumerate(self.rows) if r["商品编码"] == old_code), None)
         if index is None:
             raise ValueError("找不到要编辑的商品")
-        self.rows[index] = item
-        self.save()
+        updated = list(self.rows)
+        updated[index] = item
+        self._commit_rows(updated)
 
     def delete(self, code):
-        self.rows = [r for r in self.rows if r["商品编码"] != code]
-        self.save()
+        self._commit_rows([r for r in self.rows if r["商品编码"] != code])
 
     def import_csv(self, path):
+        source = Path(path)
+        if source.stat().st_size > MAX_CSV_BYTES:
+            raise ValueError("CSV 文件超过 25 MiB 限制")
         incoming = []
-        with open(path, encoding="utf-8-sig", newline="") as handle:
+        with source.open(encoding="utf-8-sig", newline="") as handle:
             reader = csv.DictReader(handle)
-            if not reader.fieldnames or not set(FIELDS).issubset(set(reader.fieldnames)):
-                raise ValueError("CSV 必须包含全部字段：" + "、".join(FIELDS))
-            for line, row in enumerate(reader, start=2):
+            headers = reader.fieldnames or []
+            if len(headers) != len(set(headers)):
+                raise ValueError("CSV 表头存在重复列")
+            if set(headers) != set(FIELDS):
+                raise ValueError("CSV 必须且只能包含全部字段：" + "、".join(FIELDS))
+            for line, raw_row in enumerate(reader, start=2):
+                if raw_row is None or all(value is None or str(value).strip() == "" for value in raw_row.values()):
+                    continue
+                if None in raw_row or any(raw_row.get(field) is None for field in FIELDS):
+                    raise ValueError(f"第 {line} 行：列数与表头不一致")
+                row = dict(raw_row)
+                for field in FIELDS:
+                    if field not in NUMERIC_FIELDS:
+                        row[field] = _restore_spreadsheet_text(row[field])
                 try:
                     incoming.append(normalize_row(row))
                 except ValueError as exc:
                     raise ValueError(f"第 {line} 行：{exc}") from exc
+                if len(incoming) > MAX_CSV_ROWS:
+                    raise ValueError("CSV 超过 50,000 条记录限制")
         self._check_unique(incoming)
         existing = {r["商品编码"] for r in self.rows}
         duplicates = existing.intersection(r["商品编码"] for r in incoming)
         if duplicates:
             raise ValueError("导入包含已存在商品编码，未导入任何数据：" + "、".join(sorted(duplicates)))
-        self.rows.extend(incoming)
-        self.save()
+        if len(self.rows) + len(incoming) > MAX_ITEMS:
+            raise ValueError("导入后库存记录将超过 100,000 条限制")
+        self._commit_rows([*self.rows, *incoming])
         return len(incoming)
 
     def export_csv(self, path):
-        with open(path, "w", encoding="utf-8-sig", newline="") as handle:
+        target = Path(path)
+
+        def write(handle):
             writer = csv.DictWriter(handle, fieldnames=FIELDS)
             writer.writeheader()
-            writer.writerows(self.rows)
+            for row in self.rows:
+                writer.writerow({field: _spreadsheet_safe(row[field]) for field in FIELDS})
+
+        _atomic_write(target, write, encoding="utf-8-sig")
 
     def backup(self, path):
-        payload = {"format": "mainland-inventory-backup", "version": BACKUP_VERSION,
-                   "created_at": datetime.now().isoformat(timespec="seconds"), "items": self.rows}
-        Path(path).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        payload = {
+            "format": "mainland-inventory-backup",
+            "version": BACKUP_VERSION,
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+            "items": self.rows,
+        }
+        content = json.dumps(payload, ensure_ascii=False, indent=2)
+        if len(content.encode("utf-8")) > MAX_BACKUP_BYTES:
+            raise ValueError("备份文件超过 100 MiB 限制")
+        _atomic_write(path, lambda handle: handle.write(content))
 
     def restore(self, path):
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
-        if payload.get("format") != "mainland-inventory-backup" or payload.get("version") != BACKUP_VERSION:
+        source = Path(path)
+        if source.stat().st_size > MAX_BACKUP_BYTES:
+            raise ValueError("备份文件超过 100 MiB 限制")
+        try:
+            payload = json.loads(source.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"备份文件无法读取：{exc}") from exc
+        if not isinstance(payload, dict):
+            raise ValueError("备份文件顶层必须是 JSON 对象")
+        if payload.get("format") != "mainland-inventory-backup" or type(payload.get("version")) is not int or payload.get("version") != BACKUP_VERSION:
             raise ValueError("备份文件版本或格式不受支持")
-        rows = [normalize_row(row) for row in payload.get("items", [])]
+        items = payload.get("items")
+        if not isinstance(items, list):
+            raise ValueError("备份文件 items 必须是数组")
+        if len(items) > MAX_ITEMS:
+            raise ValueError("备份记录超过 100,000 条限制")
+        rows = []
+        for index, row in enumerate(items, start=1):
+            try:
+                rows.append(normalize_row(row))
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"备份第 {index} 条商品记录无效：{exc}") from exc
         self._check_unique(rows)
-        self.rows = rows
-        self.save()
+        self._commit_rows(rows)
 
 
 def default_data_path():
@@ -192,7 +307,10 @@ class App:
     def delete(self):
         selected = self.tree.selection()
         if selected and messagebox.askyesno("确认删除", "删除所选商品？"):
-            self.store.delete(selected[0]); self.refresh()
+            try:
+                self.store.delete(selected[0]); self.refresh()
+            except (ValueError, OSError) as exc:
+                messagebox.showerror("删除失败", str(exc))
     def import_csv(self):
         path = filedialog.askopenfilename(filetypes=[("CSV 文件", "*.csv")])
         if path:
@@ -204,17 +322,17 @@ class App:
         path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV 文件", "*.csv")])
         if path:
             try: self.store.export_csv(path); messagebox.showinfo("导出完成", "CSV 已保存")
-            except OSError as exc: messagebox.showerror("导出失败", str(exc))
+            except (ValueError, OSError) as exc: messagebox.showerror("导出失败", str(exc))
     def backup(self):
         path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON 备份", "*.json")])
         if path:
             try: self.store.backup(path); messagebox.showinfo("备份完成", "备份文件已保存")
-            except OSError as exc: messagebox.showerror("备份失败", str(exc))
+            except (ValueError, OSError) as exc: messagebox.showerror("备份失败", str(exc))
     def restore(self):
         path = filedialog.askopenfilename(filetypes=[("JSON 备份", "*.json")])
         if path and messagebox.askyesno("确认恢复", "恢复会替换当前库存数据，建议先备份。继续？"):
             try: self.store.restore(path); self.refresh(); messagebox.showinfo("恢复完成", "库存数据已恢复")
-            except (ValueError, OSError, json.JSONDecodeError) as exc: messagebox.showerror("恢复失败", str(exc))
+            except (ValueError, OSError) as exc: messagebox.showerror("恢复失败", str(exc))
 
 
 def self_test():

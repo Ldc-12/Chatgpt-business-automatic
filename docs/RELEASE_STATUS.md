@@ -1,3 +1,37 @@
+# 2026-11-15 PR #55/#56/#57 合并与候选包复核
+
+## 当前 main 与 PR
+- 当前 main HEAD：`a3d0f8339c5fb35e449beb858dba0cf7ee41e3f1`（PR #57 squash merge）；本次检查 open PR=0。
+- PR [#55 Reject malformed offline license payloads safely](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/55) 已合并，代码提交 `8c0d044ac506c973bd288ccce89d488ae198d522`。PR Mainland Windows run #378：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43710059824)，24/24 jobs success、无失败 job；库存矩阵 job `132799462160` 为 66 passed、源码自测通过、PyInstaller build success、冻结 EXE 自测退出码 0。新增顶层 JSON 数组、非对象 payload、非字符串/空白签名的拒绝测试；没有修改生产密钥、产品 ID、设备绑定或签名算法。
+- PR [#56 Harden small-shop inventory persistence and CSV safety](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/56) 已合并，代码提交 `ea504665dad8c6a521998f4c06cf7cf815fc15ec`。PR Mainland Windows run #380：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43711588813)，24/24 jobs success、无失败 job；库存矩阵 job `132804123203` 为 75 passed、PyInstaller build success、冻结 EXE 自测退出码 0。
+- PR [#57 Recover safely when the local inventory file is unreadable](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/57) 已合并，main merge commit `a3d0f8339c5fb35e449beb858dba0cf7ee41e3f1`。PR Mainland Windows run #383：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43714027518)，24/24 jobs success、无失败 job；库存矩阵 job `132811581920` 为 78 passed in 1.58s、PyInstaller build success、`FROZEN_EXE_SELF_TEST_OK` 且退出码 0。客户包 job `132812096494` 的分类套餐、ZIP 检查、上传、重新下载、逐项复检、分片和 manifest 均成功，并记录 `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`。
+
+## 小店库存盘点助手改进
+- JSON 数据和 CSV 导出采用同目录临时文件、flush/fsync 与原子替换；新增/编辑/删除/CSV 导入/恢复先在内存构造候选数据，写入成功后才更新内存状态。
+- 拒绝 NaN/Infinity、重复商品编码、异常 CSV 表头/行宽、超大 CSV、超量库存与不符合格式的备份；导出对 Excel/WPS 公式样式文本做保护，并在重新导入本软件导出文件时还原原文。
+- PR #57 新增损坏库存文件恢复模式：JSON 损坏、格式错误或超限时，程序不再直接崩溃，也不会以空库存覆盖原文件；进入只读恢复模式，禁用新增/编辑/删除/CSV 导入导出和普通备份，仅允许选择有效备份。备份校验通过且原子替换成功后才解除恢复模式；无效备份或写入失败会保留原文件和恢复状态。
+- 中文说明书已新增异常启动与数据恢复章节，说明备份恢复步骤和无可用备份时应先复制保留原始数据文件。
+
+## PR #57 候选客户包（不是 post-merge main artifact）
+- PR run #383 的 `mainland-phase1-customer-package` artifact ID `14160769749`，381,002,535 bytes；artifact digest `ca56559859b2f6623c8ff8d0fee6cb8c92907e8a77a7712d90d99b7f2c680c2c`。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：380,893,288 bytes，SHA256 `f309d600cc831b4dae78457df1821bce45058cf9ad129c1d790d604c0b2e536b`；CI inspection CRC=passed，52 个条目（50 个文件、2 个目录），23 个 EXE（22 款业务工具 + 工具箱启动器）、23 份逐款中文说明书。inspection 的数量与实际构建清单一致。
+- 内层 ZIP 时间戳：2026-11-15 12:31:10 UTC（北京时间 20:31:10）；客户包 artifact 创建时间 12:31:33 UTC。包内包含说明书索引、README、套餐说明、分类目录和 inspection JSON。
+- 分类套餐 artifact ID `14161023866`，366,320,256 bytes；A/B/C/D/E 分别 5/8/4/3/2 款，F 为 22 款业务工具 + 启动器。建议售价 A–D 29.9 元、E 19.9 元、F 39.9 元，仍为待市场验证建议价，不代表成交。
+- Manifest artifact ID `14161208477`（2,603 bytes）；分片 artifact ID `14161895594`（380,896,616 bytes）。以上均属于 PR #57 run #383 的候选产物，不冒充 main 正式发布包。
+
+## 合并后 main 包状态：仍待独立确认
+- PR #57 已合并至 main，但本次可用的 GitHub Actions 查询接口只返回 pull_request 触发的 workflow runs，无法列出 push/schedule 触发的 run。对 merge commit `a3d0f8339c5fb35e449beb858dba0cf7ee41e3f1` 查询后未返回 main push run，因此没有虚构 main run 编号或 artifact ID。
+- 最近一个有完整独立下载核验记录的 main 客户包仍是 run #375，artifact ID `14159408627`；它对应旧产品代码提交 `9800b9df9b619aa8f3b259b67ca5167e74bfe0c7`，早于 PR #55/#56/#57，不能作为当前 main 交付包。
+- 因此 PR #57 候选包虽通过完整 CI 检查，但**当前 main 正式客户包仍待 post-merge push workflow 的独立确认和下载核验**。不得用 run #375 历史包或 PR #383 候选包冒充当前 main 包。
+
+## ABE 与授权验收
+- 当前 `.github/workflows/business-engine.yml` 仍配置 main push、手动触发和每 6 小时 schedule。最近可直接复核的 ABE 记录为 run #449：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43708780200)，build/deploy 2/2 success、402 passed，Pages artifact ID `14159034388`。本次接口不能列出较新 push/schedule run；#449 是本次审计中最新可直接核验记录，不宣称它一定是最新实际运行。
+- 客户端内嵌公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；配置文件公钥 DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，仍不一致。
+- 本轮未猜测、替换、创建或轮换生产密钥；卖家私钥仍不在仓库，也未要求上传私钥。最终验收仍需用户在可信 Windows 电脑本地导出真实卖家公钥 PEM 或 SHA256 指纹用于比对；绝不提供私钥。
+- **所有产品继续标记为待最终验收，不可宣称已经正式可销售。** 尚缺真实 Windows GUI 全流程、卖家公钥匹配、真实签发/激活和退出重启后的持续有效性复验。
+
+---
+
 # 2026-11-15 PR #51 合并与 main run #375 发布复核
 
 ## 当前主线与 PR

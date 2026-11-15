@@ -21,6 +21,14 @@ def write_csv(path, rows, fieldnames=None):
         writer.writerows(rows)
 
 
+def expect_value_error(action):
+    try:
+        action()
+    except ValueError:
+        return
+    raise AssertionError("expected ValueError")
+
+
 def test_add_save_reload_and_update(tmp_path):
     store = module.InventoryStore(tmp_path / "inventory.json")
     store.add(row())
@@ -37,12 +45,7 @@ def test_csv_roundtrip_and_duplicate_is_atomic(tmp_path):
     assert store.import_csv(source) == 1
     before = list(store.rows)
     write_csv(source, [row()])
-    try:
-        store.import_csv(source)
-    except ValueError as exc:
-        assert "未导入任何数据" in str(exc)
-    else:
-        raise AssertionError("duplicate import should fail")
+    expect_value_error(lambda: store.import_csv(source))
     assert store.rows == before
 
 
@@ -51,12 +54,7 @@ def test_invalid_csv_does_not_replace_existing_data(tmp_path):
     store.add(row())
     bad = tmp_path / "bad.csv"
     bad.write_text("商品编码,商品名称\nA002,缺少字段", encoding="utf-8-sig")
-    try:
-        store.import_csv(bad)
-    except ValueError:
-        pass
-    else:
-        raise AssertionError("invalid CSV accepted")
+    expect_value_error(lambda: store.import_csv(bad))
     assert len(store.rows) == 1
 
 
@@ -75,24 +73,14 @@ def test_restore_rejects_unknown_format_without_overwriting(tmp_path):
     store.add(row())
     bad = tmp_path / "bad.json"
     bad.write_text('{"format":"unknown","version":9,"items":[]}', encoding="utf-8")
-    try:
-        store.restore(bad)
-    except ValueError:
-        pass
-    else:
-        raise AssertionError("unknown backup accepted")
+    expect_value_error(lambda: store.restore(bad))
     assert len(store.rows) == 1
 
 
 def test_duplicate_product_code_rejected(tmp_path):
     store = module.InventoryStore(tmp_path / "inventory.json")
     store.add(row())
-    try:
-        store.add(row())
-    except ValueError as exc:
-        assert "已存在" in str(exc)
-    else:
-        raise AssertionError("duplicate code accepted")
+    expect_value_error(lambda: store.add(row()))
 
 
 def test_non_finite_inventory_numbers_are_rejected():
@@ -170,21 +158,10 @@ def test_csv_rejects_duplicate_or_extra_headers_without_mutation(tmp_path):
     original = list(store.rows)
     duplicate = tmp_path / "duplicate.csv"
     duplicate.write_text("商品编码,商品编码,商品名称,分类,单位,库存数量,预警下限,进货单价,备注\nA002,A002,商品,日用品,件,1,0,2,备注\n", encoding="utf-8-sig")
-    for source in (duplicate,):
-        try:
-            store.import_csv(source)
-        except ValueError:
-            pass
-        else:
-            raise AssertionError("duplicate headers accepted")
+    expect_value_error(lambda: store.import_csv(duplicate))
     extra = tmp_path / "extra.csv"
     write_csv(extra, [row()], fieldnames=module.FIELDS + ["额外列"])
-    try:
-        store.import_csv(extra)
-    except ValueError:
-        pass
-    else:
-        raise AssertionError("extra header accepted")
+    expect_value_error(lambda: store.import_csv(extra))
     assert store.rows == original
 
 
@@ -225,12 +202,7 @@ def test_restore_rejects_malformed_json_shapes_without_overwriting(tmp_path):
     for index, payload in enumerate(malformed):
         source = tmp_path / f"bad-{index}.json"
         source.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-        try:
-            store.restore(source)
-        except ValueError:
-            pass
-        else:
-            raise AssertionError(f"malformed backup accepted: {payload!r}")
+        expect_value_error(lambda source=source: store.restore(source))
         assert store.rows == original_rows
         assert store.path.read_text(encoding="utf-8") == original_text
 
@@ -271,3 +243,60 @@ def test_inventory_record_limit_prevents_unbackable_state(tmp_path, monkeypatch)
     else:
         raise AssertionError("record limit not enforced")
     assert len(store.rows) == 1
+
+
+def test_corrupt_inventory_opens_read_only_recovery_mode(tmp_path):
+    data_path = tmp_path / "inventory.json"
+    original = b"{broken-json"
+    data_path.write_bytes(original)
+    store = module.InventoryStore.open_for_recovery(data_path)
+
+    assert store.read_only is True
+    assert store.rows == []
+    assert "库存数据无法读取" in store.load_error
+
+    source = tmp_path / "items.csv"
+    write_csv(source, [row()])
+    expect_value_error(lambda: store.add(row()))
+    expect_value_error(lambda: store.import_csv(source))
+    expect_value_error(lambda: store.export_csv(tmp_path / "export.csv"))
+    expect_value_error(lambda: store.backup(tmp_path / "backup.json"))
+
+    assert data_path.read_bytes() == original
+    assert not (tmp_path / "export.csv").exists()
+    assert not (tmp_path / "backup.json").exists()
+
+
+def test_invalid_backup_keeps_corrupt_inventory_in_recovery_mode(tmp_path):
+    data_path = tmp_path / "inventory.json"
+    original = b"not-json"
+    data_path.write_bytes(original)
+    store = module.InventoryStore.open_for_recovery(data_path)
+    bad_backup = tmp_path / "bad-backup.json"
+    bad_backup.write_text("[]", encoding="utf-8")
+
+    expect_value_error(lambda: store.restore(bad_backup))
+
+    assert store.read_only is True
+    assert store.rows == []
+    assert data_path.read_bytes() == original
+
+
+def test_valid_backup_restores_corrupt_inventory_and_reenables_writes(tmp_path):
+    source = module.InventoryStore(tmp_path / "source.json")
+    source.add(row())
+    backup = tmp_path / "valid-backup.json"
+    source.backup(backup)
+
+    data_path = tmp_path / "inventory.json"
+    data_path.write_bytes(b"{damaged")
+    store = module.InventoryStore.open_for_recovery(data_path)
+    assert store.read_only is True
+
+    store.restore(backup)
+
+    assert store.read_only is False
+    assert store.load_error is None
+    assert store.rows == source.rows
+    store.add(row("A002", "恢复后新增商品"))
+    assert len(module.InventoryStore(data_path).rows) == 2

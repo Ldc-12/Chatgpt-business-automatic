@@ -93,7 +93,29 @@ class InventoryStore:
     def __init__(self, path):
         self.path = Path(path)
         self.rows = []
+        self.read_only = False
+        self.load_error = None
         self.load()
+
+    @classmethod
+    def open_for_recovery(cls, path):
+        """Open a damaged store without replacing or hiding its original file."""
+        try:
+            return cls(path)
+        except ValueError as exc:
+            store = cls.__new__(cls)
+            store.path = Path(path)
+            store.rows = []
+            store.read_only = True
+            store.load_error = str(exc)
+            return store
+
+    def _ensure_writable(self):
+        if self.read_only:
+            raise ValueError(
+                "库存数据无法读取，软件已进入只读恢复模式。"
+                "请先恢复有效备份；恢复前不会覆盖原始数据文件。"
+            )
 
     @staticmethod
     def _check_unique(rows):
@@ -124,7 +146,9 @@ class InventoryStore:
         except (OSError, UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError) as exc:
             raise ValueError(f"库存数据无法读取，原文件未修改：{exc}") from exc
 
-    def _commit_rows(self, rows):
+    def _commit_rows(self, rows, allow_recovery=False):
+        if self.read_only and not allow_recovery:
+            self._ensure_writable()
         snapshot = [dict(row) for row in rows]
         if len(snapshot) > MAX_ITEMS:
             raise ValueError("库存记录超过 100,000 条限制")
@@ -134,17 +158,21 @@ class InventoryStore:
             raise ValueError("库存数据超过 100 MiB 限制")
         _atomic_write(self.path, lambda handle: handle.write(content))
         self.rows = snapshot
+        self.read_only = False
+        self.load_error = None
 
     def save(self):
         self._commit_rows(self.rows)
 
     def add(self, row):
+        self._ensure_writable()
         item = normalize_row(row)
         if any(r["商品编码"] == item["商品编码"] for r in self.rows):
             raise ValueError("商品编码已存在")
         self._commit_rows([*self.rows, item])
 
     def update(self, old_code, row):
+        self._ensure_writable()
         item = normalize_row(row)
         if any(r["商品编码"] == item["商品编码"] and r["商品编码"] != old_code for r in self.rows):
             raise ValueError("商品编码已存在")
@@ -156,9 +184,11 @@ class InventoryStore:
         self._commit_rows(updated)
 
     def delete(self, code):
+        self._ensure_writable()
         self._commit_rows([r for r in self.rows if r["商品编码"] != code])
 
     def import_csv(self, path):
+        self._ensure_writable()
         source = Path(path)
         if source.stat().st_size > MAX_CSV_BYTES:
             raise ValueError("CSV 文件超过 25 MiB 限制")
@@ -196,6 +226,7 @@ class InventoryStore:
         return len(incoming)
 
     def export_csv(self, path):
+        self._ensure_writable()
         target = Path(path)
 
         def write(handle):
@@ -207,6 +238,7 @@ class InventoryStore:
         _atomic_write(target, write, encoding="utf-8-sig")
 
     def backup(self, path):
+        self._ensure_writable()
         payload = {
             "format": "mainland-inventory-backup",
             "version": BACKUP_VERSION,
@@ -242,7 +274,7 @@ class InventoryStore:
             except (TypeError, ValueError) as exc:
                 raise ValueError(f"备份第 {index} 条商品记录无效：{exc}") from exc
         self._check_unique(rows)
-        self._commit_rows(rows)
+        self._commit_rows(rows, allow_recovery=True)
 
 
 def default_data_path():
@@ -255,13 +287,28 @@ class App:
         self.root = root
         root.title("小店库存盘点助手｜大陆版")
         root.geometry("1100x650")
-        self.store = InventoryStore(default_data_path())
+        self.store = InventoryStore.open_for_recovery(default_data_path())
         bar = tk.Frame(root); bar.pack(fill="x", padx=8, pady=8)
         actions = [("新增商品", self.add), ("编辑", self.edit), ("删除", self.delete),
                    ("导入 CSV", self.import_csv), ("导出 CSV", self.export_csv),
                    ("备份", self.backup), ("恢复备份", self.restore)]
+        self.action_buttons = {}
         for label, command in actions:
-            tk.Button(bar, text=label, command=command).pack(side="left", padx=3)
+            button = tk.Button(bar, text=label, command=command)
+            button.pack(side="left", padx=3)
+            self.action_buttons[label] = button
+            if self.store.read_only and label != "恢复备份":
+                button.configure(state="disabled")
+        self.recovery_notice = None
+        if self.store.read_only:
+            self.recovery_notice = tk.Label(
+                root,
+                text="库存数据文件无法读取，已进入只读恢复模式。原文件未修改；请先恢复有效备份。",
+                fg="#b00020",
+                anchor="w",
+                justify="left",
+            )
+            self.recovery_notice.pack(fill="x", padx=10, pady=4)
         self.query = tk.StringVar()
         tk.Label(bar, text="搜索").pack(side="left", padx=(14, 3))
         entry = tk.Entry(bar, textvariable=self.query, width=22); entry.pack(side="left")
@@ -275,6 +322,11 @@ class App:
 
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
+        if self.store.read_only:
+            self.summary.set(
+                f"恢复模式：原始库存文件未修改。请先恢复有效备份。数据位置：{self.store.path}"
+            )
+            return
         q = self.query.get().casefold()
         for row in self.store.rows:
             if q and q not in " ".join(str(row[f]) for f in FIELDS).casefold():
@@ -330,9 +382,26 @@ class App:
             except (ValueError, OSError) as exc: messagebox.showerror("备份失败", str(exc))
     def restore(self):
         path = filedialog.askopenfilename(filetypes=[("JSON 备份", "*.json")])
-        if path and messagebox.askyesno("确认恢复", "恢复会替换当前库存数据，建议先备份。继续？"):
-            try: self.store.restore(path); self.refresh(); messagebox.showinfo("恢复完成", "库存数据已恢复")
-            except (ValueError, OSError) as exc: messagebox.showerror("恢复失败", str(exc))
+        if path:
+            if self.store.read_only:
+                prompt = (
+                    "恢复会使用所选备份替换无法读取的库存文件。"
+                    "如果需要保留损坏原件，请先在资源管理器复制该文件。继续？"
+                )
+            else:
+                prompt = "恢复会替换当前库存数据，建议先备份。继续？"
+            if messagebox.askyesno("确认恢复", prompt):
+                try:
+                    self.store.restore(path)
+                    for button in self.action_buttons.values():
+                        button.configure(state="normal")
+                    if self.recovery_notice is not None:
+                        self.recovery_notice.destroy()
+                        self.recovery_notice = None
+                    self.refresh()
+                    messagebox.showinfo("恢复完成", "库存数据已恢复")
+                except (ValueError, OSError) as exc:
+                    messagebox.showerror("恢复失败", str(exc))
 
 
 def self_test():

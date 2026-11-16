@@ -11,7 +11,7 @@ import uuid
 from datetime import date
 from pathlib import Path
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, simpledialog, ttk
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
@@ -255,7 +255,7 @@ class App(tk.Tk):
                    ("里程公里", "0"), ("费用类别", "保养"), ("项目/事项", "常规保养"),
                    ("服务商", ""), ("金额元", "0"), ("下次提醒日期", ""), ("备注", "")]
         for field, default in prompts:
-            value = tk.simpledialog.askstring("新增车辆记录", field, initialvalue=default, parent=self)
+            value = simpledialog.askstring("新增车辆记录", field, initialvalue=default, parent=self)
             if value is None:
                 return
             values[field] = value

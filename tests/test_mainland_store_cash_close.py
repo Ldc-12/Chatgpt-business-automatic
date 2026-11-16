@@ -285,3 +285,10 @@ def test_rejects_extreme_amounts_and_unsafe_record_ids():
         assert "记录编号" in str(exc)
     else:
         raise AssertionError("unsafe record ID accepted")
+
+
+def test_gui_uses_explicit_simpledialog_import_for_all_prompts():
+    source = PATH.read_text(encoding="utf-8")
+    assert "from tkinter import filedialog, messagebox, simpledialog, ttk" in source
+    assert "tk.simpledialog" not in source
+    assert source.count("simpledialog.askstring") >= 4

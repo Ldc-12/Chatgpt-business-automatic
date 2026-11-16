@@ -83,6 +83,31 @@ def test_duplicate_product_code_rejected(tmp_path):
     expect_value_error(lambda: store.add(row()))
 
 
+def test_delete_existing_product_persists_removal(tmp_path):
+    data_path = tmp_path / "inventory.json"
+    store = module.InventoryStore(data_path)
+    store.add(row())
+
+    store.delete("A001")
+
+    assert store.rows == []
+    assert module.InventoryStore(data_path).rows == []
+
+
+def test_delete_missing_or_blank_product_code_does_not_rewrite_data(tmp_path):
+    data_path = tmp_path / "inventory.json"
+    store = module.InventoryStore(data_path)
+    store.add(row())
+    original_text = data_path.read_text(encoding="utf-8")
+    original_rows = list(store.rows)
+
+    expect_value_error(lambda: store.delete("MISSING"))
+    expect_value_error(lambda: store.delete("  "))
+
+    assert store.rows == original_rows
+    assert data_path.read_text(encoding="utf-8") == original_text
+
+
 def test_non_finite_inventory_numbers_are_rejected():
     for value in ("nan", "NaN", "inf", "-inf", "Infinity"):
         try:

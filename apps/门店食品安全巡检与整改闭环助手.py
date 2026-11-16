@@ -233,6 +233,8 @@ class InspectionStore:
         if not self.path.exists():
             self.inspections, self.events = [], []
             return
+        if self.path.stat().st_size > MAX_BACKUP_BYTES:
+            raise ValueError("本地巡检数据超过 100 MiB，已拒绝加载且原文件未修改")
         try:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
             self.inspections, self.events = self.decode_payload(payload)

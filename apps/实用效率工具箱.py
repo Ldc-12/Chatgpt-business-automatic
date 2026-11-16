@@ -27,6 +27,7 @@ TOOLS = [
     ("装修工程签证与进度款管理助手", "MainlandConstructionSettlementAssistant.exe"),
     ("物业租金与押金管理助手", "MainlandRentalLedgerAssistant.exe"),
     ("设备维保巡检与保养计划助手", "MainlandEquipmentMaintenanceAssistant.exe"),
+    ("车辆维保与费用台账助手", "MainlandVehicleMaintenanceLedger.exe"),
 ]
 
 
@@ -42,7 +43,7 @@ def application_directory():
 
 
 def self_test():
-    assert len(TOOLS) == 22
+    assert len(TOOLS) == 23
     names = [name for name, _ in TOOLS]
     exes = [exe for _, exe in TOOLS]
     assert len(set(names)) == len(names)
@@ -56,7 +57,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("实用效率工具箱")
-        self.geometry("780x720")
+        self.geometry("800x800")
         self.resizable(False, False)
         ttk.Label(
             self, text="Windows 实用效率工具箱",

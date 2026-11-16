@@ -1,3 +1,32 @@
+# 2026-11-16 PR #63 已合并：门店日结与收银差异核对助手（主线发布待独立复核）
+
+## 合并与 PR 验证
+- PR [#63 Add offline store cash-close reconciliation and audit assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/63) 已 squash 合并；main merge commit：`ff131dde6ff775b5026be7e85a9c756ca4ccd0a2`。
+- PR Mainland Windows EXE run #403：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43797257463)，26/26 jobs success、无失败 job（25 个 EXE 矩阵 job + 1 个客户包 job）。
+- 新产品 Windows job `133068779235`：84 passed in 1.42s；源码 self-test 成功；PyInstaller 6.22.3 构建成功；冻结 EXE self-test 进程退出码 0。
+- 新增功能：按日期/门店/班次/收银台唯一日结；现金与 POS 差异计算；差异说明强制复核；封账后锁定、重新开账必须填写原因；本地 SHA256 操作链；新增操作日志校验和安全 CSV 导出。审计 CSV 导出前重新验证整条链，损坏时拒绝覆盖现有报告。中文说明书、工具箱入口、独立产品 ID、B 系列套餐和构建矩阵均已集成。
+
+## PR #63 候选客户包（不是 main 正式发布包）
+- PR run #403 的 `mainland-phase1-customer-package` artifact ID `14194848141`，410,581,216 bytes；artifact ZIP digest：`sha256:6e0f8f98352a443fbbebfc3ed8341a58d77d90f564af979126552d361af78aa8`。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：410,463,681 bytes；SHA256：`e288cc58018965b319cfa1cb0ddc1a8c1c4a33d2bb538188fe7b20d6c0001b5f`；CRC passed；56 个条目（54 个文件），25 个 EXE、25 份逐款中文说明书。ZIP 时间戳：2026-11-16 03:19:58 UTC。
+- 包含 `package/MainlandStoreCashClose.exe` 与 `package/说明书/24-门店日结与收银差异核对助手-用户说明书.md`。
+- 套餐 A–F 六类说明齐全；A/B/C/D/E 分别 5/9/4/3/3 款；F 为 24 款业务工具 + 工具箱启动器。建议价 A–D 29.9 元、E 19.9 元、F 39.9 元，仍为待成交验证建议价。
+- 分类套餐 artifact ID `14194853049`（395,900,624 bytes）；manifest artifact ID `14194922924`（2,676 bytes）；分片 artifact ID `14194589425`（410,467,183 bytes）。
+- 客户包 job 完成上传后重新下载和二次 ZIP 检查，日志记录 `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`；重新下载包与上传前检查包逐字节一致。
+- 本轮已通过 GitHub artifact 下载接口下载 main 旧版和 PR 候选包元数据；大于 100 MiB 的 ZIP 在当前工作容器受 materialization 大小限制，未在本地再次解压。以上实际内容计数、CRC、SHA256 与重新下载一致性来自 PR run #403 的包检查日志，明确标记为 PR 候选验收结果。
+
+## 合并后 main 正式发布状态
+- 当前 main HEAD 为合并提交 `ff131dde6ff775b5026be7e85a9c756ca4ccd0a2`。
+- 当前可用 GitHub 查询接口未返回该 merge commit 的 push workflow run 或 commit status；因此 PR #403 的 artifact 仍是 PR 候选包，**不能冒充 post-merge main 正式客户包**。
+- 最近一个有完整检查记录的 main 正式客户包仍是 run #388、artifact ID `14188324302`，对应 PR #63 合并前的 24 EXE/24 说明书版本。必须待合并后 main push workflow 的正式包独立确认后，才能更新为新主线发行包。
+
+## ABE 与授权最终验收
+- 最近可直接复核的 Autonomous Business Engine main run #459：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43781738457)，build/deploy 2/2 success；build job `133020251434` 为 428 passed；Pages artifact ID `14188836229`，47,755 bytes。
+- 客户端内嵌公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；配置文件公钥 DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，仍不一致。
+- 未创建、猜测、替换或上传任何卖家私钥/生产公钥。真实 Windows GUI 全流程、卖家公钥匹配、真实签发/激活和退出重启后的持续有效性仍待验收；所有版本继续标记为待最终验收，不可宣称正式可销售。
+
+---
+
 # 2026-11-16 PR #60 已合并：车辆维保新产品与 main run #388 正式包验收
 
 ## 当前 main 与 PR

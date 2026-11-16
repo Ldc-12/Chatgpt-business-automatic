@@ -114,7 +114,7 @@ def test_repair_work_order_product_is_in_build_matrix_and_customer_package():
     assert 'product: "售后维修工单管理助手"' in workflow
     assert "tests/test_mainland_repair_work_orders.py" in workflow
     assert "MainlandRepairWorkOrderManager" in workflow
-    assert "23 款 Windows EXE（22 款业务工具及工具箱启动器）" in workflow
+    assert "24 款 Windows EXE（23 款业务工具及工具箱启动器）" in workflow
     assert "售后维修工单管理助手.json" in workflow
     launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
     assert "MainlandRepairWorkOrderManager.exe" in launcher
@@ -137,7 +137,7 @@ def test_store_schedule_product_is_in_build_matrix_and_customer_package():
     assert "门店排班考勤助手.json" in workflow
     launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
     assert "MainlandStoreScheduleAssistant.exe" in launcher
-    assert "assert len(TOOLS) == 22" in launcher
+    assert "assert len(TOOLS) == 23" in launcher
 
 
 def test_contract_ledger_product_is_in_build_matrix_and_customer_package():
@@ -167,7 +167,7 @@ def test_construction_settlement_product_is_in_build_matrix_launcher_and_custome
     assert "assert len(TOOLS) == 22" in launcher
     assert "23 款 Windows EXE（22 款业务工具及工具箱启动器）" in workflow
     assert "23 款业务工具 + 工具箱启动器" in workflow
-    assert len(APP_ENTRYPOINTS) == 23
+    assert len(APP_ENTRYPOINTS) == 24
 
 
 def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package():
@@ -185,7 +185,7 @@ def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package()
     assert "MainlandRentalLedgerAssistant.exe" in launcher
     assert "物业租金与押金管理助手" in license_tests
     assert "23 款 Windows EXE（22 款业务工具及工具箱启动器）" in workflow
-    assert "全部 22 款业务工具 + 工具箱启动器" in workflow
+    assert "全部 23 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 23
 
 
@@ -197,8 +197,8 @@ def test_every_standalone_delivery_zip_has_its_matching_chinese_manual():
         for line in workflow.splitlines()
         if line.strip().startswith("manual: ")
     ]
-    assert len(manual_names) == 23
-    assert len(set(manual_names)) == 23
+    assert len(manual_names) == 24
+    assert len(set(manual_names)) == 24
     for name in manual_names:
         assert (root / "docs" / "manuals" / name).is_file(), name
     assert "z.write('docs/manuals/${{ matrix.manual }}','说明书/${{ matrix.manual }}')" in workflow
@@ -288,8 +288,8 @@ def test_customer_zip_inspection_runs_before_artifact_upload_and_is_retained():
     customer_upload = workflow.index("name: mainland-phase1-customer-package")
     assert inspection_step < customer_upload
     assert "tools/inspect_mainland_package.py" in workflow
-    assert "--expected-exes 23" in workflow
-    assert "--expected-manuals 23" in workflow
+    assert "--expected-exes 24" in workflow
+    assert "--expected-manuals 24" in workflow
     report = "release/Phase1-Mainland-Windows-Tools.inspection.json"
     assert workflow.count(report) >= 2
     assert "tests/test_mainland_package_inspection.py" in workflow

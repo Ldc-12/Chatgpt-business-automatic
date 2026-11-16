@@ -1,3 +1,57 @@
+# 2026-11-16 main HEAD 3c821e5：供应商应付账龄历史口径修复与发布复核
+
+## 当前主线与 PR 状态
+- 本次读取到的 main HEAD：`3c821e519a473ab7b3930129d360d3230e4ee64c`。
+- PR [#65 Add offline supplier AP aging and reconciliation assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/65) 已合并，main 产品提交：`7aca117efed14016c6fd219e26162954b3a3a212`。新增供应商应付单据、分笔付款、账龄、到期清单、供应商对账、CSV、备份恢复和中文说明书。
+- PR [#66 Fix customer package chunk capacity for growing EXE bundles](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/66) 已合并到 PR #65 的产品分支；把分片改为准确的 20 MiB 二进制块，最多 24 块（480 MiB），加入容量边界、哈希、manifest 和过期分片回归测试。
+- PR [#67 Prevent silent no-op when deleting missing inventory items](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/67) 已合并，main commit：`106ed8c58201ecb9ca2cdb292fa2640c057fd0d0`。库存删除现在拒绝空白/不存在的商品编码，失败时不重写磁盘文件；新增删除成功持久化及无效编码不改数据测试。
+- PR [#68 Fix historical supplier AP aging cutoff](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/68) 已在全部检查通过后合并，merge commit：`3c821e519a473ab7b3930129d360d3230e4ee64c`。历史账龄只计入付款日期不晚于统计日期的付款；新增统计日期前/当日/之后的付款边界及供应商汇总回归测试，并更新中文说明书。
+
+## 最近 Mainland Windows EXE 工作流
+- PR run #409：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43799991711)，27 个 job 全部 success；属于 PR #66 分片修复验证。
+- PR run #410：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43860715864)，27/27 jobs success。供应商 AP 产品 job `133276487859`：101 passed in 3.28s、`SELF_TEST_OK`、PyInstaller 6.22.3 build 成功、`FROZEN_EXE_SELF_TEST_OK`；客户包 job `133277571782` 成功并记录 `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`。
+- PR run #411：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43861061559)，26/26 jobs success。库存产品 job `133277699901`：84 passed in 2.32s、源码自检及冻结 EXE 自检成功；客户包 job `133278847641` 成功。
+- PR run #414：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43865690835)，PR #68 的 27/27 jobs success。供应商 AP job `133293519949`：102 passed in 5.91s、`SELF_TEST_OK`、PyInstaller 6.22.3 构建成功、`FROZEN_EXE_SELF_TEST_OK`；客户包 job `133294660698` 成功，日志包含 `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`，分片检查为 21 parts。
+- run #411 虽然编号晚于 #410，但 PR #67 分支创建时基于 PR #65 合并前的 main（base SHA `bf0bf7a775105a8e6aa50ce65c99eba00b48e8e9`），其包没有供应商 AP 产品。因此它是较旧产品基线的 PR 候选包，不可作为当前 main 发布包。
+
+## PR #65 候选客户包 #410：已下载并本地核验，不是 main 正式包
+- Artifact `mainland-phase1-customer-package` ID `14223217493`，425,382,873 bytes；外层 SHA256：`87aae1b63ca61615670742adec923a8e917f0713a2ad75f4989d6fac0791e9e0`；外层 ZIP CRC passed。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：425,261,362 bytes；SHA256：`32d0cebffd5b7e86925c508870a37b71ac86b0683e50edf601204308131504dd`；CRC passed；58 个 ZIP 条目（56 个文件），26 个 EXE（25 款业务软件 + 工具箱启动器），26 份逐款中文说明书。内层 ZIP 时间戳：2026-11-16 11:49:32 UTC（北京时间 19:49:32）。
+- 实际文件清单包含 `package/MainlandSupplierAPAging.exe` 和 `package/说明书/25-供应商对账与应付账龄管理助手-用户说明书.md`。
+- 套餐说明 A–F 六类完整：A 办公效率 5 款/29.9 元建议价；B 门店经营 9 款/29.9 元；C 财务与交易 5 款/29.9 元；D 合同工程物业 3 款/29.9 元；E 客户与个人事务 3 款/19.9 元；F 全系列 25 款业务软件 + 启动器/39.9 元。所有价格均为待成交验证建议价，不是成交数据。
+- 分类套餐 artifact ID `14223317270`，410,704,032 bytes；已下载，外层 ZIP CRC passed。A–E 五个内层 ZIP CRC 均通过，EXE/说明书数量分别为 5/5、9/9、5/5、3/3、3/3。分类目录说明 F 由主客户包提供，不重复生成。
+- Manifest artifact ID `14222004610`，2,397 bytes；已下载并核验 ZIP CRC，声明内层包大小和 SHA256 与实测一致。以上均为 PR #65 候选产物，不是合并后的 main 发布包。
+
+## PR #68 候选客户包 #414：最新已下载核验的完整候选包
+- Artifact `mainland-phase1-customer-package` ID `14226295510`，425,372,963 bytes；外层 SHA256：`34dd68b324b8c12f42e28e92c362944dfa8f43453750641825f5d755e9547c03`；外层 ZIP CRC passed。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：425,250,845 bytes；SHA256：`7d2b4c91fa35219d8fd6a3f32ccce7f92d85913172a316ab85f787ea42a777dc`；CRC passed；58 个 ZIP 条目（56 个文件），26 个 EXE（25 款业务软件 + 工具箱启动器），26 份逐款中文说明书。内层 ZIP 时间戳：2026-11-16 12:23:14 UTC（北京时间 20:23:14）。
+- 套餐 A–F 与 26 EXE/26 说明书清单完整；A–E 分别为 5/9/5/3/3 款，F 为全系列 25 款业务软件 + 启动器。建议价仍为待市场验证：A–D 29.9 元、E 19.9 元、F 39.9 元。
+- 分类套餐 artifact ID `14226275507`，410,690,739 bytes，SHA256：`5036d41338ffed7624f6fdd419587d089a2e6ef7d82168049b679cde387116d2`；已下载，外层及五个内层 ZIP CRC 均通过，EXE/说明书数为 5/5、9/9、5/5、3/3、3/3。
+- Manifest artifact ID `14225866275`，2,397 bytes，SHA256：`129d0ef1f32dac6b654b834bcbfe74aa3a20966494e25ffea31930d90116c6df`；分片 artifact ID `14225551926`，425,254,521 bytes、21 个分片；均已下载并通过 ZIP CRC。Manifest 声明的内层大小和 SHA256 与实测一致。
+- 该包是 PR #68 的完整 Windows 候选包，PR 已合并；但它仍是 PR 触发构建，不冒充 post-merge main push artifact。
+
+## PR #67 候选客户包 #411：较新 run，但产品基线较旧
+- Artifact `mainland-phase1-customer-package` ID `14223293012`，410,584,222 bytes；外层 SHA256：`0506ee8524c68b64d7445f71e67efeceeb8a7fb9d13322d72a32c7bcde806675`；外层 ZIP CRC passed。
+- 内层 ZIP：410,466,642 bytes；SHA256：`f2ecc8296811b895d13b34afec472d6b35b992fcd94209ed09766f941e20f4b3`；CRC passed；56 个条目（54 个文件），25 个 EXE（24 款业务软件 + 启动器），25 份逐款中文说明书；时间戳 2026-11-16 11:52:02 UTC。
+- 清单明确缺少供应商 AP EXE、说明书及 C 系列第五款，故不能把该 artifact 当作当前 main 包。Manifest artifact ID `14223495857` 与分片 artifact ID `14221929979` 均已下载，ZIP CRC passed。
+
+## 合并后 main 正式客户包：仍待独立验证
+- 当前 main 已包含 PR #65、#67、#68，但本次可用的 Actions 查询只返回 PR 触发的 runs，不能列出 main push/schedule 触发的 Mainland Windows EXE run。没有取得与 main HEAD `3c821e5` 对应的 post-merge 主线客户包 artifact ID。
+- 最近有完整独立核验记录的 main 正式客户包仍是 run #388、artifact ID `14188324302`（24 EXE/24 说明书），早于 PR #63、#65、#67、#68，不能作为当前主线交付包。
+- 因此 #410 和 #411 都只能作为 PR 候选包；不得用它们或历史 run #388 冒充当前 main 正式客户包。必须待 post-merge main Windows workflow 产物可独立下载、核验后再更新正式包状态。
+
+## Autonomous Business Engine（ABE）
+- 最近可直接复核的 ABE run #459：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43781738457)，build/deploy 2/2 success；build job `133020251434` 为 428 passed in 1.95s，生成阶段 `error: null`；deploy job `133020355152` 成功。
+- Pages artifact ID `14188836229`，47,755 bytes，SHA256：`f831ea255247f8ca713da09ae1899d3f0ac477281e240130769dde016aa433fe`；已下载，外层 ZIP CRC passed，内部 TAR 198 个条目，其中 17 个 product.json、12 个闲鱼 listing.txt。
+- 该 run 对应提交 `d4165b48687056507e5d6a2d04251850f4f89369`，早于 PR #63/#65/#67。当前可用查询无法列出后续 push/schedule runs，因此 #459 仅作为最后一个直接复核的 ABE 记录，不宣称是当前最新 ABE run。
+
+## 授权与最终销售验收
+- 客户端内嵌公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；配置文件公钥 DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，仍不一致。
+- 未创建、猜测、替换、轮换或上传卖家私钥/生产公钥。卖家私钥不在仓库。
+- 真实 Windows GUI、卖家公钥匹配、真实签发/激活及退出重启后的持续有效性仍待最终验收。最终只需在可信 Windows 电脑使用本地原有私钥导出公钥 PEM 或 SHA256 指纹供比对；绝不上传私钥。当前所有产品继续标记为待最终验收，不得宣称正式可销售。
+
+---
+
 # 2026-11-16 PR #63 已合并：门店日结与收银差异核对助手（主线发布待独立复核）
 
 ## 合并与 PR 验证

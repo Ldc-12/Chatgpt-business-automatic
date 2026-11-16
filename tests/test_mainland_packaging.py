@@ -133,7 +133,7 @@ def test_store_schedule_product_is_in_build_matrix_and_customer_package():
     assert 'product: "门店排班考勤助手"' in workflow
     assert "tests/test_mainland_store_schedule.py" in workflow
     assert "MainlandStoreScheduleAssistant" in workflow
-    assert "23 款 Windows EXE（22 款业务工具及工具箱启动器）" in workflow
+    assert "24 款 Windows EXE（23 款业务工具及工具箱启动器）" in workflow
     assert "门店排班考勤助手.json" in workflow
     launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
     assert "MainlandStoreScheduleAssistant.exe" in launcher
@@ -164,7 +164,7 @@ def test_construction_settlement_product_is_in_build_matrix_launcher_and_custome
     assert "MainlandConstructionSettlementAssistant" in workflow
     assert "装修工程签证与进度款管理助手.json" in workflow
     assert "MainlandConstructionSettlementAssistant.exe" in launcher
-    assert "assert len(TOOLS) == 22" in launcher
+    assert "assert len(TOOLS) == 23" in launcher
     assert "23 款 Windows EXE（22 款业务工具及工具箱启动器）" in workflow
     assert "23 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 24
@@ -186,7 +186,7 @@ def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package()
     assert "物业租金与押金管理助手" in license_tests
     assert "23 款 Windows EXE（22 款业务工具及工具箱启动器）" in workflow
     assert "全部 23 款业务工具 + 工具箱启动器" in workflow
-    assert len(APP_ENTRYPOINTS) == 23
+    assert len(APP_ENTRYPOINTS) == 24
 
 
 def test_every_standalone_delivery_zip_has_its_matching_chinese_manual():

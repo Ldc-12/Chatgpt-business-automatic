@@ -1,3 +1,38 @@
+# 2026-11-16 PR #60 已合并：车辆维保新产品与 main run #388 正式包验收
+
+## 当前 main 与 PR
+- 当前 main 产品提交：`d4165b48687056507e5d6a2d04251850f4f89369`（PR #60 squash merge）；PR #60 已合并，当前 open PR=0。
+- PR [#60 Add offline vehicle maintenance ledger and guard inspection data](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/60) 已合并。合并前最终 PR Mainland Windows run #387：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43781384239)，25/25 jobs success、无失败 job；新产品车辆台账 job `133019166302` 为 71 passed、源程序自测通过、PyInstaller EXE build 成功、冻结 EXE 自测退出码 0；食品安全巡检 job `133019166340` 为 88 passed、冻结 EXE 自测退出码 0；启动器 job `133019166239` 为 66 passed、冻结 EXE 自测退出码 0；分类包、客户包检查、上传后重新下载字节一致验证全部成功。
+- PR #60 第一轮 run #385 曾因启动器 EXE 白名单及工具箱说明书遗漏新产品而失败（2 failed、64 passed）；已按日志修正后，run #387 全部通过。中间 run #386 因新提交触发并发取消，不作为最终验证依据。
+
+## 合并后 main 正式 Windows 客户包
+- Mainland Windows EXE main push run #388：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43781738482)，25/25 jobs success、无失败 job（24 个 EXE 矩阵 job + 1 个客户包 job）。
+- 最新正式 artifact `mainland-phase1-customer-package` ID `14188324302`，395,783,713 bytes；外层 artifact ZIP SHA256 `90276c6b04f9015bec27599606653aaef349f8d3151bc00bed118db8fd11ebcd`，已下载并核验 CRC。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：395,670,059 bytes；SHA256 `8f8a0d6f75dc0644ce0d816127d0a6e53670ebb94115654f70bfc42ea73b206e`；CRC 通过；54 个条目（52 个文件、2 个目录），24 个 EXE（23 款业务工具 + 工具箱启动器）、24 份逐款中文说明书。
+- 新产品确认包含：`package/MainlandVehicleMaintenanceLedger.exe` 和 `package/说明书/23-车辆维保与费用台账助手-用户说明书.md`。内层 ZIP 时间戳：2026-11-16 00:42:50 UTC（北京时间 08:42:50）。
+- 套餐说明 A–F 六个系列齐全；E 系列现为 3 款（销售客户跟进、求职申请、车辆维保台账），建议价 19.9 元；F 全系列为 23 款业务工具 + 启动器，建议价 39.9 元。所有价格仍为待成交验证建议价。
+- 分类套餐 artifact ID `14188209671`，381,100,745 bytes；外层 CRC 通过。A/B/C/D/E 分别 5/8/4/3/3 款；五个内层 ZIP CRC 全部通过，EXE 数与说明书数分别一致。E 包包含车辆维保助手 EXE 及说明书。
+- Manifest artifact ID `14188169946`，2,639 bytes；已下载并核验 ZIP CRC。清单声明内层包 395,670,059 bytes、SHA256 与实测一致、19 个分片、每片 20 MiB。
+- 分片 artifact ID `14188732996`，395,673,387 bytes。
+- 客户包 job `133020932788` 完成 ZIP 检查、上传、重新下载、二次检查、分片与 manifest；日志明确记录 `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`，重新下载包与已检查包逐字节一致。
+
+## 新产品与既有缺陷修复
+- 新增 23 号业务产品：车辆维保与费用台账助手。离线记录车牌/车辆、日期、里程、保养、维修、保险、年检、轮胎、燃油/充电、停车/通行费用、服务商、金额及下次提醒；本地 JSON SHA256 完整性校验和原子持久化；CSV UTF-8 BOM、公式注入防护、重复编号拒绝；备份/恢复校验和 100 MiB 限制。新增中文说明书、工具箱入口、独立授权产品 ID、Windows 构建矩阵及 E 分类套餐。
+- 修复门店食品安全巡检助手加载本地数据前未限制文件大小的问题：加载前拒绝超过 100 MiB 的本地 JSON，原文件保留；新增回归测试。
+- 当前产品数量：23 款业务软件 + 1 个工具箱启动器；客户包 24 EXE、24 份产品说明书。
+
+## 最新 ABE 与独立 Windows EXE Build
+- ABE main push run #459：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43781738457)，build/deploy 2/2 success；build job `133020251434` 为 428 passed in 1.95s，deploy job `133020355152` 成功。
+- Pages artifact ID `14188836229`，47,755 bytes，SHA256 `f831ea255247f8ca713da09ae1899d3f0ac477281e240130769dde016aa433fe`；已下载，外层 ZIP CRC 通过，内部 TAR 198 个条目、20 个产品 JSON、12 个闲鱼 listing。
+- main Windows EXE Build run #204：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43781738437)，test/build 2/2 success；artifact ID `14187834007`，11,125,937 bytes。
+
+## 授权最终验收
+- 客户端内嵌公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；配置文件公钥 DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，仍不一致。
+- 未猜测、替换、创建或轮换生产密钥；未要求用户上传私钥。最终只需要用户在可信 Windows 电脑用真实本地私钥导出公钥 PEM 或 SHA256 指纹。
+- 真实 Windows GUI、卖家公钥匹配、真实签发/激活、退出重启持续有效性仍待验收；所有软件继续标记为待最终验收，不得宣称正式可销售。
+
+---
+
 # 2026-11-16 main run #384 正式客户包复核与 PR #60 开发记录
 
 ## 最新已核验 main 正式客户包

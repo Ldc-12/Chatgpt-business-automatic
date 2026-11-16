@@ -126,3 +126,52 @@ def test_oversized_local_data_is_rejected_without_modification(tmp_path, monkeyp
 
 def test_self_test_runs_without_gui_or_license():
     MODULE.self_test()
+
+
+def test_update_preserves_record_id_and_persists_changes(tmp_path):
+    path = tmp_path / "ledger.json"
+    store = MODULE.VehicleStore(path)
+    record_id = store.add(sample())
+    store.update(record_id, sample(**{"里程公里": 18000, "金额元": 520, "项目/事项": "更换机油和滤芯"}))
+    loaded = MODULE.VehicleStore(path)
+    assert loaded.rows[0]["记录编号"] == record_id
+    assert loaded.rows[0]["里程公里"] == 18000
+    assert loaded.rows[0]["金额元"] == 520
+    assert loaded.rows[0]["项目/事项"] == "更换机油和滤芯"
+
+
+def test_invalid_update_keeps_original_disk_and_memory_data(tmp_path):
+    store = MODULE.VehicleStore(tmp_path / "ledger.json")
+    record_id = store.add(sample())
+    before = store.path.read_bytes()
+    original = list(store.rows)
+    try:
+        store.update(record_id, sample(**{"金额元": float("nan")}))
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("invalid update accepted")
+    assert store.path.read_bytes() == before
+    assert store.rows == original
+
+
+def test_delete_persists_and_unknown_ids_are_rejected(tmp_path):
+    path = tmp_path / "ledger.json"
+    store = MODULE.VehicleStore(path)
+    record_id = store.add(sample())
+    store.delete(record_id)
+    assert store.rows == []
+    assert MODULE.VehicleStore(path).rows == []
+    try:
+        store.delete(record_id)
+    except ValueError as exc:
+        assert "不存在" in str(exc)
+    else:
+        raise AssertionError("deleting an unknown record should fail")
+
+
+def test_vehicle_ledger_ui_exposes_edit_and_confirmed_delete():
+    source = PATH.read_text(encoding="utf-8")
+    assert '("编辑记录", self.edit_record)' in source
+    assert '("删除记录", self.delete_record)' in source
+    assert 'messagebox.askyesno("确认删除"' in source

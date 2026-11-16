@@ -40,10 +40,10 @@ def test_inspector_reports_counts_crc_hash_bundle_labels_and_timestamps(tmp_path
     report = MODULE.inspect_package(package)
     assert report["crc"] == "passed"
     assert report["exe_count"] == 24
-    assert report["manual_count"] == 23
-    assert report["entry_count"] == 50
-    assert len(report["executables"]) == 23
-    assert len(report["manuals"]) == 23
+    assert report["manual_count"] == 24
+    assert report["entry_count"] == 52
+    assert len(report["executables"]) == 24
+    assert len(report["manuals"]) == 24
     assert len(report["sha256"]) == 64
     assert report["bundle_descriptions"] == [
         f"系列 {letter}｜建议售价 29.9 元" for letter in "ABCDEF"

@@ -175,3 +175,10 @@ def test_vehicle_ledger_ui_exposes_edit_and_confirmed_delete():
     assert '("编辑记录", self.edit_record)' in source
     assert '("删除记录", self.delete_record)' in source
     assert 'messagebox.askyesno("确认删除"' in source
+
+def test_vehicle_manual_uses_real_headings_and_line_breaks():
+    manual_path = PATH.parents[1] / "docs" / "manuals" / "23-车辆维保与费用台账助手-用户说明书.md"
+    manual = manual_path.read_text(encoding="utf-8")
+    assert "\\n" not in manual
+    assert "## 4. 新增、编辑与删除" in manual
+    assert "## 5. CSV 导入导出" in manual

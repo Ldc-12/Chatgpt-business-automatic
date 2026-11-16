@@ -269,3 +269,19 @@ def test_summary_csv_keeps_negative_variances_numeric(tmp_path):
     rows = list(csv.DictReader(output.open(encoding="utf-8-sig", newline="")))
     assert rows[0]["现金差异"] == "-5.00"
     assert not rows[0]["现金差异"].startswith("'")
+
+
+def test_rejects_extreme_amounts_and_unsafe_record_ids():
+    for value in ("1e999999", "1000000000000", "9" * 40):
+        try:
+            MODULE.decimal_value(value, "金额")
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"extreme amount accepted: {value}")
+    try:
+        MODULE.normalize(sample(**{"记录编号": "../unsafe"}))
+    except ValueError as exc:
+        assert "记录编号" in str(exc)
+    else:
+        raise AssertionError("unsafe record ID accepted")

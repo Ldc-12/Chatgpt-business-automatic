@@ -203,7 +203,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt pyinstaller
       - name: Automated regression tests
-        run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py tests/test_mainland_series_packages.py tests/test_mainland_package_inspection.py
+        run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py tests/test_mainland_series_packages.py tests/test_mainland_package_inspection.py tests/test_mainland_package_chunks.py
       - name: Source self-test
         run: python "${{ matrix.source }}" --self-test
       - name: Build EXE with ReportLab support
@@ -366,18 +366,10 @@ jobs:
       - name: Create bounded download chunks and checksum manifest
         shell: bash
         run: |
-          package="release/Phase1-Mainland-Windows-Tools.zip"
-          sha256sum "$package" > release/Phase1-Mainland-Windows-Tools.zip.sha256
-          bytes=$(stat -c '%s' "$package")
-          printf '%s\n' "$bytes" > release/Phase1-Mainland-Windows-Tools.zip.bytes
-          split -b 20m -d -a 2 "$package" "release/Phase1-Mainland-Windows-Tools.zip.part-"
-          parts=(release/Phase1-Mainland-Windows-Tools.zip.part-*)
-          parts_count=${#parts[@]}
-          if [ "$parts_count" -gt 20 ]; then
-            echo "Package exceeds the supported 20 x 20 MiB chunk size."
-            exit 1
-          fi
-          printf 'file=Phase1-Mainland-Windows-Tools.zip\nbytes=%s\nsha256=%s\nparts=%s\npart_size=20MiB\n' "$bytes" "$(cut -d' ' -f1 release/Phase1-Mainland-Windows-Tools.zip.sha256)" "$parts_count" > release/Phase1-Mainland-Windows-Tools.manifest.txt
+          python tools/split_mainland_package.py \
+            --package release/Phase1-Mainland-Windows-Tools.zip \
+            --output-dir release \
+            --max-chunks 24
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-manifest

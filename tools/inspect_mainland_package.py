@@ -148,7 +148,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Inspect the Mainland Phase 1 customer ZIP.")
     parser.add_argument("--package", required=True, help="Path to Phase1-Mainland-Windows-Tools.zip")
     parser.add_argument("--expected-exes", type=int, default=25)
-    parser.add_argument("--expected-manuals", type=int, default=24)
+    parser.add_argument("--expected-manuals", type=int, default=25)
     parser.add_argument("--report", required=True, help="Write the JSON inspection report to this path")
     args = parser.parse_args()
     try:

@@ -49,7 +49,10 @@ def decimal_value(value, field, allow_blank=False):
     if not number.is_finite() or number <= 0 or number > MAX_AMOUNT:
         raise ValueError(f"{field}必须大于 0 且不超过 999999999999.99")
     try:
-        return format(number.quantize(CENT, rounding=ROUND_HALF_UP), "f")
+        rounded = number.quantize(CENT, rounding=ROUND_HALF_UP)
+        if rounded <= 0:
+            raise ValueError(f"{field}四舍五入到分后必须大于 0")
+        return format(rounded, "f")
     except InvalidOperation:
         raise ValueError(f"{field}精度超出可接受范围") from None
 
@@ -398,6 +401,8 @@ class SupplierAPStore:
                 statement.append({"供应商编号": code, "供应商名称": name, "发票号": number, "单据日期": doc_date, "金额": amount})
                 if len(statement) > MAX_ROWS:
                     raise ValueError("对账单超过 50000 条记录上限")
+        if not statement:
+            raise ValueError("对账单没有数据，未执行核对")
         local = {invoice_key(row): row for row in self.invoices}
         issues = []
         statement_keys = set()

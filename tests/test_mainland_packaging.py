@@ -382,3 +382,10 @@ def test_supplier_ap_product_is_in_build_matrix_launcher_license_and_finance_ser
     assert "供应商对账与应付账龄管理助手" in license_tests
     assert '"supplier-ap"' in series_builder
     assert len(APP_ENTRYPOINTS) == 26
+
+
+def test_supplier_ap_readme_discloses_aging_and_reconciliation_limits():
+    text = module.render_mainland_readme("供应商对账与应付账龄管理助手")
+    assert "分笔付款" in text
+    assert "逾期 1–30/31–60/61–90/90 天以上账龄" in text
+    assert "不连接银行或供应商系统" in text

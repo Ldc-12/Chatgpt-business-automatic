@@ -11,7 +11,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, simpledialog, ttk
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
@@ -492,7 +492,7 @@ class App(tk.Tk):
             ("新增日结", self.add_record), ("编辑", self.edit_record), ("删除", self.delete_record),
             ("复核", self.review_record), ("封账", self.close_record), ("重新开账", self.reopen_record),
             ("导入 CSV", self.import_csv), ("导出明细", self.export_csv),
-            ("门店汇总", self.show_summary), ("备份", self.backup), ("恢复", self.restore),
+            ("门店汇总", self.show_summary), ("导出汇总", self.export_summary), ("备份", self.backup), ("恢复", self.restore),
         )
         for label, command in actions:
             ttk.Button(bar, text=label, command=command).pack(side="left", padx=2)
@@ -619,7 +619,7 @@ class App(tk.Tk):
         if not record_id:
             messagebox.showinfo("复核日结", "请先选择一条日结记录。")
             return
-        reviewer = tk.simpledialog.askstring("复核日结", "复核人：", parent=self)
+        reviewer = simpledialog.askstring("复核日结", "复核人：", parent=self)
         if reviewer is None:
             return
         note = tk.simpledialog.askstring("差异处理说明", "如存在差异，请说明核对结果；无差异可留空：", parent=self) or ""
@@ -695,6 +695,18 @@ class App(tk.Tk):
             messagebox.showinfo("门店日结汇总", "\n".join(lines[:30]))
         except ValueError as exc:
             messagebox.showerror("汇总失败", str(exc))
+
+    def export_summary(self):
+        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV 文件", "*.csv")])
+        if not path:
+            return
+        day = simpledialog.askstring("导出门店汇总", "营业日期（YYYY-MM-DD），留空导出全部日期：", parent=self) or ""
+        try:
+            if day:
+                date.fromisoformat(day)
+            self.store.export_summary_csv(path, day or None)
+        except (OSError, ValueError) as exc:
+            messagebox.showerror("导出汇总失败", str(exc))
 
     def backup(self):
         path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON 备份", "*.json")])

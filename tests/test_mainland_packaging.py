@@ -165,7 +165,7 @@ def test_construction_settlement_product_is_in_build_matrix_launcher_and_custome
     assert "装修工程签证与进度款管理助手.json" in workflow
     assert "MainlandConstructionSettlementAssistant.exe" in launcher
     assert "assert len(TOOLS) == 23" in launcher
-    assert "23 款 Windows EXE（22 款业务工具及工具箱启动器）" in workflow
+    assert "24 款 Windows EXE（23 款业务工具及工具箱启动器）" in workflow
     assert "23 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 24
 
@@ -279,7 +279,7 @@ def test_food_safety_inspection_product_is_in_build_matrix_launcher_license_and_
     assert "MainlandFoodSafetyInspectionAssistant.exe" in launcher
     assert "门店食品安全巡检与整改闭环助手" in license_tests
     assert '"food-safety-inspection"' in series_builder
-    assert len(APP_ENTRYPOINTS) == 23
+    assert len(APP_ENTRYPOINTS) == 24
 
 
 def test_customer_zip_inspection_runs_before_artifact_upload_and_is_retained():

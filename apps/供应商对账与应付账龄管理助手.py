@@ -277,6 +277,9 @@ class SupplierAPStore:
         as_of = parse_date(as_of_date or date.today().isoformat(), "统计日期")
         paid_by_invoice = {}
         for payment in self.payments:
+            # Historical reports must not include payments recorded after the cutoff date.
+            if date.fromisoformat(payment["付款日期"]) > as_of:
+                continue
             paid_by_invoice[payment["单据编号"]] = paid_by_invoice.get(payment["单据编号"], Decimal("0")) + Decimal(payment["金额"])
         output = []
         for invoice in self.invoices:

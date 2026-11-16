@@ -64,13 +64,16 @@ def test_frozen_exe_build_includes_license_module_and_checks_real_exit_code():
     assert "FROZEN_EXE_SELF_TEST_OK" in workflow
 
 
-def test_package_chunking_uploads_only_actual_split_parts():
-    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
-    assert 'if [ "$parts_count" -gt 20 ]; then' in workflow
-    assert "Package exceeds the supported 20 x 20 MiB chunk size." in workflow
-    assert "split -b 20m" in workflow
-    assert "parts_count=${#parts[@]}" in workflow
-    assert "parts=%s" in workflow
+def test_package_chunking_uses_tested_bounded_splitter_and_uploads_only_actual_parts():
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    chunker = (root / "tools" / "split_mainland_package.py").read_text(encoding="utf-8")
+    assert "tools/split_mainland_package.py" in workflow
+    assert "--max-chunks 24" in workflow
+    assert "CHUNK_SIZE_BYTES = 20 * 1024 * 1024" in chunker
+    assert "MAX_CHUNKS = 24" in chunker
+    assert "chunk_count(size_bytes" in chunker
+    assert "sha256=" in chunker
     assert "name: mainland-phase1-package-parts" in workflow
     assert "path: release/Phase1-Mainland-Windows-Tools.zip.part-*" in workflow
     assert "for part in 00 01 02" not in workflow

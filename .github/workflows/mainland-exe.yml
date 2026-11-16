@@ -178,6 +178,12 @@ jobs:
             test: tests/test_mainland_equipment_maintenance.py
             exe: MainlandEquipmentMaintenanceAssistant
             manual: 22-设备维保巡检与保养计划助手-用户说明书.md
+          - key: vehicle-ledger
+            product: "车辆维保与费用台账助手"
+            source: apps/车辆维保与费用台账助手.py
+            test: tests/test_mainland_vehicle_ledger.py
+            exe: MainlandVehicleMaintenanceLedger
+            manual: 23-车辆维保与费用台账助手-用户说明书.md
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -252,7 +258,7 @@ jobs:
           cat > release/README-大陆版.md <<'EOF'
           # 第一阶段 Windows 工具包
 
-          本包包含 23 款 Windows EXE（22 款业务工具及工具箱启动器）。
+          本包包含 24 款 Windows EXE（23 款业务工具及工具箱启动器）。
           使用方式：双击对应 EXE 即可运行。
           数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
           工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。
@@ -279,7 +285,7 @@ jobs:
           轻量销售客户跟进工具、求职申请管理 Pro。
 
           系列 F｜全系列综合套餐｜建议售价 39.9 元
-          全部 22 款业务工具 + 工具箱启动器。
+          全部 23 款业务工具 + 工具箱启动器。
 
           以上均为待市场验证的建议售价，不代表实际成交价。分类 ZIP 独立提供，每款软件附对应中文说明书；全系列包保留全部软件及说明书。
           EOF
@@ -291,8 +297,8 @@ jobs:
         run: >-
           python tools/inspect_mainland_package.py
           --package release/Phase1-Mainland-Windows-Tools.zip
-          --expected-exes 23
-          --expected-manuals 23
+          --expected-exes 24
+          --expected-manuals 24
           --report release/Phase1-Mainland-Windows-Tools.inspection.json
       - uses: actions/upload-artifact@v4
         with:

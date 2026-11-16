@@ -406,12 +406,12 @@ class SupplierAPStore:
         local = {invoice_key(row): row for row in self.invoices}
         issues = []
         statement_keys = set()
-        supplier_codes = {row["供应商编号"] for row in statement}
-        if statement:
-            start = min(row["单据日期"] for row in statement)
-            end = max(row["单据日期"] for row in statement)
-        else:
-            start = end = ""
+        supplier_ranges = {}
+        for row in statement:
+            code = row["供应商编号"]
+            bounds = supplier_ranges.setdefault(code, [row["单据日期"], row["单据日期"]])
+            bounds[0] = min(bounds[0], row["单据日期"])
+            bounds[1] = max(bounds[1], row["单据日期"])
         for row in statement:
             key = (row["供应商编号"], row["发票号"])
             statement_keys.add(key)
@@ -433,7 +433,8 @@ class SupplierAPStore:
         if statement:
             for invoice in self.invoices:
                 key = invoice_key(invoice)
-                if invoice["供应商编号"] in supplier_codes and start <= invoice["单据日期"] <= end and key not in statement_keys:
+                bounds = supplier_ranges.get(invoice["供应商编号"])
+                if bounds and bounds[0] <= invoice["单据日期"] <= bounds[1] and key not in statement_keys:
                     issues.append({
                         "供应商编号": invoice["供应商编号"], "供应商名称": invoice["供应商名称"],
                         "发票号": invoice["发票号"], "单据日期": invoice["单据日期"],
@@ -494,7 +495,7 @@ def self_test():
         restored = SupplierAPStore(Path(folder) / "restored.json")
         restored.restore(backup)
         assert restored.invoice_rows("2026-12-15")[0]["未付金额"] == "750.00"
-    print("SELF_TEST_OK")
+    print("SELF_TEST_OK", flush=True)
 
 
 class App(tk.Tk):

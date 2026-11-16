@@ -480,7 +480,7 @@ class CashCloseStore:
                 field: values[field] if field == "序号" else csv_safe(values[field])
                 for field in AUDIT_FIELDS
             })
-        atomic_write(path, ("\\ufeff" + buffer.getvalue()).encode("utf-8"))
+        atomic_write(path, ("\ufeff" + buffer.getvalue()).encode("utf-8"))
 
     def backup(self, path):
         data = json.dumps(self._payload(self.rows, self.events), ensure_ascii=False, indent=2).encode("utf-8")
@@ -763,9 +763,9 @@ class App(tk.Tk):
             latest_hash = summary["最新摘要"] or "暂无日志"
             messagebox.showinfo(
                 "操作日志校验",
-                f"SHA256 链校验通过。\\n累计事件：{summary['事件数']}\\n"
-                f"最后操作：{summary['最后操作'] or '无'}\\n"
-                f"最后时间：{summary['最后操作时间'] or '无'}\\n最新摘要：{latest_hash}",
+                f"SHA256 链校验通过。\n累计事件：{summary['事件数']}\n"
+                f"最后操作：{summary['最后操作'] or '无'}\n"
+                f"最后时间：{summary['最后操作时间'] or '无'}\n最新摘要：{latest_hash}",
                 parent=self,
             )
         except ValueError as exc:

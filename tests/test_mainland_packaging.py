@@ -39,6 +39,7 @@ APP_ENTRYPOINTS = [
     "装修工程签证与进度款管理助手.py",
     "物业租金与押金管理助手.py",
     "设备维保巡检与保养计划助手.py",
+    "车辆维保与费用台账助手.py",
 ]
 
 
@@ -90,7 +91,7 @@ def test_expense_reimbursement_product_is_in_build_matrix_and_customer_package()
     assert 'product: "费用报销管理助手"' in workflow
     assert "tests/test_mainland_expense_reimbursement.py" in workflow
     assert "MainlandExpenseReimbursement" in workflow
-    assert "23 款 Windows EXE（22 款业务工具及工具箱启动器）" in workflow
+    assert "24 款 Windows EXE（23 款业务工具及工具箱启动器）" in workflow
     assert "费用报销管理助手.json" in workflow
 
 
@@ -117,7 +118,7 @@ def test_repair_work_order_product_is_in_build_matrix_and_customer_package():
     assert "售后维修工单管理助手.json" in workflow
     launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
     assert "MainlandRepairWorkOrderManager.exe" in launcher
-    assert "assert len(TOOLS) == 22" in launcher
+    assert "assert len(TOOLS) == 23" in launcher
 
 
 def test_mainland_windows_build_concurrency_is_scoped_per_ref():
@@ -149,7 +150,7 @@ def test_contract_ledger_product_is_in_build_matrix_and_customer_package():
     assert "MainlandContractLedgerAssistant" in workflow
     assert "合同台账与到期提醒助手.json" in workflow
     assert "MainlandContractLedgerAssistant.exe" in launcher
-    assert len(APP_ENTRYPOINTS) == 23
+    assert len(APP_ENTRYPOINTS) == 24
 
 
 
@@ -165,7 +166,7 @@ def test_construction_settlement_product_is_in_build_matrix_launcher_and_custome
     assert "MainlandConstructionSettlementAssistant.exe" in launcher
     assert "assert len(TOOLS) == 22" in launcher
     assert "23 款 Windows EXE（22 款业务工具及工具箱启动器）" in workflow
-    assert "22 款业务工具 + 工具箱启动器" in workflow
+    assert "23 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 23
 
 
@@ -331,3 +332,18 @@ def test_equipment_maintenance_readme_discloses_internal_reminder_limits():
     assert "不是法定检验要求或厂家标准" in text
     assert "待验收" in text
     assert "不作安全鉴定" in text
+
+
+def test_vehicle_ledger_product_is_in_build_matrix_launcher_license_and_package():
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
+    license_tests = (root / "tests" / "test_mainland_license.py").read_text(encoding="utf-8")
+    assert "key: vehicle-ledger" in workflow
+    assert "tests/test_mainland_vehicle_ledger.py" in workflow
+    assert "MainlandVehicleMaintenanceLedger" in workflow
+    assert "23-车辆维保与费用台账助手-用户说明书.md" in workflow
+    assert "MainlandVehicleMaintenanceLedger.exe" in launcher
+    assert "车辆维保与费用台账助手" in license_tests
+    assert "--expected-exes 24" in workflow
+    assert "--expected-manuals 24" in workflow

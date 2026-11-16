@@ -20,11 +20,11 @@ def _make_inputs(tmp_path):
     return release, manuals, output
 
 
-def test_series_catalog_covers_all_22_products_once():
+def test_series_catalog_covers_all_24_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 23
-    assert len(assigned) == 23
+    assert len(MODULE.PRODUCTS) == 24
+    assert len(assigned) == 24
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "23 款业务软件 + 工具箱启动器" in catalog
+    assert "24 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -115,3 +115,10 @@ def test_personal_series_contains_vehicle_maintenance_ledger():
     assert "vehicle-ledger" in personal["products"]
     assert MODULE.PRODUCTS["vehicle-ledger"][1] == "MainlandVehicleMaintenanceLedger.exe"
     assert MODULE.PRODUCTS["vehicle-ledger"][2] == "23-车辆维保与费用台账助手-用户说明书.md"
+
+
+def test_store_series_contains_cash_close_reconciliation():
+    store_series = next(item for item in MODULE.SERIES if item["code"] == "B")
+    assert "store-cash-close" in store_series["products"]
+    assert MODULE.PRODUCTS["store-cash-close"][1] == "MainlandStoreCashClose.exe"
+    assert MODULE.PRODUCTS["store-cash-close"][2] == "24-门店日结与收银差异核对助手-用户说明书.md"

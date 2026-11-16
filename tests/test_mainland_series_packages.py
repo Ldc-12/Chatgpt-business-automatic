@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "22 款业务软件 + 工具箱启动器" in catalog
+    assert "23 款业务软件 + 工具箱启动器" in catalog
 
 
 

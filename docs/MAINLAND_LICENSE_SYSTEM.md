@@ -1,6 +1,6 @@
 # Mainland Windows License System
 
-The 22 standalone mainland Windows business EXEs enforce a signed offline license tied to the Windows machine. The toolbox launcher is only a menu and is not one of the 22 product IDs; each business EXE performs its own license check before opening.
+The 23 standalone mainland Windows business EXEs enforce a signed offline license tied to the Windows machine. The toolbox launcher is only a menu and is not one of the 22 product IDs; each business EXE performs its own license check before opening.
 
 Protected products (the product name must match exactly when issuing a license):
 - 文件整理助手 Pro

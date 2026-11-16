@@ -38,6 +38,7 @@ FIELDS = [
 ]
 DERIVED_FIELDS = ["应有现金", "现金差异", "渠道净收", "POS净收", "POS差异"]
 EXPORT_FIELDS = FIELDS + DERIVED_FIELDS
+AUDIT_FIELDS = ["序号", "操作时间", "操作类型", "记录编号", "操作人", "原因", "前序摘要", "本次摘要"]
 
 
 def canonical(value):
@@ -449,6 +450,38 @@ class CashCloseStore:
             writer.writerow({field: csv_safe(row[field]) if field in {"营业日期", "门店编号", "门店名称"} else row[field] for field in fields})
         atomic_write(path, ("\ufeff" + buffer.getvalue()).encode("utf-8"))
 
+    def audit_summary(self):
+        verify_audit(self.events)
+        latest = self.events[-1] if self.events else {}
+        return {
+            "事件数": len(self.events),
+            "最后操作时间": latest.get("timestamp", ""),
+            "最后操作": latest.get("action", ""),
+            "最新摘要": latest.get("hash", ""),
+        }
+
+    def export_audit_csv(self, path):
+        verify_audit(self.events)
+        buffer = io.StringIO(newline="")
+        writer = csv.DictWriter(buffer, fieldnames=AUDIT_FIELDS)
+        writer.writeheader()
+        for event in self.events:
+            values = {
+                "序号": event["seq"],
+                "操作时间": event["timestamp"],
+                "操作类型": event["action"],
+                "记录编号": event["record_id"],
+                "操作人": event["actor"],
+                "原因": event["reason"],
+                "前序摘要": event["previous_hash"],
+                "本次摘要": event["hash"],
+            }
+            writer.writerow({
+                field: values[field] if field == "序号" else csv_safe(values[field])
+                for field in AUDIT_FIELDS
+            })
+        atomic_write(path, ("\\ufeff" + buffer.getvalue()).encode("utf-8"))
+
     def backup(self, path):
         data = json.dumps(self._payload(self.rows, self.events), ensure_ascii=False, indent=2).encode("utf-8")
         if len(data) > MAX_BACKUP_BYTES:
@@ -506,7 +539,9 @@ class App(tk.Tk):
             ("新增日结", self.add_record), ("编辑", self.edit_record), ("删除", self.delete_record),
             ("复核", self.review_record), ("封账", self.close_record), ("重新开账", self.reopen_record),
             ("导入 CSV", self.import_csv), ("导出明细", self.export_csv),
-            ("门店汇总", self.show_summary), ("导出汇总", self.export_summary), ("备份", self.backup), ("恢复", self.restore),
+            ("门店汇总", self.show_summary), ("导出汇总", self.export_summary),
+            ("校验日志", self.verify_audit_log), ("导出日志", self.export_audit_log),
+            ("备份", self.backup), ("恢复", self.restore),
         )
         for label, command in actions:
             ttk.Button(bar, text=label, command=command).pack(side="left", padx=2)
@@ -721,6 +756,30 @@ class App(tk.Tk):
             self.store.export_summary_csv(path, day or None)
         except (OSError, ValueError) as exc:
             messagebox.showerror("导出汇总失败", str(exc))
+
+    def verify_audit_log(self):
+        try:
+            summary = self.store.audit_summary()
+            latest_hash = summary["最新摘要"] or "暂无日志"
+            messagebox.showinfo(
+                "操作日志校验",
+                f"SHA256 链校验通过。\\n累计事件：{summary['事件数']}\\n"
+                f"最后操作：{summary['最后操作'] or '无'}\\n"
+                f"最后时间：{summary['最后操作时间'] or '无'}\\n最新摘要：{latest_hash}",
+                parent=self,
+            )
+        except ValueError as exc:
+            messagebox.showerror("操作日志校验失败", str(exc), parent=self)
+
+    def export_audit_log(self):
+        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV 文件", "*.csv")])
+        if not path:
+            return
+        try:
+            self.store.export_audit_csv(path)
+            messagebox.showinfo("导出完成", "操作日志已导出为 UTF-8 BOM CSV。", parent=self)
+        except (OSError, ValueError) as exc:
+            messagebox.showerror("导出日志失败", str(exc), parent=self)
 
     def backup(self):
         path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON 备份", "*.json")])

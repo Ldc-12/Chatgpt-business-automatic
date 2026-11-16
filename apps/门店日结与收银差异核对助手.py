@@ -432,7 +432,7 @@ class CashCloseStore:
         writer = csv.DictWriter(buffer, fieldnames=fields)
         writer.writeheader()
         for row in self.summary_by_store(business_date):
-            writer.writerow({field: csv_safe(row[field]) for field in fields})
+            writer.writerow({field: csv_safe(row[field]) if field in {"营业日期", "门店编号", "门店名称"} else row[field] for field in fields})
         atomic_write(path, ("\ufeff" + buffer.getvalue()).encode("utf-8"))
 
     def backup(self, path):

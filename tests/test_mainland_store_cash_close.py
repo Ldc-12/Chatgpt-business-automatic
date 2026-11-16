@@ -292,3 +292,42 @@ def test_gui_uses_explicit_simpledialog_import_for_all_prompts():
     assert "from tkinter import filedialog, messagebox, simpledialog, ttk" in source
     assert "tk.simpledialog" not in source
     assert source.count("simpledialog.askstring") >= 4
+
+
+def test_audit_export_is_bom_formula_safe_and_keeps_verifiable_hashes(tmp_path):
+    store = MODULE.CashCloseStore(tmp_path / "cash.json")
+    store.add(sample(), actor="=HYPERLINK(\"https://example.invalid\")")
+    output = tmp_path / "audit.csv"
+    store.export_audit_csv(output)
+    assert output.read_bytes().startswith(b"\\xef\\xbb\\xbf")
+    rows = list(csv.DictReader(output.open(encoding="utf-8-sig", newline="")))
+    assert len(rows) == 1
+    assert rows[0]["操作人"].startswith("'=HYPERLINK(")
+    assert rows[0]["本次摘要"] == store.events[0]["hash"]
+    summary = store.audit_summary()
+    assert summary["事件数"] == 1
+    assert summary["最后操作"] == "新增"
+    assert summary["最新摘要"] == store.events[0]["hash"]
+
+
+def test_audit_export_refuses_corrupted_chain_without_overwriting_target(tmp_path):
+    store = MODULE.CashCloseStore(tmp_path / "cash.json")
+    store.add(sample())
+    store.events[0]["reason"] = "tampered"
+    output = tmp_path / "audit.csv"
+    output.write_text("keep-existing-report", encoding="utf-8")
+    try:
+        store.export_audit_csv(output)
+    except ValueError as exc:
+        assert "SHA256" in str(exc)
+    else:
+        raise AssertionError("corrupted audit chain was exported")
+    assert output.read_text(encoding="utf-8") == "keep-existing-report"
+
+
+def test_audit_ui_exposes_integrity_check_and_log_export():
+    source = PATH.read_text(encoding="utf-8")
+    assert "校验日志" in source
+    assert "导出日志" in source
+    assert "self.store.audit_summary()" in source
+    assert "self.store.export_audit_csv(path)" in source

@@ -53,7 +53,7 @@ SERIES = (
         "slug": "store-operations",
         "title": "门店经营系列",
         "price": "29.9",
-        "products": ("inventory", "food-batch", "food-safety-inspection", "purchase-compare", "repair-work-order", "after-sales-evidence", "store-schedule", "equipment-maintenance"),
+        "products": ("inventory", "food-batch", "food-safety-inspection", "purchase-compare", "repair-work-order", "after-sales-evidence", "store-schedule", "equipment-maintenance", "store-cash-close"),
         "summary": "库存盘点、批次效期追踪、食品安全巡检整改闭环、采购比价、售后工单、纠纷证据归档、员工排班、设备维保计划和门店日结差异核对。",
     },
     {
@@ -77,7 +77,7 @@ SERIES = (
         "slug": "customer-personal",
         "title": "客户与个人事务系列",
         "price": "19.9",
-        "products": ("sales", "jobs", "vehicle-ledger", "store-cash-close"),
+        "products": ("sales", "jobs", "vehicle-ledger"),
         "summary": "客户跟进、求职申请进度及个人车辆维保费用记录。",
     },
 )

@@ -166,7 +166,7 @@ def test_construction_settlement_product_is_in_build_matrix_launcher_and_custome
     assert "装修工程签证与进度款管理助手.json" in workflow
     assert "MainlandConstructionSettlementAssistant.exe" in launcher
     assert "assert len(TOOLS) == 24" in launcher
-    assert "24 款 Windows EXE（23 款业务工具及工具箱启动器）" in workflow
+    assert "25 款 Windows EXE（24 款业务工具及工具箱启动器）" in workflow
     assert "24 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 25
 
@@ -185,7 +185,7 @@ def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package()
     assert "物业租金与押金管理助手" in package_description
     assert "MainlandRentalLedgerAssistant.exe" in launcher
     assert "物业租金与押金管理助手" in license_tests
-    assert "24 款 Windows EXE（23 款业务工具及工具箱启动器）" in workflow
+    assert "25 款 Windows EXE（24 款业务工具及工具箱启动器）" in workflow
     assert "全部 24 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 25
 
@@ -280,7 +280,7 @@ def test_food_safety_inspection_product_is_in_build_matrix_launcher_license_and_
     assert "MainlandFoodSafetyInspectionAssistant.exe" in launcher
     assert "门店食品安全巡检与整改闭环助手" in license_tests
     assert '"food-safety-inspection"' in series_builder
-    assert len(APP_ENTRYPOINTS) == 24
+    assert len(APP_ENTRYPOINTS) == 25
 
 
 def test_customer_zip_inspection_runs_before_artifact_upload_and_is_retained():
@@ -323,7 +323,7 @@ def test_equipment_maintenance_product_is_in_build_matrix_launcher_license_and_s
     assert "MainlandEquipmentMaintenanceAssistant.exe" in launcher
     assert "设备维保巡检与保养计划助手" in license_tests
     assert '"equipment-maintenance"' in series_builder
-    assert len(APP_ENTRYPOINTS) == 24
+    assert len(APP_ENTRYPOINTS) == 25
 
 
 

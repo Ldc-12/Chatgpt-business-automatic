@@ -87,6 +87,27 @@ def test_partial_payment_updates_outstanding_and_history(tmp_path):
     assert store.payments_for_invoice(invoice_id)[0]["付款编号"] == payment_id
 
 
+def test_historical_aging_excludes_payments_after_the_cutoff_date(tmp_path):
+    store = MODULE.SupplierAPStore(tmp_path / "ap.json")
+    invoice_id = store.add_invoice(invoice(**{"到期日期": "2026-11-05"}))
+    store.add_payment(invoice_id, "400", "2026-11-20", "BANK-02", "期后付款")
+
+    before_payment = store.invoice_rows("2026-11-15")[0]
+    on_payment_date = store.invoice_rows("2026-11-20")[0]
+    after_payment = store.invoice_rows("2026-11-21")[0]
+
+    assert before_payment["已付金额"] == "0.00"
+    assert before_payment["未付金额"] == "1000.00"
+    assert before_payment["账龄区间"] == "逾期1-30天"
+    assert store.aging_summary("2026-11-15")[0]["未付合计"] == "1000.00"
+
+    assert on_payment_date["已付金额"] == "400.00"
+    assert on_payment_date["未付金额"] == "600.00"
+    assert after_payment["已付金额"] == "400.00"
+    assert after_payment["未付金额"] == "600.00"
+    assert store.aging_summary("2026-11-20")[0]["未付合计"] == "600.00"
+
+
 def test_overpayment_is_rejected_without_mutating_data(tmp_path):
     path = tmp_path / "ap.json"
     store = MODULE.SupplierAPStore(path)

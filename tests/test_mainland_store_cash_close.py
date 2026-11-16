@@ -299,7 +299,7 @@ def test_audit_export_is_bom_formula_safe_and_keeps_verifiable_hashes(tmp_path):
     store.add(sample(), actor="=HYPERLINK(\"https://example.invalid\")")
     output = tmp_path / "audit.csv"
     store.export_audit_csv(output)
-    assert output.read_bytes().startswith(b"\\xef\\xbb\\xbf")
+    assert output.read_bytes().startswith(b"\xef\xbb\xbf")
     rows = list(csv.DictReader(output.open(encoding="utf-8-sig", newline="")))
     assert len(rows) == 1
     assert rows[0]["操作人"].startswith("'=HYPERLINK(")

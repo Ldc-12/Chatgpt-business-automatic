@@ -25,6 +25,7 @@ Protected products (the product name must match exactly when issuing a license):
 - 装修工程签证与进度款管理助手
 - 物业租金与押金管理助手
 - 设备维保巡检与保养计划助手
+- 车辆维保与费用台账助手
 
 ## Customer flow
 

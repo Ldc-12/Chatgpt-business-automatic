@@ -259,3 +259,13 @@ def test_ui_exposes_review_close_reopen_and_summary_actions():
 
 def test_self_test_runs_without_gui_or_license():
     MODULE.self_test()
+
+
+def test_summary_csv_keeps_negative_variances_numeric(tmp_path):
+    store = MODULE.CashCloseStore(tmp_path / "cash.json")
+    store.add(sample())
+    output = tmp_path / "summary.csv"
+    store.export_summary_csv(output, "2026-11-16")
+    rows = list(csv.DictReader(output.open(encoding="utf-8-sig", newline="")))
+    assert rows[0]["现金差异"] == "-5.00"
+    assert not rows[0]["现金差异"].startswith("'")

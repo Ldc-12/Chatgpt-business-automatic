@@ -1,16 +1,17 @@
-# 2026-11-16 main HEAD 106ed8c：供应商应付账龄产品、库存删除保护与发布复核
+# 2026-11-16 main HEAD 3c821e5：供应商应付账龄历史口径修复与发布复核
 
 ## 当前主线与 PR 状态
-- 本次读取到的 main HEAD：`106ed8c58201ecb9ca2cdb292fa2640c057fd0d0`。
+- 本次读取到的 main HEAD：`3c821e519a473ab7b3930129d360d3230e4ee64c`。
 - PR [#65 Add offline supplier AP aging and reconciliation assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/65) 已合并，main 产品提交：`7aca117efed14016c6fd219e26162954b3a3a212`。新增供应商应付单据、分笔付款、账龄、到期清单、供应商对账、CSV、备份恢复和中文说明书。
 - PR [#66 Fix customer package chunk capacity for growing EXE bundles](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/66) 已合并到 PR #65 的产品分支；把分片改为准确的 20 MiB 二进制块，最多 24 块（480 MiB），加入容量边界、哈希、manifest 和过期分片回归测试。
 - PR [#67 Prevent silent no-op when deleting missing inventory items](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/67) 已合并，main commit：`106ed8c58201ecb9ca2cdb292fa2640c057fd0d0`。库存删除现在拒绝空白/不存在的商品编码，失败时不重写磁盘文件；新增删除成功持久化及无效编码不改数据测试。
-- 当前 open PR：[#68 Fix historical supplier AP aging cutoff](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/68)，分支 `fix/supplier-ap-historical-aging-20261116`，head `a9a8faeeafd28d79e116fcc52f53bcb327d57750`。修复历史账龄把统计日期之后付款提前计入的问题，新增统计日期前/当日/之后的付款边界和供应商汇总测试，并更新中文说明书。尚未取得该 PR 的 Actions 结果，未合并。
+- PR [#68 Fix historical supplier AP aging cutoff](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/68) 已在全部检查通过后合并，merge commit：`3c821e519a473ab7b3930129d360d3230e4ee64c`。历史账龄只计入付款日期不晚于统计日期的付款；新增统计日期前/当日/之后的付款边界及供应商汇总回归测试，并更新中文说明书。
 
 ## 最近 Mainland Windows EXE 工作流
 - PR run #409：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43799991711)，27 个 job 全部 success；属于 PR #66 分片修复验证。
 - PR run #410：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43860715864)，27/27 jobs success。供应商 AP 产品 job `133276487859`：101 passed in 3.28s、`SELF_TEST_OK`、PyInstaller 6.22.3 build 成功、`FROZEN_EXE_SELF_TEST_OK`；客户包 job `133277571782` 成功并记录 `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`。
 - PR run #411：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43861061559)，26/26 jobs success。库存产品 job `133277699901`：84 passed in 2.32s、源码自检及冻结 EXE 自检成功；客户包 job `133278847641` 成功。
+- PR run #414：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43865690835)，PR #68 的 27/27 jobs success。供应商 AP job `133293519949`：102 passed in 5.91s、`SELF_TEST_OK`、PyInstaller 6.22.3 构建成功、`FROZEN_EXE_SELF_TEST_OK`；客户包 job `133294660698` 成功，日志包含 `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`，分片检查为 21 parts。
 - run #411 虽然编号晚于 #410，但 PR #67 分支创建时基于 PR #65 合并前的 main（base SHA `bf0bf7a775105a8e6aa50ce65c99eba00b48e8e9`），其包没有供应商 AP 产品。因此它是较旧产品基线的 PR 候选包，不可作为当前 main 发布包。
 
 ## PR #65 候选客户包 #410：已下载并本地核验，不是 main 正式包
@@ -21,14 +22,22 @@
 - 分类套餐 artifact ID `14223317270`，410,704,032 bytes；已下载，外层 ZIP CRC passed。A–E 五个内层 ZIP CRC 均通过，EXE/说明书数量分别为 5/5、9/9、5/5、3/3、3/3。分类目录说明 F 由主客户包提供，不重复生成。
 - Manifest artifact ID `14222004610`，2,397 bytes；已下载并核验 ZIP CRC，声明内层包大小和 SHA256 与实测一致。以上均为 PR #65 候选产物，不是合并后的 main 发布包。
 
+## PR #68 候选客户包 #414：最新已下载核验的完整候选包
+- Artifact `mainland-phase1-customer-package` ID `14226295510`，425,372,963 bytes；外层 SHA256：`34dd68b324b8c12f42e28e92c362944dfa8f43453750641825f5d755e9547c03`；外层 ZIP CRC passed。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：425,250,845 bytes；SHA256：`7d2b4c91fa35219d8fd6a3f32ccce7f92d85913172a316ab85f787ea42a777dc`；CRC passed；58 个 ZIP 条目（56 个文件），26 个 EXE（25 款业务软件 + 工具箱启动器），26 份逐款中文说明书。内层 ZIP 时间戳：2026-11-16 12:23:14 UTC（北京时间 20:23:14）。
+- 套餐 A–F 与 26 EXE/26 说明书清单完整；A–E 分别为 5/9/5/3/3 款，F 为全系列 25 款业务软件 + 启动器。建议价仍为待市场验证：A–D 29.9 元、E 19.9 元、F 39.9 元。
+- 分类套餐 artifact ID `14226275507`，410,690,739 bytes，SHA256：`5036d41338ffed7624f6fdd419587d089a2e6ef7d82168049b679cde387116d2`；已下载，外层及五个内层 ZIP CRC 均通过，EXE/说明书数为 5/5、9/9、5/5、3/3、3/3。
+- Manifest artifact ID `14225866275`，2,397 bytes，SHA256：`129d0ef1f32dac6b654b834bcbfe74aa3a20966494e25ffea31930d90116c6df`；分片 artifact ID `14225551926`，425,254,521 bytes、21 个分片；均已下载并通过 ZIP CRC。Manifest 声明的内层大小和 SHA256 与实测一致。
+- 该包是 PR #68 的完整 Windows 候选包，PR 已合并；但它仍是 PR 触发构建，不冒充 post-merge main push artifact。
+
 ## PR #67 候选客户包 #411：较新 run，但产品基线较旧
 - Artifact `mainland-phase1-customer-package` ID `14223293012`，410,584,222 bytes；外层 SHA256：`0506ee8524c68b64d7445f71e67efeceeb8a7fb9d13322d72a32c7bcde806675`；外层 ZIP CRC passed。
 - 内层 ZIP：410,466,642 bytes；SHA256：`f2ecc8296811b895d13b34afec472d6b35b992fcd94209ed09766f941e20f4b3`；CRC passed；56 个条目（54 个文件），25 个 EXE（24 款业务软件 + 启动器），25 份逐款中文说明书；时间戳 2026-11-16 11:52:02 UTC。
 - 清单明确缺少供应商 AP EXE、说明书及 C 系列第五款，故不能把该 artifact 当作当前 main 包。Manifest artifact ID `14223495857` 与分片 artifact ID `14221929979` 均已下载，ZIP CRC passed。
 
 ## 合并后 main 正式客户包：仍待独立验证
-- 当前 main 已包含 PR #65 和 PR #67，但本次可用的 Actions 查询只返回 PR 触发的 runs，不能列出 main push/schedule 触发的 Mainland Windows EXE run。没有取得与 main HEAD `106ed8c` 对应的 post-merge 主线客户包 artifact ID。
-- 最近有完整独立核验记录的 main 正式客户包仍是 run #388、artifact ID `14188324302`（24 EXE/24 说明书），早于 PR #63、#65、#67，不能作为当前主线交付包。
+- 当前 main 已包含 PR #65、#67、#68，但本次可用的 Actions 查询只返回 PR 触发的 runs，不能列出 main push/schedule 触发的 Mainland Windows EXE run。没有取得与 main HEAD `3c821e5` 对应的 post-merge 主线客户包 artifact ID。
+- 最近有完整独立核验记录的 main 正式客户包仍是 run #388、artifact ID `14188324302`（24 EXE/24 说明书），早于 PR #63、#65、#67、#68，不能作为当前主线交付包。
 - 因此 #410 和 #411 都只能作为 PR 候选包；不得用它们或历史 run #388 冒充当前 main 正式客户包。必须待 post-merge main Windows workflow 产物可独立下载、核验后再更新正式包状态。
 
 ## Autonomous Business Engine（ABE）

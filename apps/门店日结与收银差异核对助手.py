@@ -636,7 +636,7 @@ class App(tk.Tk):
         reviewer = simpledialog.askstring("复核日结", "复核人：", parent=self)
         if reviewer is None:
             return
-        note = tk.simpledialog.askstring("差异处理说明", "如存在差异，请说明核对结果；无差异可留空：", parent=self) or ""
+        note = simpledialog.askstring("差异处理说明", "如存在差异，请说明核对结果；无差异可留空：", parent=self) or ""
         try:
             self.store.review(record_id, reviewer, note)
             self.refresh()
@@ -661,10 +661,10 @@ class App(tk.Tk):
         if not record_id:
             messagebox.showinfo("重新开账", "请先选择一条日结记录。")
             return
-        reason = tk.simpledialog.askstring("重新开账", "请输入重新开账原因（至少 4 个字符）：", parent=self)
+        reason = simpledialog.askstring("重新开账", "请输入重新开账原因（至少 4 个字符）：", parent=self)
         if reason is None:
             return
-        actor = tk.simpledialog.askstring("操作人", "操作人：", parent=self) or "本机用户"
+        actor = simpledialog.askstring("操作人", "操作人：", parent=self) or "本机用户"
         try:
             self.store.reopen(record_id, reason, actor)
             self.refresh()
@@ -692,7 +692,7 @@ class App(tk.Tk):
             messagebox.showerror("导出失败", str(exc))
 
     def show_summary(self):
-        day = tk.simpledialog.askstring("门店日结汇总", "营业日期（YYYY-MM-DD），留空汇总全部日期：", parent=self) or ""
+        day = simpledialog.askstring("门店日结汇总", "营业日期（YYYY-MM-DD），留空汇总全部日期：", parent=self) or ""
         try:
             if day:
                 date.fromisoformat(day)

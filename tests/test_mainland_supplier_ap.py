@@ -402,3 +402,17 @@ def test_empty_supplier_statement_is_not_reported_as_clean(tmp_path):
         assert "没有数据" in str(exc)
     else:
         raise AssertionError("empty statement was treated as a clean reconciliation")
+
+
+def test_statement_coverage_ranges_are_scoped_per_supplier(tmp_path):
+    store = MODULE.SupplierAPStore(tmp_path / "ap.json")
+    store.add_invoice(invoice(**{"单据编号": "A-1", "供应商编号": "SUP-A", "供应商名称": "供应商A", "发票号": "A-INV-1", "单据日期": "2026-11-01"}))
+    store.add_invoice(invoice(**{"单据编号": "A-2", "供应商编号": "SUP-A", "供应商名称": "供应商A", "发票号": "A-INV-2", "单据日期": "2026-11-15"}))
+    store.add_invoice(invoice(**{"单据编号": "B-1", "供应商编号": "SUP-B", "供应商名称": "供应商B", "发票号": "B-INV-1", "单据日期": "2026-11-30"}))
+    source = tmp_path / "multi-supplier.csv"
+    statement_csv(source, [
+        {"供应商编号": "SUP-A", "供应商名称": "供应商A", "发票号": "A-INV-1", "单据日期": "2026-11-01", "金额": "1000"},
+        {"供应商编号": "SUP-B", "供应商名称": "供应商B", "发票号": "B-INV-1", "单据日期": "2026-11-30", "金额": "1000"},
+    ])
+    issues = store.reconcile_statement_csv(source)
+    assert not any(row["发票号"] == "A-INV-2" and "对账单缺少本地单据" in row["差异类型"] for row in issues)

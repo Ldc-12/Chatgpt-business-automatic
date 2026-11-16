@@ -321,7 +321,7 @@ jobs:
       - name: Verify re-downloaded customer package
         shell: bash
         run: |
-          python tools/inspect_mainland_package.py --package release/downloaded-artifact/Phase1-Mainland-Windows-Tools.zip --expected-exes 24 --expected-manuals 24 --report release/downloaded-artifact/reinspection.json
+          python tools/inspect_mainland_package.py --package release/downloaded-artifact/Phase1-Mainland-Windows-Tools.zip --expected-exes 25 --expected-manuals 25 --report release/downloaded-artifact/reinspection.json
           python - <<'PY'
           import json
           from pathlib import Path

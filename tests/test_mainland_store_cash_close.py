@@ -104,7 +104,7 @@ def test_review_requires_explanation_for_variance_then_close_and_reopen(tmp_path
 def test_update_resets_review_and_preserves_record_id(tmp_path):
     store = MODULE.CashCloseStore(tmp_path / "cash.json")
     record_id = store.add(sample(**{"现金销售": "1000", "实际现金盘点": "1120"}))
-    store.review(record_id, "店长")
+    store.review(record_id, "店长", "POS 差异已核对")
     store.update(record_id, sample(**{"现金销售": "1100", "实际现金盘点": "1220"}))
     assert store.rows[0]["记录编号"] == record_id
     assert store.rows[0]["现金销售"] == "1100.00"
@@ -144,7 +144,6 @@ def test_csv_roundtrip_is_utf8_bom_formula_safe_and_validates_derived_values(tmp
     imported = MODULE.CashCloseStore(tmp_path / "imported.json")
     assert imported.import_csv(export) == 1
     assert imported.rows[0]["备注"].startswith("'=")
-    assert imported.calculate if hasattr(imported, "calculate") else True
     rows = list(csv.DictReader(text.splitlines()))
     rows[0]["现金差异"] = "999.00"
     bad = tmp_path / "tampered.csv"

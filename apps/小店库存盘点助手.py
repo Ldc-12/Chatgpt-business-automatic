@@ -185,7 +185,12 @@ class InventoryStore:
 
     def delete(self, code):
         self._ensure_writable()
-        self._commit_rows([r for r in self.rows if r["商品编码"] != code])
+        target_code = str(code or "").strip()
+        if not target_code:
+            raise ValueError("商品编码不能为空")
+        if not any(row["商品编码"] == target_code for row in self.rows):
+            raise ValueError("找不到要删除的商品")
+        self._commit_rows([r for r in self.rows if r["商品编码"] != target_code])
 
     def import_csv(self, path):
         self._ensure_writable()

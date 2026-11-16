@@ -1,6 +1,6 @@
 """Build independent mainland Windows product-series ZIP packages.
 
-The five series are disjoint and cover all 22 business apps exactly once.
+The five series are disjoint and cover all business apps exactly once.
 The all-in-one F package remains the main Phase 1 customer package.
 """
 from __future__ import annotations
@@ -36,6 +36,7 @@ PRODUCTS = {
     "rental-ledger": ("物业租金与押金管理助手", "MainlandRentalLedgerAssistant.exe", "18-物业租金与押金管理助手-用户说明书.md"),
     "equipment-maintenance": ("设备维保巡检与保养计划助手", "MainlandEquipmentMaintenanceAssistant.exe", "22-设备维保巡检与保养计划助手-用户说明书.md"),
     "vehicle-ledger": ("车辆维保与费用台账助手", "MainlandVehicleMaintenanceLedger.exe", "23-车辆维保与费用台账助手-用户说明书.md"),
+    "store-cash-close": ("门店日结与收银差异核对助手", "MainlandStoreCashClose.exe", "24-门店日结与收银差异核对助手-用户说明书.md"),
 }
 
 SERIES = (
@@ -53,7 +54,7 @@ SERIES = (
         "title": "门店经营系列",
         "price": "29.9",
         "products": ("inventory", "food-batch", "food-safety-inspection", "purchase-compare", "repair-work-order", "after-sales-evidence", "store-schedule", "equipment-maintenance"),
-        "summary": "库存盘点、批次效期追踪、食品安全巡检整改闭环、采购比价、售后工单、纠纷证据归档、员工排班和设备维保计划。",
+        "summary": "库存盘点、批次效期追踪、食品安全巡检整改闭环、采购比价、售后工单、纠纷证据归档、员工排班、设备维保计划和门店日结差异核对。",
     },
     {
         "code": "C",
@@ -76,7 +77,7 @@ SERIES = (
         "slug": "customer-personal",
         "title": "客户与个人事务系列",
         "price": "19.9",
-        "products": ("sales", "jobs", "vehicle-ledger"),
+        "products": ("sales", "jobs", "vehicle-ledger", "store-cash-close"),
         "summary": "客户跟进、求职申请进度及个人车辆维保费用记录。",
     },
 )
@@ -120,8 +121,8 @@ def render_catalog() -> str:
     lines = [
         "# 大陆版 Windows 软件分类套餐目录",
         "",
-        "五个分类系列 A–E 各自独立打包，23 款业务软件不重复、无遗漏。",
-        "全系列 F 为主客户包：23 款业务软件 + 工具箱启动器；建议售价 39.9 元，本脚本不重复生成 F 包。",
+        "五个分类系列 A–E 各自独立打包，24 款业务软件不重复、无遗漏。",
+        "全系列 F 为主客户包：24 款业务软件 + 工具箱启动器；建议售价 39.9 元，本脚本不重复生成 F 包。",
         "价格均为待市场验证的建议价，不代表已发生的闲鱼成交。",
         "",
         "| 编号 | 系列 | 软件数量 | 建议售价 | 商品内容 |",

@@ -261,6 +261,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-series-packages
+          overwrite: true
           path: |
             release/series/*.zip
             release/series/系列套餐目录.md
@@ -315,11 +316,34 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-customer-package
+          overwrite: true
           path: |
             release/Phase1-Mainland-Windows-Tools.zip
             release/README-大陆版.md
             release/Phase1-Mainland-Windows-Tools.inspection.json
       - name: Re-download uploaded customer package artifact
+        id: re_download_package
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: mainland-phase1-customer-package
+          path: release/downloaded-artifact
+      - name: Wait before retrying customer package download
+        if: steps.re_download_package.outcome != 'success'
+        run: sleep 5
+      - name: Retry customer package artifact download
+        id: re_download_package_retry
+        if: steps.re_download_package.outcome != 'success'
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: mainland-phase1-customer-package
+          path: release/downloaded-artifact
+      - name: Wait before second customer package download retry
+        if: steps.re_download_package.outcome != 'success' && steps.re_download_package_retry.outcome != 'success'
+        run: sleep 10
+      - name: Final retry for customer package artifact download
+        if: steps.re_download_package.outcome != 'success' && steps.re_download_package_retry.outcome != 'success'
         uses: actions/download-artifact@v4
         with:
           name: mainland-phase1-customer-package
@@ -357,6 +381,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-manifest
+          overwrite: true
           path: |
             release/Phase1-Mainland-Windows-Tools.zip.sha256
             release/Phase1-Mainland-Windows-Tools.zip.bytes
@@ -365,6 +390,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-parts
+          overwrite: true
           path: release/Phase1-Mainland-Windows-Tools.zip.part-*
           if-no-files-found: error
           compression-level: 0

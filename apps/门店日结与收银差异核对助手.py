@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import sys
 import tempfile
 import uuid
@@ -23,6 +24,7 @@ MAX_ROWS = 50000
 MAX_CSV_BYTES = 25 * 1024 * 1024
 MAX_BACKUP_BYTES = 100 * 1024 * 1024
 CENT = Decimal("0.01")
+MAX_AMOUNT = Decimal("999999999999.99")
 SHIFTS = {"早班", "中班", "晚班", "全天"}
 STATUSES = {"待复核", "已复核", "已封账"}
 AMOUNT_FIELDS = (
@@ -46,13 +48,18 @@ def decimal_value(value, field, allow_blank=False):
     text = "" if value is None else str(value).strip().replace(",", "").replace("，", "").replace("￥", "")
     if allow_blank and not text:
         return ""
+    if len(text) > 32:
+        raise ValueError(f"{field}超出可接受长度")
     try:
         number = Decimal(text or "0")
     except (InvalidOperation, ValueError):
         raise ValueError(f"{field}必须是有效数字") from None
-    if not number.is_finite() or number < 0:
-        raise ValueError(f"{field}必须是非负有限数字")
-    return format(number.quantize(CENT, rounding=ROUND_HALF_UP), "f")
+    if not number.is_finite() or number < 0 or number > MAX_AMOUNT:
+        raise ValueError(f"{field}必须在 0 至 999999999999.99 之间")
+    try:
+        return format(number.quantize(CENT, rounding=ROUND_HALF_UP), "f")
+    except InvalidOperation:
+        raise ValueError(f"{field}精度超出可接受范围") from None
 
 
 def csv_safe(value):
@@ -81,6 +88,8 @@ def normalize(row):
     if not isinstance(row, dict):
         raise ValueError("日结记录必须是对象")
     record_id = str(row.get("记录编号", "")).strip() or uuid.uuid4().hex.upper()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", record_id):
+        raise ValueError("记录编号只能包含 1–64 位字母、数字、下划线或连字符")
     try:
         business_date = date.fromisoformat(str(row.get("营业日期", "")).strip()).isoformat()
     except (TypeError, ValueError):
@@ -109,6 +118,11 @@ def normalize(row):
         raise ValueError("日结状态不受支持")
     reviewer = str(row.get("复核人", "") or "").strip()
     resolution = str(row.get("差异处理说明", "") or "").strip()
+    if len(reviewer) > 80 or len(resolution) > 500:
+        raise ValueError("复核人最多 80 个字符，差异处理说明最多 500 个字符")
+    note = str(row.get("备注", "") or "").strip()
+    if len(note) > 2000:
+        raise ValueError("备注最多 2000 个字符")
     closed_at = str(row.get("封账时间", "") or "").strip()
     if status in {"已复核", "已封账"} and not reviewer:
         raise ValueError("已复核或已封账记录必须填写复核人")
@@ -129,7 +143,7 @@ def normalize(row):
         **pos,
         "复核人": reviewer,
         "差异处理说明": resolution,
-        "备注": str(row.get("备注", "") or "").strip(),
+        "备注": note,
         "状态": status,
         "封账时间": closed_at,
     }

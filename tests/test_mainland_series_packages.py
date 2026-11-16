@@ -23,8 +23,8 @@ def _make_inputs(tmp_path):
 def test_series_catalog_covers_all_22_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 22
-    assert len(assigned) == 22
+    assert len(MODULE.PRODUCTS) == 23
+    assert len(assigned) == 23
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -108,3 +108,10 @@ def test_store_series_contains_equipment_maintenance_planner():
     assert "equipment-maintenance" in store_series["products"]
     assert MODULE.PRODUCTS["equipment-maintenance"][1] == "MainlandEquipmentMaintenanceAssistant.exe"
     assert MODULE.PRODUCTS["equipment-maintenance"][2] == "22-设备维保巡检与保养计划助手-用户说明书.md"
+
+
+def test_personal_series_contains_vehicle_maintenance_ledger():
+    personal = next(item for item in MODULE.SERIES if item["code"] == "E")
+    assert "vehicle-ledger" in personal["products"]
+    assert MODULE.PRODUCTS["vehicle-ledger"][1] == "MainlandVehicleMaintenanceLedger.exe"
+    assert MODULE.PRODUCTS["vehicle-ledger"][2] == "23-车辆维保与费用台账助手-用户说明书.md"

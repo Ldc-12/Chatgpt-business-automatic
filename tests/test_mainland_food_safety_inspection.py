@@ -416,3 +416,17 @@ def test_store_risk_csv_preserves_existing_file_when_atomic_replace_fails(tmp_pa
 
     assert destination.read_bytes() == b"previous-report"
     assert not list(tmp_path.glob("store-risk.csv.*.tmp"))
+
+
+def test_oversized_local_data_is_rejected_before_json_parse(tmp_path, monkeypatch):
+    path = tmp_path / "data.json"
+    path.write_text('{"large":"payload"}', encoding="utf-8")
+    before = path.read_bytes()
+    monkeypatch.setattr(MODULE, "MAX_BACKUP_BYTES", 4)
+    try:
+        MODULE.InspectionStore(path)
+    except ValueError as exc:
+        assert "100 MiB" in str(exc)
+    else:
+        raise AssertionError("oversized local data should be rejected")
+    assert path.read_bytes() == before

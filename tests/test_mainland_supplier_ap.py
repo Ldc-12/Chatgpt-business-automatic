@@ -309,7 +309,7 @@ def test_reconciliation_does_not_mutate_local_data(tmp_path):
     store.add_invoice(invoice())
     before = path.read_bytes()
     source = tmp_path / "statement.csv"
-    statement_csv(source, [])
+    statement_csv(source, [{"供应商编号": "SUP-01", "供应商名称": "华南供应商", "发票号": "INV-001", "单据日期": "2026-11-01", "金额": "1000.00"}])
     store.reconcile_statement_csv(source)
     assert path.read_bytes() == before
 

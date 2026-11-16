@@ -35,7 +35,7 @@ def statement_csv(path, rows, headers=None):
 
 def test_decimal_rounding_and_rejects_invalid_amounts():
     assert MODULE.decimal_value("12.345", "金额") == "12.35"
-    for value in ("", "NaN", "Infinity", "-1", "0", "1e999999", "9" * 40):
+    for value in ("", "NaN", "Infinity", "-1", "0", "0.001", "1e999999", "9" * 40):
         try:
             MODULE.decimal_value(value, "金额")
         except ValueError:
@@ -390,3 +390,15 @@ def test_gui_exposes_reconciliation_aging_and_backup_actions():
         assert label in source
     assert "self.store.reconcile_statement_csv(path)" in source
     assert "self.store.export_aging_csv(path, day)" in source
+
+
+def test_empty_supplier_statement_is_not_reported_as_clean(tmp_path):
+    store = MODULE.SupplierAPStore(tmp_path / "ap.json")
+    source = tmp_path / "empty.csv"
+    statement_csv(source, [])
+    try:
+        store.reconcile_statement_csv(source)
+    except ValueError as exc:
+        assert "没有数据" in str(exc)
+    else:
+        raise AssertionError("empty statement was treated as a clean reconciliation")

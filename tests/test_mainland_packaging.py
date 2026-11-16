@@ -184,7 +184,7 @@ def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package()
     assert "物业租金与押金管理助手" in package_description
     assert "MainlandRentalLedgerAssistant.exe" in launcher
     assert "物业租金与押金管理助手" in license_tests
-    assert "23 款 Windows EXE（22 款业务工具及工具箱启动器）" in workflow
+    assert "24 款 Windows EXE（23 款业务工具及工具箱启动器）" in workflow
     assert "全部 23 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 24
 
@@ -322,7 +322,7 @@ def test_equipment_maintenance_product_is_in_build_matrix_launcher_license_and_s
     assert "MainlandEquipmentMaintenanceAssistant.exe" in launcher
     assert "设备维保巡检与保养计划助手" in license_tests
     assert '"equipment-maintenance"' in series_builder
-    assert len(APP_ENTRYPOINTS) == 23
+    assert len(APP_ENTRYPOINTS) == 24
 
 
 

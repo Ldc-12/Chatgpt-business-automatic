@@ -18,6 +18,7 @@ TOOLS = [
     ("食品批次与保质期追踪助手", "MainlandFoodBatchExpiryAssistant.exe"),
     ("门店食品安全巡检与整改闭环助手", "MainlandFoodSafetyInspectionAssistant.exe"),
     ("供应商采购比价助手", "MainlandPurchaseCompare.exe"),
+    ("供应商对账与应付账龄管理助手", "MainlandSupplierAPAging.exe"),
     ("报价单生成器", "MainlandQuotationGenerator.exe"),
     ("费用报销管理助手", "MainlandExpenseReimbursement.exe"),
     ("售后维修工单管理助手", "MainlandRepairWorkOrderManager.exe"),
@@ -44,7 +45,7 @@ def application_directory():
 
 
 def self_test():
-    assert len(TOOLS) == 24
+    assert len(TOOLS) == 25
     names = [name for name, _ in TOOLS]
     exes = [exe for _, exe in TOOLS]
     assert len(set(names)) == len(names)

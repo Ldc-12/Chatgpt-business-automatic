@@ -153,6 +153,20 @@ class VehicleStore:
         self._commit(self.rows + [normalized])
         return normalized["记录编号"]
 
+    def update(self, record_id, row):
+        if not any(item["记录编号"] == record_id for item in self.rows):
+            raise ValueError("要编辑的车辆记录不存在")
+        values = dict(row)
+        values["记录编号"] = record_id
+        normalized = normalize(values)
+        self._commit([normalized if item["记录编号"] == record_id else item for item in self.rows])
+        return record_id
+
+    def delete(self, record_id):
+        if not any(item["记录编号"] == record_id for item in self.rows):
+            raise ValueError("要删除的车辆记录不存在")
+        self._commit([item for item in self.rows if item["记录编号"] != record_id])
+
     def export_csv(self, path):
         buffer = io.StringIO(newline="")
         writer = csv.DictWriter(buffer, fieldnames=FIELDS, extrasaction="ignore")
@@ -218,7 +232,12 @@ def self_test():
                    "里程公里": 10000, "费用类别": "保养", "项目/事项": "机油保养",
                    "金额元": 300, "下次提醒日期": "2026-07-01"})
         assert len(store.rows) == 1
-        assert len(store.due_reminders(date.fromisoformat("2026-08-01"))) == 1
+        record_id = store.rows[0]["记录编号"]
+        store.update(record_id, {"车牌号码": "粤A12345", "车辆名称": "测试车辆", "日期": "2026-01-01", "里程公里": 11000, "费用类别": "保养", "项目/事项": "机油保养", "金额元": 300})
+        assert store.rows[0]["里程公里"] == 11000
+        store.delete(record_id)
+        assert store.rows == []
+        assert len(store.due_reminders(date.fromisoformat("2026-08-01"))) == 0
     print("SELF_TEST_OK")
 
 
@@ -231,7 +250,8 @@ class App(tk.Tk):
         self.geometry("1180x700")
         bar = ttk.Frame(self, padding=10)
         bar.pack(fill="x")
-        for label, command in (("新增记录", self.add_record), ("导入 CSV", self.import_csv),
+        for label, command in (("新增记录", self.add_record), ("编辑记录", self.edit_record),
+                               ("删除记录", self.delete_record), ("导入 CSV", self.import_csv),
                                ("导出 CSV", self.export_csv), ("备份", self.backup), ("恢复", self.restore)):
             ttk.Button(bar, text=label, command=command).pack(side="left", padx=4)
         self.tree = ttk.Treeview(self, columns=FIELDS[1:], show="headings")
@@ -247,23 +267,63 @@ class App(tk.Tk):
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
         for row in self.store.rows:
-            self.tree.insert("", "end", values=[row.get(field, "") for field in FIELDS[1:]])
+            self.tree.insert("", "end", iid=row["记录编号"], values=[row.get(field, "") for field in FIELDS[1:]])
 
     def add_record(self):
-        values = {}
-        prompts = [("车牌号码", "粤A12345"), ("车辆名称", "家用轿车"), ("日期", date.today().isoformat()),
-                   ("里程公里", "0"), ("费用类别", "保养"), ("项目/事项", "常规保养"),
-                   ("服务商", ""), ("金额元", "0"), ("下次提醒日期", ""), ("备注", "")]
-        for field, default in prompts:
-            value = simpledialog.askstring("新增车辆记录", field, initialvalue=default, parent=self)
-            if value is None:
-                return
-            values[field] = value
+        values = self._record_dialog("新增车辆记录")
+        if values is None:
+            return
         try:
             self.store.add(values)
             self.refresh()
         except (OSError, ValueError) as exc:
             messagebox.showerror("保存失败", str(exc))
+
+    def _record_dialog(self, title, existing=None):
+        values = {}
+        prompts = [("车牌号码", "粤A12345"), ("车辆名称", "家用轿车"), ("日期", date.today().isoformat()),
+                   ("里程公里", "0"), ("费用类别", "保养"), ("项目/事项", "常规保养"),
+                   ("服务商", ""), ("金额元", "0"), ("下次提醒日期", ""), ("备注", "")]
+        for field, default in prompts:
+            initial = existing.get(field, default) if existing else default
+            value = simpledialog.askstring(title, field, initialvalue=str(initial), parent=self)
+            if value is None:
+                return None
+            values[field] = value
+        return values
+
+    def edit_record(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showinfo("编辑记录", "请先选择一条车辆记录。")
+            return
+        record_id = selected[0]
+        existing = next((row for row in self.store.rows if row["记录编号"] == record_id), None)
+        if existing is None:
+            messagebox.showerror("编辑失败", "所选记录已不存在，请刷新列表。")
+            return
+        values = self._record_dialog("编辑车辆记录", existing)
+        if values is None:
+            return
+        try:
+            self.store.update(record_id, values)
+            self.refresh()
+        except (OSError, ValueError) as exc:
+            messagebox.showerror("保存失败", str(exc))
+
+    def delete_record(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showinfo("删除记录", "请先选择一条车辆记录。")
+            return
+        record_id = selected[0]
+        if not messagebox.askyesno("确认删除", "删除后无法自动撤销。建议先备份。确定删除所选车辆记录吗？"):
+            return
+        try:
+            self.store.delete(record_id)
+            self.refresh()
+        except (OSError, ValueError) as exc:
+            messagebox.showerror("删除失败", str(exc))
 
     def import_csv(self):
         path = filedialog.askopenfilename(filetypes=[("CSV 文件", "*.csv")])

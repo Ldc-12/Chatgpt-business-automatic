@@ -193,3 +193,36 @@ def test_category_summary_and_listing_text_do_not_expose_private_floor():
 
 def test_self_test_runs_without_gui():
     module.self_test()
+
+def test_analysis_csv_exports_calculated_prices_and_protects_formula_text(tmp_path):
+    store = module.PriceStore(tmp_path / "items.json")
+    store.add(sample(**{
+        "商品名称": "=HYPERLINK(\"https://bad.example\",\"click\")",
+        "备注": "@SUM(1,2)",
+    }))
+    path = tmp_path / "analysis.csv"
+    store.export_analysis_csv(path, as_of=date(2026, 11, 17))
+
+    raw = path.read_bytes()
+    assert raw.startswith(bytes.fromhex("efbbbf"))
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        row = next(reader)
+    assert row["建议标价(元)"] == "670.00"
+    assert row["最低接受价(元)"] == "540.91"
+    assert row["标价预计净利润(元)"] == "227.80"
+    assert row["规则版本"] == "XY-USED-PRICE-2026.11"
+    assert row["商品名称"].startswith("'=")
+    assert row["备注"].startswith("'@")
+
+
+def test_analysis_csv_empty_store_still_has_stable_headers(tmp_path):
+    store = module.PriceStore(tmp_path / "items.json")
+    path = tmp_path / "empty-analysis.csv"
+    store.export_analysis_csv(path, as_of=date(2026, 11, 17))
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        assert "最低接受价(元)" in reader.fieldnames
+        assert "标价预计净利润(元)" in reader.fieldnames
+        assert list(reader) == []
+

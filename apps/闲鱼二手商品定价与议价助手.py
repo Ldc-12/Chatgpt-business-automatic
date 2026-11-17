@@ -34,6 +34,7 @@ class App:
         actions = [
             ("新增商品", self.add), ("编辑商品", self.edit), ("删除商品", self.delete),
             ("导入 CSV", self.import_csv), ("导出 CSV", self.export_csv),
+            ("导出分析 CSV", self.export_analysis_csv),
             ("定价分析", self.analyze), ("复制上架文案", self.copy_listing),
             ("品类汇总", self.summary), ("备份", self.backup), ("恢复备份", self.restore),
         ]
@@ -181,6 +182,21 @@ class App:
                 messagebox.showinfo("导出完成", "CSV 已保存为 UTF-8 BOM 格式")
             except OSError as exc:
                 messagebox.showerror("导出失败", str(exc))
+
+    def export_analysis_csv(self):
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("定价分析 CSV", "*.csv")],
+        )
+        if path:
+            try:
+                self.store.export_analysis_csv(path)
+                messagebox.showinfo(
+                    "导出完成",
+                    f"已导出 {len(self.store.rows)} 条定价分析。报告包含最低接受价和利润底线，请勿直接发给买家。",
+                )
+            except (ValueError, OSError) as exc:
+                messagebox.showerror("分析导出失败", str(exc))
 
     def analyze(self):
         item_id = self.selected_id()

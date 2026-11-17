@@ -144,7 +144,7 @@ def calculate_tile_quantity(
         raise ValueError("每箱片数必须是正整数")
     tile_area = length * width / Decimal("1000000")
     required = _ceil_decimal(area * (Decimal("1") + waste / Decimal("100")) / tile_area)
-    boxes = math.ceil(required / int(per_box))
+    boxes = _ceil_decimal(Decimal(required) / per_box)
     purchased = boxes * int(per_box)
     purchased_area = tile_area * purchased
     return {

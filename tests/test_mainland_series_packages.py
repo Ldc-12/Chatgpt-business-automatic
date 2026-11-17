@@ -20,11 +20,11 @@ def _make_inputs(tmp_path):
     return release, manuals, output
 
 
-def test_series_catalog_covers_all_27_products_once():
+def test_series_catalog_covers_all_28_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 27
-    assert len(assigned) == 27
+    assert len(MODULE.PRODUCTS) == 28
+    assert len(assigned) == 28
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "27 款业务软件 + 工具箱启动器" in catalog
+    assert "28 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -138,6 +138,12 @@ def test_contract_project_series_contains_renovation_material_takeoff():
     assert MODULE.PRODUCTS["renovation-materials"][1] == "MainlandRenovationMaterialsAssistant.exe"
     assert MODULE.PRODUCTS["renovation-materials"][2] == "26-装修材料用量与预算核算助手-用户说明书.md"
 
+
+def test_finance_series_contains_xianyu_used_goods_pricing_assistant():
+    finance = next(item for item in MODULE.SERIES if item["code"] == "C")
+    assert "xianyu-used-pricing" in finance["products"]
+    assert MODULE.PRODUCTS["xianyu-used-pricing"][1] == "MainlandXianyuUsedPricingAssistant.exe"
+    assert MODULE.PRODUCTS["xianyu-used-pricing"][2] == "28-闲鱼二手商品定价与议价助手-用户说明书.md"
 
 
 def test_finance_series_contains_xianyu_order_profit_assistant():

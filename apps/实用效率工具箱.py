@@ -19,6 +19,8 @@ TOOLS = [
     ("门店食品安全巡检与整改闭环助手", "MainlandFoodSafetyInspectionAssistant.exe"),
     ("供应商采购比价助手", "MainlandPurchaseCompare.exe"),
     ("供应商对账与应付账龄管理助手", "MainlandSupplierAPAging.exe"),
+    ("闲鱼订单利润与售后成本核算助手", "MainlandXianyuProfitAssistant.exe"),
+    ("闲鱼二手商品定价与议价助手", "MainlandXianyuUsedPricingAssistant.exe"),
     ("报价单生成器", "MainlandQuotationGenerator.exe"),
     ("费用报销管理助手", "MainlandExpenseReimbursement.exe"),
     ("售后维修工单管理助手", "MainlandRepairWorkOrderManager.exe"),
@@ -31,7 +33,6 @@ TOOLS = [
     ("设备维保巡检与保养计划助手", "MainlandEquipmentMaintenanceAssistant.exe"),
     ("车辆维保与费用台账助手", "MainlandVehicleMaintenanceLedger.exe"),
     ("门店日结与收银差异核对助手", "MainlandStoreCashClose.exe"),
-    ("闲鱼订单利润与售后成本核算助手", "MainlandXianyuProfitAssistant.exe"),
 ]
 
 
@@ -47,7 +48,7 @@ def application_directory():
 
 
 def self_test():
-    assert len(TOOLS) == 27
+    assert len(TOOLS) == 28
     names = [name for name, _ in TOOLS]
     exes = [exe for _, exe in TOOLS]
     assert len(set(names)) == len(names)

@@ -20,11 +20,11 @@ def _make_inputs(tmp_path):
     return release, manuals, output
 
 
-def test_series_catalog_covers_all_25_products_once():
+def test_series_catalog_covers_all_26_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 25
-    assert len(assigned) == 25
+    assert len(MODULE.PRODUCTS) == 26
+    assert len(assigned) == 26
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "25 款业务软件 + 工具箱启动器" in catalog
+    assert "26 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -129,3 +129,11 @@ def test_finance_series_contains_supplier_ap_aging_assistant():
     assert "supplier-ap" in finance["products"]
     assert MODULE.PRODUCTS["supplier-ap"][1] == "MainlandSupplierAPAging.exe"
     assert MODULE.PRODUCTS["supplier-ap"][2] == "25-供应商对账与应付账龄管理助手-用户说明书.md"
+
+
+
+def test_contract_project_series_contains_renovation_material_takeoff():
+    project_series = next(item for item in MODULE.SERIES if item["code"] == "D")
+    assert "renovation-materials" in project_series["products"]
+    assert MODULE.PRODUCTS["renovation-materials"][1] == "MainlandRenovationMaterialsAssistant.exe"
+    assert MODULE.PRODUCTS["renovation-materials"][2] == "26-装修材料用量与预算核算助手-用户说明书.md"

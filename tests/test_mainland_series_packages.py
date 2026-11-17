@@ -157,6 +157,6 @@ def test_static_series_catalog_lists_each_business_product_once():
     catalog_path = Path(__file__).resolve().parents[1] / "docs" / "MAINLAND_SERIES_PACKAGES.md"
     catalog = catalog_path.read_text(encoding="utf-8")
     for name, _, _ in MODULE.PRODUCTS.values():
-        assert catalog.count(f"- {name}\\n") == 1, name
+        assert catalog.count(f"- {name}\n") == 1, name
     assert "| C | 财务与交易系列 | 7 |" in catalog
     assert "| F | 全系列综合套餐 | 28 款业务软件 + 工具箱启动器 |" in catalog

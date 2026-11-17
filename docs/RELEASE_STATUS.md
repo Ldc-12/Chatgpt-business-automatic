@@ -1315,3 +1315,37 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - [ABE run #433](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43418203059)，head SHA `86551c1797ad97520a3e5286d0317501f756dd8f`，build/deploy 2/2 success。
 - build job #131861313381：`325 passed in 1.86s`，生成 12 个产品页面和 12 个闲鱼目录条目；`error: null`，没有外部 API fallback。
 - Pages artifact ID `14032637487`，47,775 bytes；已下载核验，ZIP CRC 通过，内部 TAR 198 个条目、17 个 product.json、12 个 listing.txt；deploy success。
+
+
+## 2026-11-17 main run #430 客户包复核、PR #75 二手定价工具候选验收
+
+### 当前主线与未完成 PR
+- 当前 main HEAD：`1aff73c9534f495064824fcf71d8af2fff1e37d9`（提交说明：Add offline Xianyu order profit and after-sales assistant）。
+- 当前 open PR：1 个，PR [#75 Add offline Xianyu second-hand pricing and negotiation assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/75)，分支 `feat/xianyu-used-goods-pricing-20261117`，head `5c18230c4dbdeaa085d17873e22dbc8f2b9f2216`。PR 可合并性为 true，但截至本记录仍为 open / not merged；因此其候选包不得作为 main 正式包引用。
+- PR #75 新增离线“闲鱼二手商品定价与议价助手”：规则集 `XY-USED-PRICE-2026.11`，按品类/使用月数/成色给出透明估值；可选手工输入同类成交中位价，模型估值 40% + 手工样本 60%；把购入成本、整备、包装运费、售后预留、平台固定费、费率和目标利润计入最低接受价，再按议价空间给建议标价。支持本地 JSON 持久化、CSV 导入导出、SHA256 备份恢复、上架文案复制。规则系数仅为可解释的初始参考，不是闲鱼官方估价、实时行情或成交保证；不登录闲鱼、不抓取、不自动发布、不连接外部 AI。
+- PR #75 Windows 候选 run #434：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44075602983)，29/29 jobs success（28 款业务工具 + 工具箱启动器构建及客户包 job）；新定价工具 job #134012720315：`103 passed in 2.16s`、`SELF_TEST_OK`、`FROZEN_EXE_SELF_TEST_OK`，退出码 0。客户包 job #134013958151 完成预上传检查、上传、重新下载和复检，日志有两次 `MAINLAND_PACKAGE_INSPECTION_OK`，重下载 SHA256 与上传值一致；分片检查 `MAINLAND_PACKAGE_CHUNKING_OK parts=23 bytes=469617838`。
+- PR #75 候选客户包 artifact ID `14324712085`（469,752,344 bytes）；内层 ZIP 469,617,838 bytes，SHA256 `7182d4eec2e225fa0728d3571e8c4b844f99755a1735dafdac008a2dce71533b`，CRC 通过；64 个条目（62 个文件、2 个目录），29 个 EXE（28 款业务工具 + 启动器）、29 份逐款中文说明书（含工具箱说明书），另有说明书索引、README、分类目录、套餐说明和 inspection JSON。Manifest artifact `14324806883`；分类套餐 artifact `14325211527`，A/B/C/D/E 分别 5/9/7/4/3 款，每包 CRC 通过。候选套餐目录已把原来 C 系列重复的“闲鱼订单利润与售后成本核算助手”更正为新增的“闲鱼二手商品定价与议价助手”。
+- PR #75 候选产品、测试、说明书、启动器入口、产品 ID/授权路径和套餐计数均已纳入 Windows 矩阵；候选包已真实下载检查，未合并前不得当作正式 main 客户包。
+
+### PR #75 前序失败记录与修复结果
+- run #431（PR #75 较早提交）失败日志定位到共享测试 `tests/test_mainland_packaging.py::test_every_standalone_delivery_zip_has_its_matching_chinese_manual`：新增说明书后实际数量为 29，旧断言仍写 28（1 failed / 79 passed）。PR #75 已更新相关期望数量；最终 run #434 29/29 jobs success。
+- run #427 的共享客户包检查测试夹具仍构造 26 个 EXE，却以 28 个为预期，导致 `EXE 数量不符：期望 28，实际 26`，后续错误匹配断言也随之失败。PR #75 更新了包装/检查器测试夹具，最终候选包重新检查通过。
+- run #425 的闲鱼订单利润工具曾有回归：`test_repeated_same_sku_lines_in_one_order_count_once` 断言 60.00，实际 40.00。后续修复已进入 main；合并后 main run #430 的该产品 job #133799291962 为 `97 passed in 0.90s`，源码自测及冻结 EXE 自测均通过。
+
+### 最新 main Mainland Windows EXE run #430（当前唯一 main 客户包来源）
+- [Mainland Windows EXE run #430](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44011488966)，head SHA 与 main 一致，29/29 jobs success（28 个 EXE 构建 job + 1 个客户交付包 job），无失败 job。
+- 供应商应付账龄 job #133799291614：`108 passed in 4.38s`，冻结 EXE 自测成功；闲鱼订单利润 job #133799291962：`97 passed in 0.90s`，源码与冻结 EXE 自测成功。客户包 job #133800372927 的预上传检查、上传、重下载、CRC/SHA256 复检及分片生成均成功；上传后重下载 SHA256 与上传值一致，`MAINLAND_PACKAGE_INSPECTION_OK` 两次出现，`MAINLAND_PACKAGE_CHUNKING_OK parts=22 bytes=454846142`。
+- 最新 main 客户包 artifact `mainland-phase1-customer-package` ID `14296648036`，454,976,893 bytes；外层 ZIP SHA256 `26edbe64e06ec62583194f4bc5551d77df63bc5aea3e42fe6c3d281b2c1c097a`，ZIP CRC 通过。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：454,846,142 bytes；SHA256 `8a51f6cb8ff0ef509e010791dd0dfb58dfd65b6ac3cf98e2e7f149571b512200`；内层 ZIP CRC 通过，62 个条目（60 个文件、2 个目录），28 个 EXE（27 款业务工具 + 工具箱启动器）、28 份逐款中文说明书，另有 1 份说明书索引、1 份 README、1 份分类套餐目录、1 份套餐说明和 1 份 inspection JSON。内层文件时间戳统一为 2026-11-17 03:40:50 UTC（北京时间 11:40:50）；artifact 创建时间 03:41:14 UTC（北京时间 11:41:14）。
+- Manifest artifact ID `14297675001`，2,499 bytes；声明内层 ZIP 为 454,846,142 bytes、SHA256 `8a51f6cb8ff0ef509e010791dd0dfb58dfd65b6ac3cf98e2e7f149571b512200`、CRC passed、62 entries、28 EXE、28 manuals，与下载文件一致。
+- 分类套餐 artifact ID `14297221083`，440,297,238 bytes；外层 CRC 通过，五个系列 ZIP 均已单独解压检查并 CRC 通过：A 办公效率 5 EXE/5 说明书；B 门店经营 9/9；C 财务与交易 6/6；D 合同工程物业 4/4；E 客户与个人事务 3/3。建议价仍是待市场验证价格，不是成交数据。
+- **发现一个已知目录文案缺陷：**当前 main 客户包中的 `package/分类套餐目录.md`，C 系列清单重复列出“闲鱼订单利润与售后成本核算助手”，而没有正确列出六款中的唯一项；C 系列实际 ZIP 本身为 6 款且 CRC 正常。PR #75 已修正文案并把新增二手定价工具纳入 C 系列；需待 PR #75 合并后重新生成 main 客户包，才能让主包目录与真实套餐一致。不得用 PR 候选包替代当前 main 包。
+
+### 最新 Autonomous Business Engine run #473
+- [ABE run #473](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44042667124)，main HEAD `1aff73c9534f495064824fcf71d8af2fff1e37d9`，build/deploy 2/2 success。
+- build job #133900749787：`542 passed in 3.46s`，机会数据字段 `error: null`，未触发外部 API fallback。Pages artifact ID `14309902533`，47,785 bytes；已下载核验，ZIP CRC 通过，内部 TAR 198 个条目，其中 17 个 `product.json`、12 个 `listing.txt`；deploy job #133900903850 成功。
+
+### 授权与销售验收（仍未解除）
+- 当前 main 的 `src/license.py` 内嵌 Ed25519 公钥与 `config/mainland_license_public_key.pem` 仍不同：内嵌公钥 DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；配置公钥 DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。
+- 未读取、上传、猜测、生成、替换或轮换任何生产私钥/公钥。PR #75 只新增产品路径和测试，不改生产密钥。
+- **当前 main 客户包及 PR #75 候选包均为“待最终验收”，不是可正式销售版。**还未在可信真实 Windows 电脑完成卖家公钥匹配、真实授权签发/激活、退出重启后复验，以及逐款 GUI/数据流程验收。最终只需用户在可信 Windows 电脑用本机原有私钥导出公钥 PEM 或 SHA256 指纹供比对；绝不上传私钥。

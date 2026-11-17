@@ -6,6 +6,7 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 from pathlib import Path
 from uuid import uuid4
 from datetime import date
+from decimal import Decimal
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
@@ -76,7 +77,7 @@ class App:
                 calc["实际金额(元)"], calc["实际与预算差额(元)"],
             ]
             self.tree.insert("", "end", iid=row["记录编号"], values=values)
-        total = sum(float(calculate_material(row)["预算金额(元)"]) for row in self.store.rows)
+        total = sum((Decimal(calculate_material(row)["预算金额(元)"]) for row in self.store.rows), Decimal("0"))
         self.status.set(
             f"材料记录：{len(self.store.rows)} 条｜预算合计：¥{total:,.2f}｜"
             f"数据保存在本机：{self.store.path}"

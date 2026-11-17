@@ -163,3 +163,25 @@ def test_project_summary_separates_projects_and_actual_cost_variance():
 
 def test_self_test_runs_without_gui():
     module.self_test()
+
+
+
+@pytest.mark.parametrize(
+    "overrides, message",
+    [
+        ({"净用量": "1000000001"}, "超出支持范围"),
+        ({"单价(元/单位)": "1e1000"}, "超出支持范围"),
+        ({"包装规格": "9" * 65}, "输入过长"),
+        ({"净用量": "1e-1000"}, "精度范围|小于 0.001"),
+    ],
+)
+def test_extreme_material_numbers_fail_as_validation_errors(overrides, message):
+    with pytest.raises(ValueError, match=message):
+        module.normalize_material_row(sample(**overrides))
+
+
+def test_calculators_reject_unbounded_numeric_inputs():
+    with pytest.raises(ValueError, match="超出支持范围"):
+        module.calculate_tile_quantity("1e1000", "600", "600")
+    with pytest.raises(ValueError, match="超出支持范围"):
+        module.calculate_paint_liters("50", 2, "1e1000", "10")

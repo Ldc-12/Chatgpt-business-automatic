@@ -151,3 +151,12 @@ def test_finance_series_contains_xianyu_order_profit_assistant():
     assert "xianyu-profit" in finance["products"]
     assert MODULE.PRODUCTS["xianyu-profit"][1] == "MainlandXianyuProfitAssistant.exe"
     assert MODULE.PRODUCTS["xianyu-profit"][2] == "27-闲鱼订单利润与售后成本核算助手-用户说明书.md"
+
+
+def test_static_series_catalog_lists_each_business_product_once():
+    catalog_path = Path(__file__).resolve().parents[1] / "docs" / "MAINLAND_SERIES_PACKAGES.md"
+    catalog = catalog_path.read_text(encoding="utf-8")
+    for name, _, _ in MODULE.PRODUCTS.values():
+        assert catalog.count(f"- {name}\\n") == 1, name
+    assert "| C | 财务与交易系列 | 7 |" in catalog
+    assert "| F | 全系列综合套餐 | 28 款业务软件 + 工具箱启动器 |" in catalog

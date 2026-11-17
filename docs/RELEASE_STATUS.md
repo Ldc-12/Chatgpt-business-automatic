@@ -1,3 +1,47 @@
+# 2026-11-17 当前核验快照：main HEAD a489453，闲鱼利润助手 PR #73 待验收
+
+## 当前主线与开放 PR
+- 当前 main HEAD：`a4894538f63833de3a0656ab0c7850b6b7ef4c99`（[commit](https://github.com/Ldc-12/Chatgpt-business-automatic/commit/a4894538f63833de3a0656ab0c7850b6b7ef4c99)）。
+- PR [#70 装修材料用量与预算核算助手](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/70) 已合并，产品提交 `007481203f83558170033e42c505ca03dd2086bf`。
+- PR [#72 装修材料极端数值输入校验](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/72) 已合并；main 最新提交 `a4894538f63833de3a0656ab0c7850b6b7ef4c99` 增加金额/数量范围、文本长度、舍入精度校验及回归测试。
+- 当前开放 PR：[#71 本发布记录更新](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/71)；[#73 闲鱼订单利润与售后成本核算助手](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/73)。PR #71 原始记录基于旧 main `0074812`，本次将其内容刷新为当前 main 快照；PR #73 基于当前 main `a489453`。
+
+## Mainland Windows EXE：可直接核实的 run 与包来源
+
+### Main run #420：已验证，但早于 PR #72
+- [Actions run #420](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44004336734)，run ID `44004336734`，head SHA `007481203f83558170033e42c505ca03dd2086bf`，27/27 jobs success（26 个 Windows EXE 矩阵任务 + 1 个客户包任务），无失败 job。
+- 装修材料工具 job `133775851160`：92 passed、`SELF_TEST_OK`、PyInstaller 6.22.3 构建成功、`FROZEN_EXE_SELF_TEST_OK` 退出码 0。
+- 客户包 artifact `mainland-phase1-customer-package` ID `14294540015`，440,180,965 bytes；artifact digest `sha256:ba25de8f358dd04578a06f5a5856749ae3ebd9f9e93059af227d63941bbd548d`。内层 `Phase1-Mainland-Windows-Tools.zip` 为 440,054,658 bytes，SHA256 `38c47ce2271c904460ae5f0621f0b7f1efaa483fe3c7f04c9438e10de99b19da`，ZIP CRC passed，60 条目（58 文件），27 EXE、27 份逐款说明书；时间戳统一为 2026-11-17 02:40:04 UTC。Manifest artifact ID `14294550004`；parts artifact ID `14294405075`，21 parts。上传后重新下载复检逐字节一致。
+- 该包对应 PR #72 合并前的产品代码提交 `0074812`，**不是当前 main HEAD `a489453` 的发行包**，不得用它代表当前主线版本。
+
+### PR run #421：PR #72 的候选包，不是 main 正式包
+- [Actions run #421](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44006174922)，run ID `44006174922`，PR #72 head `482551f107fb6b9cdb6d23dcb2fc8bf143cbecf1`，27/27 jobs success，无失败 job。
+- 装修材料工具 job `133781972184`：97 passed、`SELF_TEST_OK`、PyInstaller 6.22.3 构建成功、冻结 EXE 自测退出码 0。单品 artifact ID `14294158429`，29,611,583 bytes，ZIP CRC passed；内层交付 ZIP SHA256 `1fd6a87f17aa47454b852b921cfec277d1c6d710f3da02fcb497768921245647`，含 1 个 EXE、1 份中文说明书。
+- 候选客户包 artifact ID `14294537496`，440,181,181 bytes，artifact digest `sha256:db553fa200538bcc5039e22cf4cd88d73f6ecccd88f354f93a47da82d1fa9a20`。内层 ZIP 440,055,221 bytes，SHA256 `c729e6689af68a69ef425bc6c93c32b197f0128a08cbe8835a1a839d738ce99d`，CRC passed；60 条目（58 文件）、27 EXE、27 份说明书；时间戳统一为 2026-11-17 02:55:34 UTC。A–F 套餐说明完整，建议价分别 29.9/29.9/29.9/29.9/19.9/39.9 元；上传后重新下载复检逐字节一致。Manifest artifact ID `14293354760`，parts artifact ID `14293409426`（21 parts），series artifact ID `14294377573`。这些是 PR 候选产物，不能冒充 post-merge main 包。
+
+### 当前 main post-merge 包的验证缺口
+- 当前可用 GitHub 查询可读取 PR 触发的 workflow runs；`fetch_commit_workflow_runs` 对 main commit `a489453` 未返回 push/schedule run，commit combined status 也未返回状态项。无法在本次连接器能力内独立取得 PR #72 合并后的 main push run #422 的 artifact ID / job 日志。
+- 因此 run #420 的 27-EXE 包和 PR run #421 的候选包都不能替代当前 main 发布包。**当前 main 的 post-merge Windows 客户包仍标记为未独立验证**；不猜测 run ID，不用候选包冒充正式发行包。
+
+## 闲鱼订单利润与售后成本核算助手：PR #73
+- PR [#73](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/73) 新增离线订单/SKU 台账、实收/退款/成本/包装/物流/推广/补偿/退货运费/回收价值核算、按订单费率估算平台费用（实际费用优先）、月度/SKU 汇总、保本售价、CSV、原子本地 JSON、SHA256 备份恢复及中文说明书；不登录、抓取或自动操作闲鱼。
+- PR run #423：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44007679155)，head `f65fd2de28c3137d4fd8fd982ab984e94f0cd92e`，28/28 jobs success。闲鱼利润工具 job `133786832051`：95 passed in 0.95s、`SELF_TEST_OK`、PyInstaller 6.22.3 build success、`FROZEN_EXE_SELF_TEST_OK` 退出码 0。
+- PR #73 run #423 客户包 artifact ID `14294254795`，454,978,699 bytes，artifact digest `sha256:2ee7a8ea4acc4cb05831db12054c3a5e5399e166947e79448a2ed5f678c71bf9`；内层 ZIP 454,848,240 bytes，SHA256 `57a66ece5736b78d03099348b8e5cb1034fc813015f7da92802aad6f3330733d`，CRC passed，28 EXE、28 份说明书；A–F 套餐描述完整，时间戳 2026-11-17 03:08:30 UTC，22 个分片，上传后重新下载逐字节一致。该包对应较早 PR head，不是当前最新 PR head 的包。
+- 对产品逻辑复核时发现月度订单数、售后订单数和 SKU 订单数此前按明细行计数；同一闲鱼订单拆成多条 SKU 行时会重复计数。已在 PR #73 中修正为按订单编号去重，同时保留每条明细金额求和；说明书同步澄清，并增加多 SKU 同订单及同 SKU 重复行回归测试。
+- 新提交 `ec4b5cbcf140d65a83061f834ea0a7df7db4ceae` 修正新增测试夹具：首轮 run #425 的闲鱼工具 job `133791043420` 为 96 passed / 1 failed，失败原因是测试仍继承样例默认退款 10 元，却断言净收入为 60 元；不是汇总实现失败。已显式将两行退款设为 0，触发下一轮 Windows 验证；截至本记录更新时，尚未取得该新提交的完整 Windows run 结果。PR #73 不得合并。
+
+## Autonomous Business Engine（ABE）
+- 最近可直接核实的 ABE run #470：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44004336579)，run ID `44004336579`，head SHA `007481203f83558170033e42c505ca03dd2086bf`；build/deploy 2/2 success，build job `133775849406` 为 515 passed in 3.57s，机会数据步骤 `error: null`。
+- Pages artifact ID `14293134279`，47,788 bytes，SHA256 `c6c9bad2142673ba5e71fdfffe754f39d8311d834e7b09e6a711b54cad5d8130`；已下载，ZIP CRC passed；内部 TAR 198 条目（152 文件），17 个 product.json、12 个 listing.txt。
+- run #470 对应旧 main `0074812`。当前连接器不能列出后续 main push/schedule ABE runs，因此 #470 只称“最近可直接核实的 ABE 记录”，不宣称它一定是当前最新 ABE run。
+
+## 授权与最终销售验收
+- `src/license.py` 内嵌 Ed25519 公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，仍不一致。
+- 未创建、猜测、上传、替换或轮换卖家私钥/生产公钥。授权代码路径、产品 ID 和签名验证测试可继续，但不能用假密钥绕过。
+- 真实 Windows GUI/use flow、卖家公钥匹配、真实授权签发/激活及退出重启后持续有效性仍待验收。所有 release 继续标记为 **pending final acceptance**；CI 冻结 EXE 自测不等于真实用户 GUI/授权验收。
+
+---
+
 # 2026-11-16 main HEAD 3c821e5：供应商应付账龄历史口径修复与发布复核
 
 ## 当前主线与 PR 状态

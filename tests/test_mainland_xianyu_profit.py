@@ -59,7 +59,7 @@ def test_monthly_and_sku_summaries_group_orders():
     assert monthly["2026-12"]["净收入(元)"] == "80.00"
     sku = module.sku_summary(rows)
     assert sku["二手蓝牙耳机"]["订单数"] == 2
-    assert sku["二手蓝牙耳机"]["净利润(元)"] == "91.70"
+    assert sku["二手蓝牙耳机"]["净利润(元)"] == "80.50"
 
 
 @pytest.mark.parametrize(

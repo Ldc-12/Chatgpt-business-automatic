@@ -1,3 +1,40 @@
+# 2026-11-17 main 产品提交 17bcb568：闲鱼定价分析导出与主线客户包复核
+
+## 当前主线与 PR
+- 本次产品代码复核基线：main merge commit `17bcb568e017b41d2afb7a514c432143e9f36db3`；PR [#77 Add bulk pricing analysis CSV export to Xianyu assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/77) 已 squash 合并；本次检查 open PR=0。
+- PR #77 为“闲鱼二手商品定价与议价助手”增加“导出分析 CSV”：保留原始 CSV 导入模板不变，另行导出折旧模型估值、估值基准、建议标价、最低接受价、预计净利润和净利率；UTF-8 BOM；对商品名称、备注、估值口径等文本做表格公式注入防护。报告包含卖家成本和最低接受价，说明书明确提示不得直接发给买家。
+- PR #77 Windows 候选 run #438：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44081251744)，30/30 jobs success；新产品 job `134032119190`：106 passed、`SELF_TEST_OK`、`FROZEN_EXE_SELF_TEST_OK`。候选客户包 artifact `14326658176` 已下载核验，包含 29 EXE、29 份逐款说明书，新说明书已包含批量分析导出章节。该包仅为 PR 候选包，不作为主线正式包。
+
+## 最新 Mainland Windows EXE 主线构建
+- main push run #439：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44082046996)，head SHA 与产品代码 merge commit 一致，30/30 jobs success、0 failed（29 个 Windows EXE 构建 job + 1 个客户包 job）。
+- 闲鱼定价工具 job `134034826656`：106 passed in 2.05s；源码自检 `SELF_TEST_OK`；PyInstaller 构建成功；冻结 EXE 自检 `FROZEN_EXE_SELF_TEST_OK`，进程退出码 0。
+- 客户包 job `134036153673`：系列 ZIP 构建、客户 ZIP 检查、上传、重新下载复检、分片与 manifest 全部 success；日志明确记录两次 `MAINLAND_PACKAGE_INSPECTION_OK`、`POST_UPLOAD_PACKAGE_REDOWNLOAD_OK` 和 `MAINLAND_PACKAGE_CHUNKING_OK parts=23`。上传后重新下载包与已检查 ZIP 字节一致。
+
+## 最新 main 正式客户包：run #439，已下载并独立核验
+- `mainland-phase1-customer-package` artifact ID `14327608229`，469,755,677 bytes；外层 SHA256 `4013da4ba169896c2301f64d920e82eb9ea436d876159d96dd144527841b7a7c`；外层 ZIP CRC passed。外层仅 3 项：内层客户 ZIP、inspection JSON、`README-大陆版.md`。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：469,621,546 bytes；SHA256 `03a79ef455da3b017d0cba0f14d5846df35e4ce3cef12b18a583df31ddb22d5d`；CRC passed；64 个条目（62 个文件、2 个目录），29 个 EXE（28 款业务软件 + 工具箱启动器），29 份逐款中文说明书，另含说明书索引 README、主 README、套餐说明和分类套餐目录。内层文件时间戳统一为 `2026-11-17 12:22:28 UTC`（北京时间 20:22:28）。
+- 实际文件清单已逐项读取；确认包含 `MainlandXianyuUsedPricingAssistant.exe`（15,054,143 bytes）及 `28-闲鱼二手商品定价与议价助手-用户说明书.md`。说明书已写入批量分析 CSV 的用途、字段、公式注入防护和“最低接受价/成本数据不可直接发送给买家”的提醒。
+- A–F 套餐说明已核对：A 办公效率 5 款/29.9 元；B 门店经营 9 款/29.9 元；C 财务与交易 7 款/29.9 元；D 合同工程物业 4 款/29.9 元；E 客户与个人事务 3 款/19.9 元；F 全系列 28 款业务软件 + 工具箱启动器/39.9 元。以上均为待市场验证建议价，不是实际成交价。
+- `mainland-phase1-series-packages` artifact ID `14326924070`，455,079,457 bytes；外层 CRC passed。A–E 五个独立 ZIP 均已解压并检查 CRC：A 5 EXE/5 说明书、B 9/9、C 7/7、D 4/4、E 3/3。
+- Manifest artifact ID `14328117198`，2,530 bytes；ZIP CRC passed。其声明内层 ZIP 大小 469,621,546 bytes、SHA256 `03a79ef455da3b017d0cba0f14d5846df35e4ce3cef12b18a583df31ddb22d5d`，与实际下载内层 ZIP 完全一致。
+- 分片 artifact ID `14326974394`，469,625,570 bytes；23 个分片、单片最大 20 MiB。已逐片下载、按文件名排序重组，重组结果与内层 ZIP 字节完全一致，SHA256 也一致。
+
+## 最新 Autonomous Business Engine
+- main push run #478：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44082046909)，head SHA `17bcb568e017b41d2afb7a514c432143e9f36db3`，build/deploy 2/2 success。
+- build job `134034824368`：570 passed in 3.12s；生成 12 个产品页和 12 个闲鱼目录条目；生成结果 `error: null`。deploy job `134035116408` 成功。
+- Pages artifact ID `14327112332`，47,266 bytes，SHA256 `fc03a163fb62d18eab79f44950072bf7950576141ef913f429182d8165052df2`；已下载核验，外层 ZIP CRC passed，内部 TAR 198 个条目（17 个 `product.json`、12 个 `listing.txt`）。
+
+## 失败日志复盘与修复状态
+- 旧 run #431 的代表性失败日志位于 job `134010848071`：`tests/test_mainland_packaging.py::test_every_standalone_delivery_zip_has_its_matching_chinese_manual`，断言仍期望 28，实际已有 29 份逐款说明书。PR #76 已更新数量和索引顺序；后续 run #436、#438、#439 均通过。
+- 旧 run #427 的代表性失败日志位于 job `133795967770`：定价测试期望 `671.00`，实际规则结果为 `670.00`；另有旧客户包夹具仍期望 28 个 EXE、实际 26 个，导致后续断言被前置数量错误遮蔽。PR #75 更新了定价预期及包装测试夹具；PR #75/#76 合并后的 run #437、#438、#439 均成功。
+- 本次 run #439 未发现失败 job；没有把旧失败记录误报为当前仍失败。
+
+## 授权与最终销售验收（仍阻塞）
+- 当前 main `src/license.py` 内嵌 Ed25519 公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，仍不一致。
+- PR #77 未改动任何授权密钥；本轮也未猜测、生成、替换、轮换或上传生产私钥/公钥。现有 `tests/test_mainland_license.py` 继续覆盖临时测试密钥签发/客户端验签、签名篡改、过期、产品 ID/授权路径和公钥导出指纹。
+- 真实 Windows GUI 全流程、卖家公钥匹配、真实授权签发/激活、退出重启后持续有效性仍待最终验收。最终只需用户在可信 Windows 电脑使用本地原有私钥导出公钥 PEM 或 SHA256 指纹；绝不上传私钥。未完成前所有软件仍标记为待最终验收，不得宣称正式可销售。
+
+---
 # 2026-11-16 main HEAD 3c821e5：供应商应付账龄历史口径修复与发布复核
 
 ## 当前主线与 PR 状态

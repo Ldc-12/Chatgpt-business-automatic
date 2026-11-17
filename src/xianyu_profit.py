@@ -105,7 +105,13 @@ def normalize_order_row(row: dict) -> dict:
     rate = Decimal("0") if rate is None else rate
     if rate < 0 or rate >= 100:
         raise ValueError("平台费率必须在 0–100% 之间，且小于 100%")
-    result["平台费率(%)"] = format(rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP), "f")
+    try:
+        rounded_rate = rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    except InvalidOperation as exc:
+        raise ValueError("平台费率超出支持精度范围") from exc
+    if rate > 0 and rounded_rate <= 0:
+        raise ValueError("平台费率小于 0.01%，无法准确核算")
+    result["平台费率(%)"] = format(rounded_rate, "f")
 
     if Decimal(result["售后退款(元)"]) > Decimal(result["买家实付金额(元)"]):
         raise ValueError("售后退款不能超过买家实付金额")

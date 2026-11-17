@@ -1315,3 +1315,59 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - [ABE run #433](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43418203059)，head SHA `86551c1797ad97520a3e5286d0317501f756dd8f`，build/deploy 2/2 success。
 - build job #131861313381：`325 passed in 1.86s`，生成 12 个产品页面和 12 个闲鱼目录条目；`error: null`，没有外部 API fallback。
 - Pages artifact ID `14032637487`，47,775 bytes；已下载核验，ZIP CRC 通过，内部 TAR 198 个条目、17 个 product.json、12 个 listing.txt；deploy success。
+
+
+## 2026-11-16 PR #68 / main run #415 — latest verified 26-tool customer package
+
+### Mainline provenance and Windows build
+- PR [#68 Fix historical supplier AP aging cutoff](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/68) was merged at 2026-11-16 12:24:55 UTC. The Windows release workflow built code commit `3c821e519a473ab7b3930129d360d3230e4ee64c` (supplier AP historical payment cutoff fix).
+- PR [#69 Update release status after PR #68 Windows validation](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/69) was merged at 2026-11-16 12:28:08 UTC. Main HEAD at this verification: `60bc4949f4a08baad067cf60cb2277dd423415bc` (documentation/status commit; the package's EXE content is from the Windows-validated code commit above).
+- Mainland Windows EXE run #415: [Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43866359514), run ID `43866359514`, head SHA `3c821e519a473ab7b3930129d360d3230e4ee64c`. All 27/27 jobs succeeded: 26 individual Windows EXE jobs (25 business tools plus the toolbox launcher) and the Phase 1 customer delivery package job #133297128601.
+- The run's package job completed customer ZIP inspection, manifest generation, split-package generation, artifact upload and re-download verification. No failed job was present in run #415.
+
+### Actual customer package, manifest, split parts and series ZIPs
+- Customer package artifact `mainland-phase1-customer-package`: ID `14225432903`, 425,379,183 bytes, created 2026-11-16 12:28:34 UTC. Downloaded and inspected: outer ZIP CRC passed (`ZipFile.testzip() = None`), 3 entries; outer SHA256 `711c912a69883c93b57eae6b405685c64208ffdf695a045dfb1639e3b6708779`.
+- Inner `Phase1-Mainland-Windows-Tools.zip`: 425,257,692 bytes; SHA256 `23a4568e7ef70d4b8af8bf265013b1abf3708d4c7876f2d8fb56013cd0b18f56`; CRC passed; 58 entries (56 files). It contains 26 EXEs (25 business utilities + toolbox launcher), 26 Chinese manuals (including the toolbox manual), the manual index, Mainland README, series catalog and bundle description. All inner entries have timestamp 2026-11-16 12:28:08 UTC.
+- Manifest artifact `mainland-phase1-package-manifest`: ID `14225442986`, 2,398 bytes, created 12:28:54 UTC; downloaded ZIP CRC passed. Its `.sha256`, `.bytes` and inspection JSON declare the same inner ZIP size `425257692` and SHA256 `23a4568e7ef70d4b8af8bf265013b1abf3708d4c7876f2d8fb56013cd0b18f56`; both values match the independently downloaded customer package.
+- Split-parts artifact `mainland-phase1-package-parts`: ID `14225547892`, 425,261,368 bytes, created 12:29:00 UTC; outer ZIP CRC passed. It contains 21 ordered parts: 20 parts of 20 MiB and a final 5,827,292-byte part. Concatenating all parts reconstructs exactly 425,257,692 bytes and SHA256 `23a4568e7ef70d4b8af8bf265013b1abf3708d4c7876f2d8fb56013cd0b18f56`, matching the inner customer ZIP and manifest.
+- Series artifact `mainland-phase1-series-packages`: ID `14225502709`, 410,697,722 bytes, created 12:28:08 UTC; outer ZIP CRC passed. Each of the five nested ZIPs was extracted and checked; all CRC checks passed and EXE/manual counts match: A 5/5, B 9/9, C 5/5, D 3/3, E 3/3.
+- Embedded bundle descriptions are A 办公效率 29.9 元, B 门店经营 29.9 元, C 财务与交易 29.9 元, D 合同工程物业 29.9 元, E 客户与个人事务 19.9 元, F 全系列 39.9 元. The catalog records A/B/C/D/E product counts 5/9/5/3/3 and F as 25 business tools plus the launcher. These are proposed prices, not verified Xianyu sales prices.
+- The 26-EXE package above predates the currently open PR #70; the new renovation material takeoff assistant is not included in this package and must not be advertised as part of it.
+
+### Latest Autonomous Business Engine
+- ABE run #469: [Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43966754352), run ID `43966754352`, head SHA `60bc4949f4a08baad067cf60cb2277dd423415bc`; build/deploy 2/2 success. Build job #133648101267 reports `495 passed in 2.78s`; deploy job #133648423713 reported Pages deployment success. Build log's opportunity-data result had `error: null` (no fallback recorded).
+- Pages artifact `github-pages` ID `14276201509`, 47,262 bytes, created 2026-11-16 22:06:57 UTC. Downloaded ZIP CRC passed; internal TAR has 198 entries, including 17 `product.json` files and 12 Xianyu `listing.txt` files.
+
+### Current release blockers — still pending final acceptance
+- The public-key mismatch remains unchanged: `src/license.py` embedded Ed25519 public-key DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`; `config/mainland_license_public_key.pem` DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`. They do not match.
+- No seller private key was requested, read, uploaded, created, guessed, replaced or rotated. Code/CI signature tests and frozen-EXE noninteractive smoke tests do not prove a genuine seller issue/activate/restart cycle.
+- A genuine Windows desktop GUI/business-flow test, seller public-key match, real license issue/activation and close/restart re-verification remain outstanding. All releases remain **pending final acceptance** and must not be described as ready for formal Xianyu listing.
+- Current open development PR at this status update: [#70 Add offline renovation material takeoff and budget assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/70). It is not merged and is not part of the run #415 customer package.
+
+
+## 2026-11-17 PR #70 merge：main run #420 / ABE #470 当前验证
+
+### 主线与 Windows EXE
+- PR [#70 Add offline renovation material takeoff and budget assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/70) 已合并；main commit：`007481203f83558170033e42c505ca03dd2086bf`。
+- Mainland Windows EXE run #420：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44004336734)，run ID `44004336734`，head SHA 与 main 一致；27/27 jobs success（26 个独立 EXE 构建任务 + 1 个客户包任务），无失败 job。
+- 新增产品“装修材料用量与预算核算助手” job `133775851160`：92 passed in 0.81s、`SELF_TEST_OK`、PyInstaller 6.22.3 build 成功、`FROZEN_EXE_SELF_TEST_OK`，退出码 0。单品 Windows artifact ID `14294170822`，29,607,188 bytes，上传 ZIP SHA256 `e13c256bcc30eddc5d9cbbb96db7cec618351e6056909c001a1f97593ca4989e`。
+- 新产品提供项目/房间材料清单、损耗和整包装采购量、项目预算与实际差异、瓷砖片数/整箱数、乳胶漆用量计算、CSV、安全本地持久化及 SHA256 备份恢复。工具不读取 CAD，不使用 VPN、ChatGPT、外部 AI 或云服务；计算结果仍需按现场尺寸、厂家参数和施工情况人工复核。
+
+### 最新 main 客户包（run #420，已下载并实际检查）
+- Artifact `mainland-phase1-customer-package` ID `14294540015`，440,180,965 bytes；外层 SHA256 `ba25de8f358dd04578a06f5a5856749ae3ebd9f9e93059af227d63941bbd548d`；外层 ZIP CRC 通过，3 个条目。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：440,054,658 bytes；SHA256 `38c47ce2271c904460ae5f0621f0b7f1efaa483fe3c7f04c9438e10de99b19da`；ZIP CRC 通过；60 个条目（58 个文件、2 个目录），27 个 EXE（26 款业务工具 + 工具箱启动器），27 份逐款中文用户说明书，另含说明书索引 README、大陆版 README、分类套餐目录、套餐说明和检查报告。
+- 实际下载的内层 ZIP 清单包含 `package/MainlandRenovationMaterialsAssistant.exe` 和 `package/说明书/26-装修材料用量与预算核算助手-用户说明书.md`。全部内层条目时间戳为 `2026-11-17 02:40:04 UTC`（北京时间 10:40:04）；时间戳唯一值 1。
+- 上传后 workflow 重新下载客户包并再次运行检查器；二次结果仍为 SHA256 `38c47ce2271c904460ae5f0621f0b7f1efaa483fe3c7f04c9438e10de99b19da`、CRC passed、27 EXE/27 manuals，且 `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK` 确认上传前后检查字段完全一致。
+- 套餐说明 A–F 均存在：A 办公效率 5 款/29.9 元；B 门店经营 9 款/29.9 元；C 财务与交易 5 款/29.9 元；D 合同工程物业 4 款/29.9 元；E 客户与个人事务 3 款/19.9 元；F 全系列 26 款业务软件 + 启动器/39.9 元。均为待市场验证建议价，不是实际成交数据。
+- Manifest artifact ID `14294550004`，2,452 bytes；workflow 生成的 manifest/检查报告声明内层 ZIP 大小 440,054,658 bytes、SHA256 `38c47ce2271c904460ae5f0621f0b7f1efaa483fe3c7f04c9438e10de99b19da`。manifest artifact 上传 ZIP digest 为 `216af5ce7d7857a304d5b9b9a4b27a00811dbe0a8c606e3245d1a7ad5760d76d`。
+- 分片 artifact ID `14294405075`，440,058,334 bytes；workflow 输出 `MAINLAND_PACKAGE_CHUNKING_OK`：21 个分片，拼接目标 440,054,658 bytes，SHA256 与内层 ZIP 一致。分片上传 ZIP digest `cf0309289cbaa89494ea088a03ec3e6ad8d884ec69724cbe58a8f6020f1920db`。
+- 分类套餐 artifact ID `14293947204`，425,502,859 bytes；workflow 构建日志分别记录 A/B/C/D/E 套餐 ZIP 成功生成，文件大小 89,154,419 / 132,981,816 / 86,744,635 / 72,215,200 / 44,280,706 bytes。该次日志确认五个分类 ZIP 已生成并上传；本次本地解压 CRC 复核未单独完成，勿将其写成独立 CRC 复核通过。
+
+### 最新 Autonomous Business Engine
+- ABE run #470：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44004336579)，run ID `44004336579`，head SHA 与 main 一致；build/deploy 2/2 success。
+- Build job `133775849406`：`515 passed in 3.57s`；机会数据步骤结果 `error: null`。Pages artifact `github-pages` ID `14293134279`，47,788 bytes，上传 ZIP SHA256 `c6c9bad2142673ba5e71fdfffe754f39d8311d834e7b09e6a711b54cad5d8130`。artifact 已下载；本轮没有独立展开内部 TAR 清单，不将其内部文件数写作已复核。
+
+### 当前开放 PR 与最终销售阻塞
+- 当前 open PR：[#71 发布状态记录](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/71)（本次更新）；[#72 装修材料极端数值输入校验](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/72)（新增输入范围、精度和回归测试，Windows 验证仍进行中，未合并）。
+- 公钥 mismatch 仍存在：`src/license.py` 内嵌 Ed25519 公钥 DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。
+- 没有读取、上传、创建、猜测、替换或轮换卖家私钥/生产公钥。真实 Windows GUI 业务流程、卖家公钥匹配、真实签发/激活和关闭后重启复验仍未完成。所有 release 继续标记为 **pending final acceptance**；run #420 的 CI/冻结 EXE 自检不等同于真实用户 Windows GUI 和授权验收。

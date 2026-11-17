@@ -57,7 +57,7 @@ def _ceil_decimal(value: Decimal) -> int:
 def normalize_material_row(row: dict) -> dict:
     if not isinstance(row, dict):
         raise ValueError("材料记录必须是对象")
-    result = {field: str(row.get(field, "") or "").strip() for field in FIELDS}
+    result = {field: str("" if row.get(field) is None else row.get(field, "")).strip() for field in FIELDS}
     required = (
         "记录编号", "项目编号", "项目名称", "房间/区域", "材料编码",
         "材料名称", "材料类别", "计量单位",
@@ -413,7 +413,7 @@ def self_test():
         root = Path(directory)
         store = MaterialStore(root / "materials.json")
         store.add(sample)
-        assert calculate_material(sample)["预算金额(元)"] == "410.40"
+        assert calculate_material(sample)["预算金额(元)"] == "418.00"
         assert calculate_tile_quantity("10", "600", "600", 8, 4)["建议整箱数"] == 8
         assert calculate_paint_liters("50", 2, "10", 10) == "11.0"
         csv_path = root / "materials.csv"

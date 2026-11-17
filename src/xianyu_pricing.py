@@ -396,6 +396,28 @@ class PriceStore:
             })
         _atomic_write(Path(path), buffer.getvalue().encode("utf-8-sig"))
 
+    def export_analysis_csv(self, path, as_of: date | None = None):
+        """Export seller-only pricing calculations without changing the import CSV schema."""
+        calculated_fields = (
+            "规则版本", "使用月数", "折旧系数", "成色系数", "折旧模型估值(元)",
+            "估值基准(元)", "估值口径", "建议标价(元)", "最低接受价(元)",
+            "标价预计净利润(元)", "最低价预计净利润(元)", "标价预计净利率(%)",
+        )
+        fieldnames = FIELDS + calculated_fields
+        buffer = io.StringIO(newline="")
+        writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="raise")
+        writer.writeheader()
+        for row in self.rows:
+            result = calculate_price(row, as_of=as_of)
+            combined = {**row, **result}
+            writer.writerow({
+                field: _safe_csv_text(combined[field])
+                if field in TEXT_FIELDS or field in {"规则版本", "估值口径"}
+                else combined[field]
+                for field in fieldnames
+            })
+        _atomic_write(Path(path), buffer.getvalue().encode("utf-8-sig"))
+
     def backup(self, path):
         if len(self.rows) > MAX_ROWS:
             raise ValueError("商品记录超过 100000 条，不能创建备份")
@@ -491,6 +513,9 @@ def self_test():
         assert result["建议标价(元)"] == "670.00"
         csv_path = root / "items.csv"
         store.export_csv(csv_path)
+        analysis_path = root / "pricing-analysis.csv"
+        store.export_analysis_csv(analysis_path, as_of=date(2026, 11, 17))
+        assert "最低接受价(元)" in analysis_path.read_text(encoding="utf-8-sig")
         imported = PriceStore(root / "imported.json")
         assert imported.import_csv(csv_path) == 1
         backup = root / "items-backup.json"

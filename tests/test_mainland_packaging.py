@@ -442,3 +442,20 @@ def test_xianyu_profit_product_is_in_build_matrix_launcher_license_and_finance_s
     assert "闲鱼订单利润与售后成本核算助手" in license_tests
     assert '"xianyu-profit"' in series_builder
     assert len(APP_ENTRYPOINTS) == 29
+
+
+def test_manual_index_lists_all_individual_manuals_before_delivery_rules():
+    root = Path(__file__).resolve().parents[1]
+    manuals_dir = root / "docs" / "manuals"
+    index = (manuals_dir / "README.md").read_text(encoding="utf-8")
+    table, marker, delivery_rules = index.partition("## 交付规则")
+    assert marker, "manual index must contain a delivery rules section"
+    listed = [
+        line.split("|")[1].strip()
+        for line in table.splitlines()
+        if line.startswith("| ") and "-用户说明书.md" in line
+    ]
+    actual = sorted(path.name for path in manuals_dir.glob("*-用户说明书.md"))
+    assert sorted(listed) == actual
+    assert len(listed) == len(set(listed))
+    assert all("-用户说明书.md" not in line for line in delivery_rules.splitlines())

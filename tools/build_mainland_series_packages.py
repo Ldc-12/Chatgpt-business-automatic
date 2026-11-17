@@ -39,6 +39,7 @@ PRODUCTS = {
     "vehicle-ledger": ("车辆维保与费用台账助手", "MainlandVehicleMaintenanceLedger.exe", "23-车辆维保与费用台账助手-用户说明书.md"),
     "store-cash-close": ("门店日结与收银差异核对助手", "MainlandStoreCashClose.exe", "24-门店日结与收银差异核对助手-用户说明书.md"),
     "supplier-ap": ("供应商对账与应付账龄管理助手", "MainlandSupplierAPAging.exe", "25-供应商对账与应付账龄管理助手-用户说明书.md"),
+    "xianyu-profit": ("闲鱼订单利润与售后成本核算助手", "MainlandXianyuProfitAssistant.exe", "27-闲鱼订单利润与售后成本核算助手-用户说明书.md"),
 }
 
 SERIES = (
@@ -63,8 +64,8 @@ SERIES = (
         "slug": "finance-trading",
         "title": "财务与交易系列",
         "price": "29.9",
-        "products": ("freelancer", "finance", "quotation", "expense-reimbursement", "supplier-ap"),
-        "summary": "催款跟进、经营收支、报价、费用报销、供应商应付对账和账龄分析。",
+        "products": ("freelancer", "finance", "quotation", "expense-reimbursement", "supplier-ap", "xianyu-profit"),
+        "summary": "催款跟进、经营收支、报价、费用报销、供应商应付对账和账龄分析、闲鱼订单利润及售后成本核算。",
     },
     {
         "code": "D",
@@ -123,8 +124,8 @@ def render_catalog() -> str:
     lines = [
         "# 大陆版 Windows 软件分类套餐目录",
         "",
-        "五个分类系列 A–E 各自独立打包，26 款业务软件不重复、无遗漏。",
-        "全系列 F 为主客户包：26 款业务软件 + 工具箱启动器；建议售价 39.9 元，本脚本不重复生成 F 包。",
+        "五个分类系列 A–E 各自独立打包，27 款业务软件不重复、无遗漏。",
+        "全系列 F 为主客户包：27 款业务软件 + 工具箱启动器；建议售价 39.9 元，本脚本不重复生成 F 包。",
         "价格均为待市场验证的建议价，不代表已发生的闲鱼成交。",
         "",
         "| 编号 | 系列 | 软件数量 | 建议售价 | 商品内容 |",

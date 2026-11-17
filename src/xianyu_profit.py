@@ -361,12 +361,19 @@ def monthly_summary(rows: list[dict]) -> dict:
         calc = calculate_order(item)
         key = item["成交日期"][:7]
         bucket = grouped.setdefault(key, {
-            "月份": key, "订单数": 0, "买家实付(元)": Decimal("0"),
-            "售后退款(元)": Decimal("0"), "净收入(元)": Decimal("0"),
-            "成本支出(元)": Decimal("0"), "售后回收(元)": Decimal("0"),
-            "净利润(元)": Decimal("0"), "售后订单数": 0,
+            "月份": key,
+            "_order_ids": set(),
+            "_after_sales_order_ids": set(),
+            "买家实付(元)": Decimal("0"),
+            "售后退款(元)": Decimal("0"),
+            "净收入(元)": Decimal("0"),
+            "成本支出(元)": Decimal("0"),
+            "售后回收(元)": Decimal("0"),
+            "净利润(元)": Decimal("0"),
         })
-        bucket["订单数"] += 1
+        # A single Xianyu order may contain several SKU/detail rows.
+        # Count the order once while still summing every detail's money.
+        bucket["_order_ids"].add(item["订单编号"])
         bucket["买家实付(元)"] += Decimal(calc["买家实付金额(元)"])
         bucket["售后退款(元)"] += Decimal(calc["售后退款(元)"])
         bucket["净收入(元)"] += Decimal(calc["订单净收入(元)"])
@@ -374,14 +381,14 @@ def monthly_summary(rows: list[dict]) -> dict:
         bucket["售后回收(元)"] += Decimal(calc["售后回收金额(元)"])
         bucket["净利润(元)"] += Decimal(calc["净利润(元)"])
         if item["订单状态"] in ("售后中", "已退款") or Decimal(item["售后退款(元)"]) > 0:
-            bucket["售后订单数"] += 1
+            bucket["_after_sales_order_ids"].add(item["订单编号"])
+    money_fields = ("买家实付(元)", "售后退款(元)", "净收入(元)", "成本支出(元)", "售后回收(元)", "净利润(元)")
     return {
         key: {
-            **value,
-            **{
-                field: _money(value[field], field)
-                for field in ("买家实付(元)", "售后退款(元)", "净收入(元)", "成本支出(元)", "售后回收(元)", "净利润(元)")
-            },
+            "月份": value["月份"],
+            "订单数": len(value["_order_ids"]),
+            "售后订单数": len(value["_after_sales_order_ids"]),
+            **{field: _money(value[field], field) for field in money_fields},
         }
         for key, value in grouped.items()
     }
@@ -393,15 +400,26 @@ def sku_summary(rows: list[dict]) -> dict:
         item = normalize_order_row(row)
         calc = calculate_order(item)
         key = item["商品/SKU"]
-        bucket = grouped.setdefault(key, {"商品/SKU": key, "订单数": 0, "净收入(元)": Decimal("0"), "净利润(元)": Decimal("0")})
-        bucket["订单数"] += 1
-        bucket["净收入(元)"] += Decimal(calc["订单净收入(元)"])
-        bucket["净利润(元)"] += Decimal(calc["净利润(元)"])
+        bucket = grouped.setdefault(key, {
+            "商品/SKU": key,
+            "_order_ids": set(),
+            "_net_revenue": Decimal("0"),
+            "_net_profit": Decimal("0"),
+        })
+        # Multiple detail rows for the same SKU in one order are still one
+        # SKU-order relationship, not multiple orders.
+        bucket["_order_ids"].add(item["订单编号"])
+        bucket["_net_revenue"] += Decimal(calc["订单净收入(元)"])
+        bucket["_net_profit"] += Decimal(calc["净利润(元)"])
     return {
-        key: {**value, "净收入(元)": _money(value["净收入(元)"], "SKU净收入"), "净利润(元)": _money(value["净利润(元)"], "SKU净利润")}
+        key: {
+            "商品/SKU": value["商品/SKU"],
+            "订单数": len(value["_order_ids"]),
+            "净收入(元)": _money(value["_net_revenue"], "SKU净收入"),
+            "净利润(元)": _money(value["_net_profit"], "SKU净利润"),
+        }
         for key, value in grouped.items()
     }
-
 
 def default_data_path():
     base = os.getenv("LOCALAPPDATA") or str(Path.home())

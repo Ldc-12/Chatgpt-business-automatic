@@ -29,6 +29,8 @@ TEXT_FIELDS = {
 }
 QUANTITY_FIELDS = ("净用量", "包装规格", "实际采购量")
 MONEY_FIELDS = ("单价(元/单位)", "实际金额(元)")
+MAX_NUMERIC_ABS = Decimal("1000000000")
+MAX_NUMERIC_TEXT_LENGTH = 64
 
 
 def _decimal(value, label: str, allow_blank: bool = False) -> Decimal | None:
@@ -37,17 +39,24 @@ def _decimal(value, label: str, allow_blank: bool = False) -> Decimal | None:
         if allow_blank:
             return None
         raise ValueError(f"{label}不能为空")
+    if len(raw) > MAX_NUMERIC_TEXT_LENGTH:
+        raise ValueError(f"{label}输入过长，最多 {MAX_NUMERIC_TEXT_LENGTH} 个字符")
     try:
         result = Decimal(raw)
     except (InvalidOperation, ValueError) as exc:
         raise ValueError(f"{label}必须是有效数字") from exc
     if not result.is_finite():
         raise ValueError(f"{label}不能是 NaN 或无穷大")
+    if abs(result) > MAX_NUMERIC_ABS:
+        raise ValueError(f"{label}超出支持范围，绝对值不能超过 1,000,000,000")
     return result
 
 
 def _quantize(value: Decimal, places: str) -> str:
-    return format(value.quantize(Decimal(places), rounding=ROUND_HALF_UP), "f")
+    try:
+        return format(value.quantize(Decimal(places), rounding=ROUND_HALF_UP), "f")
+    except InvalidOperation as exc:
+        raise ValueError("数值超出支持精度范围，请检查输入数值和小数位") from exc
 
 
 def _ceil_decimal(value: Decimal) -> int:
@@ -92,11 +101,21 @@ def normalize_material_row(row: dict) -> dict:
         raise ValueError("实际金额不能为负数")
 
     result["净用量"] = _quantize(net, "0.001")
+    if Decimal(result["净用量"]) <= 0:
+        raise ValueError("净用量小于 0.001，无法准确计算")
     result["损耗率(%)"] = _quantize(waste, "0.01")
     result["包装规格"] = _quantize(pack, "0.001")
+    if Decimal(result["包装规格"]) <= 0:
+        raise ValueError("包装规格小于 0.001，无法准确计算")
     result["单价(元/单位)"] = _quantize(price, "0.01")
+    if price > 0 and Decimal(result["单价(元/单位)"]) <= 0:
+        raise ValueError("单价小于 0.01 元，无法准确计算")
     result["实际采购量"] = "" if actual_qty is None else _quantize(actual_qty, "0.001")
+    if actual_qty is not None and actual_qty > 0 and Decimal(result["实际采购量"]) <= 0:
+        raise ValueError("实际采购量小于 0.001，无法准确计算")
     result["实际金额(元)"] = "" if actual_amount is None else _quantize(actual_amount, "0.01")
+    if actual_amount is not None and actual_amount > 0 and Decimal(result["实际金额(元)"]) <= 0:
+        raise ValueError("实际金额小于 0.01 元，无法准确计算")
     if len(result["备注"]) > 2000:
         raise ValueError("备注不能超过 2000 个字符")
     return result

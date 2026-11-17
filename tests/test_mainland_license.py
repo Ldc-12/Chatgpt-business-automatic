@@ -121,6 +121,7 @@ def test_default_license_paths_match_all_protected_product_ids():
         "车辆维保与费用台账助手",
         "门店日结与收银差异核对助手",
         "供应商对账与应付账龄管理助手",
+        "闲鱼订单利润与售后成本核算助手",
     ]
     paths = [lic.default_license_path(product) for product in products]
     assert len(set(paths)) == len(products)

@@ -204,7 +204,7 @@ def test_analysis_csv_exports_calculated_prices_and_protects_formula_text(tmp_pa
     store.export_analysis_csv(path, as_of=date(2026, 11, 17))
 
     raw = path.read_bytes()
-    assert raw.startswith(b"\\xef\\xbb\\xbf")
+    assert raw.startswith(bytes.fromhex("efbbbf"))
     with path.open(encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         row = next(reader)

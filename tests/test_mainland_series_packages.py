@@ -20,11 +20,11 @@ def _make_inputs(tmp_path):
     return release, manuals, output
 
 
-def test_series_catalog_covers_all_26_products_once():
+def test_series_catalog_covers_all_27_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 26
-    assert len(assigned) == 26
+    assert len(MODULE.PRODUCTS) == 27
+    assert len(assigned) == 27
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "26 款业务软件 + 工具箱启动器" in catalog
+    assert "27 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -137,3 +137,11 @@ def test_contract_project_series_contains_renovation_material_takeoff():
     assert "renovation-materials" in project_series["products"]
     assert MODULE.PRODUCTS["renovation-materials"][1] == "MainlandRenovationMaterialsAssistant.exe"
     assert MODULE.PRODUCTS["renovation-materials"][2] == "26-装修材料用量与预算核算助手-用户说明书.md"
+
+
+
+def test_finance_series_contains_xianyu_order_profit_assistant():
+    finance = next(item for item in MODULE.SERIES if item["code"] == "C")
+    assert "xianyu-profit" in finance["products"]
+    assert MODULE.PRODUCTS["xianyu-profit"][1] == "MainlandXianyuProfitAssistant.exe"
+    assert MODULE.PRODUCTS["xianyu-profit"][2] == "27-闲鱼订单利润与售后成本核算助手-用户说明书.md"

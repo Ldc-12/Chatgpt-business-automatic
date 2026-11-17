@@ -163,5 +163,59 @@ def test_failed_atomic_replace_preserves_original_file(tmp_path, monkeypatch):
     assert not list(tmp_path.glob("*.tmp"))
 
 
+def test_multi_sku_rows_count_one_xianyu_order_but_sum_all_amounts():
+    rows = [
+        sample(**{
+            "记录编号": "XY-101", "订单编号": "XY-MULTI-001",
+            "商品/SKU": "手机壳", "买家实付金额(元)": "100",
+            "商品成本(元)": "40", "售后退款(元)": "0",
+            "订单状态": "已完成",
+        }),
+        sample(**{
+            "记录编号": "XY-102", "订单编号": "XY-MULTI-001",
+            "商品/SKU": "数据线", "买家实付金额(元)": "20",
+            "商品成本(元)": "5", "售后退款(元)": "5",
+            "订单状态": "售后中",
+        }),
+        sample(**{
+            "记录编号": "XY-103", "订单编号": "XY-ORDER-OTHER",
+            "商品/SKU": "手机壳", "买家实付金额(元)": "50",
+            "商品成本(元)": "20", "售后退款(元)": "0",
+            "订单状态": "已完成",
+        }),
+    ]
+
+    monthly = module.monthly_summary(rows)["2026-11"]
+    assert monthly["订单数"] == 2
+    assert monthly["售后订单数"] == 1
+    assert monthly["买家实付(元)"] == "170.00"
+    assert monthly["售后退款(元)"] == "5.00"
+    assert monthly["净收入(元)"] == "165.00"
+
+    sku = module.sku_summary(rows)
+    assert sku["手机壳"]["订单数"] == 2
+    assert sku["手机壳"]["净收入(元)"] == "150.00"
+    assert sku["数据线"]["订单数"] == 1
+    assert sku["数据线"]["净收入(元)"] == "15.00"
+
+
+def test_repeated_same_sku_lines_in_one_order_count_once():
+    rows = [
+        sample(**{
+            "记录编号": "XY-201", "订单编号": "XY-ORDER-201",
+            "商品/SKU": "同款收纳盒", "买家实付金额(元)": "30",
+            "商品成本(元)": "10",
+        }),
+        sample(**{
+            "记录编号": "XY-202", "订单编号": "XY-ORDER-201",
+            "商品/SKU": "同款收纳盒", "买家实付金额(元)": "30",
+            "商品成本(元)": "10",
+        }),
+    ]
+    assert module.monthly_summary(rows)["2026-11"]["订单数"] == 1
+    assert module.sku_summary(rows)["同款收纳盒"]["订单数"] == 1
+    assert module.sku_summary(rows)["同款收纳盒"]["净收入(元)"] == "60.00"
+
+
 def test_self_test_runs_without_gui():
     module.self_test()

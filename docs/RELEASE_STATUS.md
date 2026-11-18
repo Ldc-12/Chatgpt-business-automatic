@@ -1,3 +1,57 @@
+# Release status — 2026-11-18 (main HEAD 2bc4159)
+
+## Current source and pull requests
+
+- Repository: `Ldc-12/Chatgpt-business-automatic`.
+- Current main HEAD: `2bc415985720a7b5793390dda8f7c368cc1bebb4`.
+- PR #85 merged as `1c6ee9f3a4798ab52a01c8df2e2755d352583315`: added seller-only shipping follow-up CSV for overdue dispatch, waiting pickup, overdue delivery and logistics exceptions.
+- PR #86 merged as `2bc415985720a7b5793390dda8f7c368cc1bebb4`: added `等待揽收天数`, sorted pickup-waiting rows by actual dispatch date (oldest first), preserved `逾期天数` for dispatch/delivery overdue only, and extended the frozen self-test, regression suite and Chinese manual.
+- Open PRs at this check: 0.
+
+## Mainland Windows EXE and customer package
+
+### Latest confirmed main-branch package (now stale relative to main)
+
+- Main run #449: https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44300473455
+- Customer package artifact: `14426765444`; series artifact: `14425613019`; manifest: `14426356076`; parts: `14426375991`.
+- The customer ZIP was downloaded and independently checked: outer ZIP CRC passed, inner ZIP CRC passed, 68 entries / 66 files, 31 EXEs and 31 product manuals. Inner ZIP size: `499153986` bytes; SHA256: `fd00ce49ac9c960079678dd22bd8cd56e898cbe528cdc99cb9ac3fff0ed26082`.
+- All 24 parts were downloaded, reassembled, and matched the inner ZIP byte-for-byte and SHA256.
+- This main-run package predates PR #85, so it does not contain the seller-only follow-up CSV feature. It must not be treated as the current main product package.
+
+### Latest fully verified candidate matching current main source
+
+- PR #86 Mainland Windows EXE run #454: https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44308949947
+- Run conclusion: success. The 30 jobs visible through the available jobs page all concluded success; no failed/cancelled job was returned.
+- Shipping product job: `134817761566`; `115 passed in 1.27s`, `SELF_TEST_OK`, PyInstaller build succeeded, frozen EXE self-test exited 0.
+- Shipping standalone artifact: `14427614754`; 29,563,886 bytes; SHA256 `ede5bb487dec4f31e31102ab063ececbb927b84e3f39f71b2427ad5a7a5484f1`. Its ZIP and inner delivery ZIP CRCs passed; it contains the shipping EXE, README and Chinese manual with the waiting-pickup-age instructions.
+- Customer-package candidate artifact: `14429303002`; series packages: `14429527237`; manifest: `14428514495`; parts: `14428953723`.
+- The customer package was downloaded and independently inspected: outer ZIP SHA256 `7d317c58326cb1bd9435f10d40212af41b5fe7457a1ca6a7f2cb83ba1a289d3d`; inner ZIP size `499158716` bytes; inner SHA256 `408f1da508656d7c7874bf1817a1169e970731f7ca6731a74f7ceddbfdf4a9fc`; 68 entries / 66 files; 31 EXEs and 31 product manuals; CRC passed. All ZIP entries share build timestamp 2026-11-18 13:01:14 UTC (21:01:14 China time).
+- The 24 package parts were downloaded and reassembled; the resulting 499,158,716-byte file matches the inner ZIP byte-for-byte and SHA256.
+- A–E series ZIPs were independently checked: A 5 EXEs/5 manuals, B 9/9, C 9/9, D 4/4, E 3/3; each inner ZIP CRC passed.
+- The package includes 30 business tools plus the toolbox launcher. Bundle prices remain proposed only: A–D ¥29.9 each, E ¥19.9, F ¥39.9; these are not verified transaction prices.
+- Important provenance: run #454 was triggered from PR #86 before merge. Its head tree is the same product tree now merged to main, but it is a PR candidate build, not a main-push release run. Do not label it a main-branch release artifact.
+
+### Main-push workflow visibility limitation
+
+- The GitHub connector returned PR-triggered workflow runs for the commit but did not expose a list of main push/scheduled workflow runs. The combined commit status for current main HEAD returned no statuses. Therefore no post-merge main-push Mainland Windows EXE run or newer main ABE run is asserted here.
+- The last independently retrievable main ABE run remains #486: https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44300473455. It had 624 passing tests, generated 12 products with live Stripe checkout links, and deployed successfully. Pages artifact: `14426585090` (47,809 bytes; SHA256 `85a138fa5f6c05c0b922f18adfb220b154f7ab6217a0aeeb5d8b3516134f1732`). The downloaded ZIP CRC passed; its TAR contains 198 entries, including 17 product.json and 12 listing.txt files. This ABE run predates PR #85/#86 and is not claimed as current-main output.
+
+## Historical CI failures reviewed
+
+- Run #431 job `134010848071`: 1 failed / 79 passed. The packaging regression expected 28 manuals but found 29 after a new manual was added. Later packaging tests were corrected.
+- Run #427 job `133795967770`: 6 failed / 94 passed. Root causes included a stale ¥671 pricing expectation (actual rule output ¥670) and packaging fixtures expecting old EXE/manual counts; later PRs corrected the tests and package inspection.
+- Run #425 job `133791043420`: 1 failed / 96 passed. The repeated-SKU order-profit test expected ¥60 but the implemented deduplication rule returned ¥40; later code/test changes resolved the mismatch.
+- PR #85 run #452 completed successfully with 30/30 visible jobs and produced candidate customer package artifact `14426784313`; it was superseded by the later PR #86 candidate for current source.
+
+## Authorization and final acceptance
+
+- Production key material remains untouched. The embedded public key in `src/license.py` fingerprints to `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`; `config/mainland_license_public_key.pem` fingerprints to `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`. They do not match.
+- The seller private key is not in the repository and must never be requested or uploaded. Do not guess, replace, rotate or generate a production private key.
+- Final signing/activation acceptance still requires the owner to export the public key or SHA256 fingerprint locally on a trusted Windows computer using `tools/export_license_public_key.py`; only the public key or fingerprint should be shared.
+- Real Windows GUI acceptance, persistence/backup/restore acceptance and production-key activation have not been completed. Status remains **待最终验收 / not ready to mark as commercially releasable**.
+
+---
+
 # 2026-11-18 main 419d8a66：闲鱼发货历史日期补录修复与最新主线客户包验收
 
 ## 本轮产品修复与合并

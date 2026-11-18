@@ -1,9 +1,10 @@
-# Release status — 2026-11-18 (main HEAD 2bc4159)
+# Release status — 2026-11-18 (product code HEAD 2bc4159; docs-only PR #87 merged as 91a6e01)
 
 ## Current source and pull requests
 
 - Repository: `Ldc-12/Chatgpt-business-automatic`.
-- Current main HEAD: `2bc415985720a7b5793390dda8f7c368cc1bebb4`.
+- Product-code main HEAD after PR #86: `2bc415985720a7b5793390dda8f7c368cc1bebb4`.
+- Docs-only PR #87 merged as `91a6e010f873f32780276e31b04f3e4d802ff7d7`; the current main branch includes this release-status update.
 - PR #85 merged as `1c6ee9f3a4798ab52a01c8df2e2755d352583315`: added seller-only shipping follow-up CSV for overdue dispatch, waiting pickup, overdue delivery and logistics exceptions.
 - PR #86 merged as `2bc415985720a7b5793390dda8f7c368cc1bebb4`: added `等待揽收天数`, sorted pickup-waiting rows by actual dispatch date (oldest first), preserved `逾期天数` for dispatch/delivery overdue only, and extended the frozen self-test, regression suite and Chinese manual.
 - Open PRs at this check: 0.
@@ -33,7 +34,7 @@
 
 ### Main-push workflow visibility limitation
 
-- The GitHub connector returned PR-triggered workflow runs for the commit but did not expose a list of main push/scheduled workflow runs. The combined commit status for current main HEAD returned no statuses. Therefore no post-merge main-push Mainland Windows EXE run or newer main ABE run is asserted here.
+- The GitHub connector returned PR-triggered workflow runs for the commit but did not expose a list of main push/scheduled workflow runs. The combined commit status for the latest docs-only main commit `91a6e010f873f32780276e31b04f3e4d802ff7d7` returned no statuses. Therefore no post-merge main-push Mainland Windows EXE run or newer main ABE run is asserted here.
 - The last independently retrievable main ABE run remains #486: https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44300473455. It had 624 passing tests, generated 12 products with live Stripe checkout links, and deployed successfully. Pages artifact: `14426585090` (47,809 bytes; SHA256 `85a138fa5f6c05c0b922f18adfb220b154f7ab6217a0aeeb5d8b3516134f1732`). The downloaded ZIP CRC passed; its TAR contains 198 entries, including 17 product.json and 12 listing.txt files. This ABE run predates PR #85/#86 and is not claimed as current-main output.
 
 ## Historical CI failures reviewed

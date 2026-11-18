@@ -376,7 +376,7 @@ def export_shipping_attention_csv(
             kind = "物流异常"
         else:
             continue
-        record = {field: item[field] for field in ATTENTION_FIELDS}
+        record = {field: item[field] for field in ATTENTION_FIELDS if field in item}
         record["待处理类型"] = kind
         record["提醒"] = risk["提醒"]
         record["逾期天数"] = (

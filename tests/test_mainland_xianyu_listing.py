@@ -46,7 +46,7 @@ def test_summary_counts_status_inventory_and_due_items():
     today = date.today()
     rows = [sample(), sample(**{
         "商品编号": "XY-L-002", "商品名称": "待上架键盘",
-        "上架状态": "待上架", "实际上架日期": "", "最后刷新日期": "",
+        "上架状态": "待上架", "库存数量": "1", "实际上架日期": "", "最后刷新日期": "",
     })]
     result = module.listing_summary(rows, as_of=today)
     assert result["商品总数"] == 2

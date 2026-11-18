@@ -347,6 +347,59 @@ def export_carrier_performance_csv(rows: list[dict], path: str | Path) -> int:
     return len(report["承运商明细"])
 
 
+
+ATTENTION_FIELDS = (
+    "发货编号", "订单编号", "商品/SKU", "承运商", "运单号",
+    "承诺发货日期", "实际发货日期", "揽收确认日期", "预计送达日期",
+    "物流状态", "待处理类型", "提醒", "逾期天数", "异常说明",
+)
+ATTENTION_TEXT_FIELDS = set(ATTENTION_FIELDS) - {"逾期天数"}
+
+
+def export_shipping_attention_csv(
+    rows: list[dict], path: str | Path, as_of: date | None = None
+) -> int:
+    """Export only shipments that need seller follow-up, without changing source rows."""
+    today = as_of or date.today()
+    priority = {"发货逾期": 0, "物流异常": 1, "送达逾期": 2, "等待揽收": 3}
+    attention = []
+    for raw in rows:
+        item = normalize_row(raw, today=today)
+        risk = shipping_risk(item, as_of=today)
+        if risk["发货逾期"]:
+            kind = "发货逾期"
+        elif risk["等待揽收"]:
+            kind = "等待揽收"
+        elif risk["送达逾期"]:
+            kind = "送达逾期"
+        elif item["物流状态"] == "异常":
+            kind = "物流异常"
+        else:
+            continue
+        record = {field: item[field] for field in ATTENTION_FIELDS}
+        record["待处理类型"] = kind
+        record["提醒"] = risk["提醒"]
+        record["逾期天数"] = risk["逾期天数"]
+        attention.append(record)
+
+    attention.sort(key=lambda row: (
+        priority[row["待处理类型"]],
+        row["承诺发货日期"] or row["预计送达日期"] or "9999-12-31",
+        row["订单编号"],
+    ))
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=ATTENTION_FIELDS, extrasaction="raise")
+    writer.writeheader()
+    for row in attention:
+        writer.writerow({
+            field: _safe_csv_text(row[field])
+            if field in ATTENTION_TEXT_FIELDS else row[field]
+            for field in ATTENTION_FIELDS
+        })
+    _atomic_write(Path(path), buffer.getvalue().encode("utf-8-sig"))
+    return len(attention)
+
+
 def _safe_csv_text(value) -> str:
     text = str(value if value is not None else "")
     probe = text.lstrip(" \t\r\n")

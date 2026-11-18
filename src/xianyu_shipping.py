@@ -351,9 +351,9 @@ def export_carrier_performance_csv(rows: list[dict], path: str | Path) -> int:
 ATTENTION_FIELDS = (
     "发货编号", "订单编号", "商品/SKU", "承运商", "运单号",
     "承诺发货日期", "实际发货日期", "揽收确认日期", "预计送达日期",
-    "物流状态", "待处理类型", "提醒", "逾期天数", "异常说明",
+    "物流状态", "待处理类型", "提醒", "等待揽收天数", "逾期天数", "异常说明",
 )
-ATTENTION_TEXT_FIELDS = set(ATTENTION_FIELDS) - {"逾期天数"}
+ATTENTION_TEXT_FIELDS = set(ATTENTION_FIELDS) - {"等待揽收天数", "逾期天数"}
 
 
 def export_shipping_attention_csv(
@@ -379,6 +379,10 @@ def export_shipping_attention_csv(
         record = {field: item[field] for field in ATTENTION_FIELDS if field in item}
         record["待处理类型"] = kind
         record["提醒"] = risk["提醒"]
+        record["等待揽收天数"] = (
+            (today - date.fromisoformat(item["实际发货日期"])).days
+            if kind == "等待揽收" else ""
+        )
         record["逾期天数"] = (
             (today - date.fromisoformat(item["承诺发货日期"])).days
             if kind == "发货逾期"
@@ -386,9 +390,17 @@ def export_shipping_attention_csv(
         )
         attention.append(record)
 
+    def attention_date(row):
+        kind = row["待处理类型"]
+        if kind == "等待揽收":
+            return row["实际发货日期"] or "9999-12-31"
+        if kind == "送达逾期":
+            return row["预计送达日期"] or "9999-12-31"
+        return row["承诺发货日期"] or "9999-12-31"
+
     attention.sort(key=lambda row: (
         priority[row["待处理类型"]],
-        row["承诺发货日期"] or row["预计送达日期"] or "9999-12-31",
+        attention_date(row),
         row["订单编号"],
     ))
     buffer = io.StringIO(newline="")
@@ -668,6 +680,18 @@ def self_test() -> None:
         assert performance["承运商明细"][0]["已签收单数"] == 1
         analysis_path = root / "carrier-performance.csv"
         assert export_carrier_performance_csv(store.rows, analysis_path) == 1
+        attention_sample = dict(sample, **{
+            "发货编号": "XY-S-SELF-002", "订单编号": "ORDER-SELF-002",
+            "承运商": "顺丰速运", "运单号": "SF-SELF-002",
+            "实际发货日期": today.isoformat(), "物流状态": "待揽收",
+        })
+        attention_path = root / "shipping-attention.csv"
+        assert export_shipping_attention_csv(
+            [attention_sample], attention_path, as_of=today
+        ) == 1
+        with attention_path.open("r", encoding="utf-8-sig", newline="") as handle:
+            attention_rows = list(csv.DictReader(handle))
+        assert attention_rows[0]["等待揽收天数"] == "0"
         csv_path = root / "shipping.csv"
         store.export_csv(csv_path)
         imported = ShippingStore(root / "imported.json")

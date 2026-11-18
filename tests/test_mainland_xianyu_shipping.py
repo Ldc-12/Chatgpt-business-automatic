@@ -373,7 +373,7 @@ def test_attention_export_contains_only_actionable_rows_and_is_formula_safe(tmp_
 
     assert module.export_shipping_attention_csv(rows, path, as_of=today) == 4
     assert rows == before
-    assert path.read_bytes().startswith(b"\\xef\\xbb\\xbf")
+    assert path.read_bytes().startswith(b"\xef\xbb\xbf")
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         exported = list(csv.DictReader(handle))
 
@@ -381,8 +381,10 @@ def test_attention_export_contains_only_actionable_rows_and_is_formula_safe(tmp_
         "发货逾期", "物流异常", "送达逾期", "等待揽收",
     ]
     assert exported[0]["订单编号"].startswith("'=HYPERLINK")
-    assert exported[0]["逾期天数"] == "0"
+    assert exported[0]["逾期天数"] == "2"
     assert exported[2]["逾期天数"] == "1"
+    assert exported[1]["逾期天数"] == ""
+    assert exported[3]["逾期天数"] == ""
     assert "XY-S-A5" not in {row["发货编号"] for row in exported}
     assert "XY-S-A6" not in {row["发货编号"] for row in exported}
 

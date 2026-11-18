@@ -399,3 +399,40 @@ def test_attention_export_writes_header_when_no_follow_up_is_needed(tmp_path):
         reader = csv.reader(handle)
         assert next(reader) == list(module.ATTENTION_FIELDS)
         assert list(reader) == []
+
+def test_attention_export_reports_pickup_age_and_sorts_by_actual_dispatch_date(tmp_path):
+    today = date.today()
+    older_waiting = sample(**{
+        "发货编号": "XY-S-PICKUP-OLD",
+        "订单编号": "ORDER-PICKUP-OLD",
+        "承运商": "顺丰速运",
+        "运单号": "SF-OLD",
+        "下单日期": (today - timedelta(days=10)).isoformat(),
+        "承诺发货日期": (today - timedelta(days=2)).isoformat(),
+        "实际发货日期": (today - timedelta(days=3)).isoformat(),
+        "物流状态": "待揽收",
+    })
+    newer_waiting = sample(**{
+        "发货编号": "XY-S-PICKUP-NEW",
+        "订单编号": "ORDER-PICKUP-NEW",
+        "承运商": "中通快递",
+        "运单号": "ZT-NEW",
+        "下单日期": (today - timedelta(days=12)).isoformat(),
+        "承诺发货日期": (today - timedelta(days=5)).isoformat(),
+        "实际发货日期": (today - timedelta(days=1)).isoformat(),
+        "物流状态": "待揽收",
+    })
+    rows = [newer_waiting, older_waiting]
+    before = [dict(row) for row in rows]
+    path = tmp_path / "pickup-age.csv"
+
+    assert module.export_shipping_attention_csv(rows, path, as_of=today) == 2
+    assert rows == before
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        exported = list(csv.DictReader(handle))
+
+    assert [row["发货编号"] for row in exported] == [
+        "XY-S-PICKUP-OLD", "XY-S-PICKUP-NEW",
+    ]
+    assert [row["等待揽收天数"] for row in exported] == ["3", "1"]
+    assert [row["逾期天数"] for row in exported] == ["", ""]

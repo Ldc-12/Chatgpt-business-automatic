@@ -298,3 +298,24 @@ def test_carrier_performance_csv_is_formula_safe_and_does_not_mutate_rows(tmp_pa
         exported = list(csv.DictReader(handle))
     assert exported[0]["承运商"] == "'=恶意承运商"
     assert exported[0]["准时率(%)"] == "100.00"
+
+def test_transition_status_respects_backdated_change_dates(tmp_path):
+    store = module.ShippingStore(tmp_path / "shipping.json")
+    store.add(sample())
+    prepared = dict(
+        store.rows[0],
+        **{"承运商": "顺丰速运", "运单号": "SF-HISTORY-001"},
+    )
+    store.update("XY-S-001", prepared)
+
+    shipped_on = date.today() - timedelta(days=2)
+    picked_up_on = date.today() - timedelta(days=1)
+    signed_on = date.today()
+    store.transition_status("XY-S-001", "待揽收", changed_on=shipped_on)
+    assert store.rows[0]["实际发货日期"] == shipped_on.isoformat()
+    store.transition_status("XY-S-001", "运输中", changed_on=picked_up_on)
+    assert store.rows[0]["揽收确认日期"] == picked_up_on.isoformat()
+    store.transition_status("XY-S-001", "派送中", changed_on=picked_up_on)
+    store.transition_status("XY-S-001", "已签收", changed_on=signed_on)
+    assert store.rows[0]["签收日期"] == signed_on.isoformat()
+    assert module.ShippingStore(store.path).rows == store.rows

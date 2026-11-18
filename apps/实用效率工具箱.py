@@ -21,6 +21,7 @@ TOOLS = [
     ("供应商对账与应付账龄管理助手", "MainlandSupplierAPAging.exe"),
     ("闲鱼订单利润与售后成本核算助手", "MainlandXianyuProfitAssistant.exe"),
     ("闲鱼二手商品定价与议价助手", "MainlandXianyuUsedPricingAssistant.exe"),
+    ("闲鱼商品发布管理助手", "MainlandXianyuListingManager.exe"),
     ("报价单生成器", "MainlandQuotationGenerator.exe"),
     ("费用报销管理助手", "MainlandExpenseReimbursement.exe"),
     ("售后维修工单管理助手", "MainlandRepairWorkOrderManager.exe"),
@@ -48,7 +49,7 @@ def application_directory():
 
 
 def self_test():
-    assert len(TOOLS) == 28
+    assert len(TOOLS) == 29
     names = [name for name, _ in TOOLS]
     exes = [exe for _, exe in TOOLS]
     assert len(set(names)) == len(names)
@@ -62,7 +63,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("实用效率工具箱")
-        self.geometry("800x800")
+        self.geometry("980x820")
         self.resizable(False, False)
         ttk.Label(
             self, text="Windows 实用效率工具箱",
@@ -74,9 +75,13 @@ class App(tk.Tk):
         ).pack(anchor="w", padx=24, pady=(0, 18))
         box = ttk.Frame(self, padding=18)
         box.pack(fill="both", expand=True)
-        for name, exe in TOOLS:
+        box.columnconfigure(0, weight=1)
+        box.columnconfigure(1, weight=1)
+        for index, (name, exe) in enumerate(TOOLS):
+            column = index % 2
+            row_index = index // 2
             row = ttk.Frame(box)
-            row.pack(fill="x", pady=4)
+            row.grid(row=row_index, column=column, sticky="ew", padx=6, pady=4)
             ttk.Label(row, text=name, width=30).pack(side="left")
             ttk.Button(row, text="启动", command=lambda e=exe: self.launch(e)).pack(side="right")
 

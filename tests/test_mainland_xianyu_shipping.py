@@ -211,3 +211,90 @@ def test_backup_restore_checks_sha256_before_replacing_current_data(tmp_path):
 def test_self_test_runs_without_network_or_user_data(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "default_data_path", lambda: tmp_path / "default.json")
     module.self_test()
+
+
+def delivered_sample(
+    shipment_id, *, carrier="顺丰速运", pickup_days=3,
+    expected_days=1, signed_days=1, freight="8",
+):
+    today = date.today()
+    return sample(**{
+        "发货编号": shipment_id,
+        "订单编号": "ORDER-" + shipment_id,
+        "承运商": carrier,
+        "运单号": "WAY-" + shipment_id,
+        "下单日期": (today - timedelta(days=10)).isoformat(),
+        "承诺发货日期": (today - timedelta(days=8)).isoformat(),
+        "实际发货日期": (today - timedelta(days=5)).isoformat(),
+        "揽收确认日期": (today - timedelta(days=pickup_days)).isoformat(),
+        "预计送达日期": (
+            (today - timedelta(days=expected_days)).isoformat()
+            if expected_days is not None else ""
+        ),
+        "签收日期": (today - timedelta(days=signed_days)).isoformat(),
+        "物流状态": "已签收",
+        "运费(元)": freight,
+    })
+
+
+def test_carrier_performance_counts_only_assessed_signed_orders():
+    today = date.today()
+    rows = [
+        delivered_sample("XY-S-C1", pickup_days=3, expected_days=1, signed_days=1),
+        delivered_sample("XY-S-C2", pickup_days=4, expected_days=1, signed_days=0, freight="10"),
+        delivered_sample("XY-S-C3", pickup_days=2, expected_days=None, signed_days=0, freight="12"),
+        sample(**{
+            "发货编号": "XY-S-C4",
+            "订单编号": "ORDER-C4",
+            "承运商": "顺丰速运",
+            "运单号": "WAY-C4",
+            "下单日期": (today - timedelta(days=5)).isoformat(),
+            "承诺发货日期": (today - timedelta(days=3)).isoformat(),
+            "实际发货日期": (today - timedelta(days=2)).isoformat(),
+            "揽收确认日期": (today - timedelta(days=1)).isoformat(),
+            "预计送达日期": (today + timedelta(days=2)).isoformat(),
+            "物流状态": "运输中",
+            "运费(元)": "6",
+        }),
+        sample(**{"发货编号": "XY-S-C5", "订单编号": "ORDER-C5", "运费(元)": "2"}),
+    ]
+    report = module.carrier_performance(rows)
+    assert report["承运商数量"] == 1
+    assert report["未填写承运商单数"] == 1
+    stat = report["承运商明细"][0]
+    assert stat["承运商"] == "顺丰速运"
+    assert stat["发货单数"] == 4
+    assert stat["已签收单数"] == 3
+    assert stat["准时评估单数"] == 2
+    assert stat["准时签收单数"] == 1
+    assert stat["逾期签收单数"] == 1
+    assert stat["未设置预计送达单数"] == 1
+    assert stat["准时率(%)"] == "50.00"
+    assert stat["平均揽收到签收天数"] == "2.67"
+    assert stat["累计运费(元)"] == "36.00"
+    assert stat["已签收运费(元)"] == "30.00"
+
+
+def test_carrier_performance_empty_and_unassessed_data_are_safe():
+    assert module.carrier_performance([]) == {
+        "承运商数量": 0, "未填写承运商单数": 0, "承运商明细": [],
+    }
+    row = delivered_sample("XY-S-NO-ETA", expected_days=None)
+    stat = module.carrier_performance([row])["承运商明细"][0]
+    assert stat["准时评估单数"] == 0
+    assert stat["准时率(%)"] == ""
+    assert stat["未设置预计送达单数"] == 1
+    assert stat["平均揽收到签收天数"] == "2.00"
+
+
+def test_carrier_performance_csv_is_formula_safe_and_does_not_mutate_rows(tmp_path):
+    row = delivered_sample("XY-S-CSV", carrier="=恶意承运商")
+    before = dict(row)
+    path = tmp_path / "carrier-performance.csv"
+    assert module.export_carrier_performance_csv([row], path) == 1
+    assert row == before
+    assert path.read_bytes().startswith(b"\xef\xbb\xbf")
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        exported = list(csv.DictReader(handle))
+    assert exported[0]["承运商"] == "'=恶意承运商"
+    assert exported[0]["准时率(%)"] == "100.00"

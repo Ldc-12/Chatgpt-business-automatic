@@ -326,16 +326,30 @@ class ShippingStore:
         self.rows = updated
 
     def update(self, shipment_id, row):
-        item = normalize_row(row)
-        if item["发货编号"] != shipment_id:
-            raise ValueError("发货编号不能修改")
         index = next((i for i, old in enumerate(self.rows) if old["发货编号"] == shipment_id), None)
         if index is None:
             raise ValueError("找不到要编辑的发货记录")
         current = self.rows[index]
-        if item["物流状态"] != current["物流状态"]:
-            if item["物流状态"] not in STATUS_TRANSITIONS[current["物流状态"]]:
-                raise ValueError(f"不允许从“{current['物流状态']}”变更为“{item['物流状态']}”")
+        candidate = dict(row)
+        if str(candidate.get("发货编号", "")).strip() != shipment_id:
+            raise ValueError("发货编号不能修改")
+        new_status = str(candidate.get("物流状态", "")).strip()
+        if new_status != current["物流状态"]:
+            if new_status not in STATUS_TRANSITIONS[current["物流状态"]]:
+                raise ValueError(f"不允许从“{current['物流状态']}”变更为“{new_status}”")
+            today = date.today().isoformat()
+            if new_status == "待揽收" and not str(candidate.get("实际发货日期", "")).strip():
+                candidate["实际发货日期"] = today
+            if new_status in {"运输中", "派送中"} and not str(candidate.get("揽收确认日期", "")).strip():
+                candidate["揽收确认日期"] = today
+            if new_status == "已签收":
+                if not str(candidate.get("实际发货日期", "")).strip():
+                    candidate["实际发货日期"] = today
+                if not str(candidate.get("揽收确认日期", "")).strip():
+                    candidate["揽收确认日期"] = today
+                if not str(candidate.get("签收日期", "")).strip():
+                    candidate["签收日期"] = today
+        item = normalize_row(candidate)
         updated = list(self.rows)
         updated[index] = item
         self.validate_rows(updated)

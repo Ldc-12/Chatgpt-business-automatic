@@ -82,6 +82,7 @@ def test_shipping_risk_boundaries_and_summary():
         **{
             "发货编号": "XY-S-003",
             "订单编号": "ORDER-003",
+            "下单日期": (today - timedelta(days=7)).isoformat(),
             "承运商": "中通快递",
             "运单号": "ZT-003",
             "实际发货日期": (today - timedelta(days=5)).isoformat(),

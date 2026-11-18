@@ -61,7 +61,9 @@ def _decimal(value, label: str, *, allow_blank: bool = False) -> Decimal | None:
         number = Decimal(raw)
     except (InvalidOperation, ValueError) as exc:
         raise ValueError(f"{label}必须是有效数字") from exc
-    if not number.is_finite() or abs(number) > MAX_NUMERIC_ABS:
+    if not number.is_finite():
+        raise ValueError(f"{label}必须是有效数字")
+    if abs(number) > MAX_NUMERIC_ABS:
         raise ValueError(f"{label}超出支持范围")
     return number
 
@@ -493,9 +495,9 @@ def self_test() -> None:
         store = ShippingStore(root / "shipping.json")
         store.add(sample)
         assert shipping_summary(store.rows, as_of=today)["发货逾期数量"] == 1
+        prepared = dict(store.rows[0], **{"承运商": "顺丰速运", "运单号": "SF-SELF-001"})
+        store.update("XY-S-SELF-001", prepared)
         store.transition_status("XY-S-SELF-001", "待揽收", changed_on=today)
-        changed = dict(store.rows[0], **{"承运商": "顺丰速运", "运单号": "SF-SELF-001"})
-        store.update("XY-S-SELF-001", changed)
         store.transition_status("XY-S-SELF-001", "运输中", changed_on=today)
         csv_path = root / "shipping.csv"
         store.export_csv(csv_path)

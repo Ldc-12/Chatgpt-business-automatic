@@ -1,3 +1,47 @@
+# 2026-11-18 main 419d8a66：闲鱼发货历史日期补录修复与最新主线客户包验收
+
+## 本轮产品修复与合并
+- PR [#83 Fix historical date handling in Xianyu shipping status transitions](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/83) 已通过全部 Windows 矩阵与客户包构建检查后 squash 合并；产品代码提交为 `419d8a66bf2f8c56fab6b78789d13a8374629a15`。本节 Windows/ABE 结果均对应该产品代码提交。
+- 修复 ShippingStore.update 忽略 transition_status(changed_on=...) 的问题：状态流转自动补记实际发货、揽收确认、签收日期时，现在会尊重调用方传入的日期；未传入时仍使用系统当天，不改变 GUI 默认行为。
+- 新增回归测试 test_transition_status_respects_backdated_change_dates，覆盖历史发货、揽收、签收日期和重新加载后的持久化一致性；更新 30 号中文说明书，明确补录历史订单应先填真实日期再保存状态。
+- PR #83 未修改生产公钥、私钥、授权路径或产品 ID。
+
+## PR #83 Windows 候选构建（仅作为合并前验证）
+- PR run #448：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44299563582)，32/32 jobs success，0 failed。闲鱼发货工具 job 134785449630：112 passed in 1.30s；SELF_TEST_OK；PyInstaller 6.22.3；FROZEN_EXE_SELF_TEST_OK，退出码 0。
+- PR 候选客户包 artifact ID 14425980304 已下载核验：外层 ZIP 499,291,010 bytes，SHA256 d16f691b73ec4dba09d870902f8ccb0395b9127ee187f41c7f04bd203cb428d8；内层 ZIP 499,148,397 bytes，SHA256 cbebf204550b08fa9998990145ab384293bb4419f408278fe7c6095434db60f1；68 entries、31 EXE、31 份逐款说明书，CRC 通过。24 个分片重组后与内层 ZIP 完全一致。该候选包不是主线正式构建，以下使用合并后的 main run #449。
+
+## 最新 Mainland Windows EXE 主线构建 #449
+- [main push run #449](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44300473507)，head 419d8a66，32/32 jobs success，0 failed。31 个单品/启动器构建 job 全部成功，客户包 job 134789903775 成功。
+- 闲鱼发货工具 job 134788583253：112 passed in 0.90s；SELF_TEST_OK；PyInstaller 6.22.3 构建成功；FROZEN_EXE_SELF_TEST_OK，进程退出码 0。单品构建 artifact ID 14426350228。
+- 最新主线客户包 artifact [14426765444](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44300473507/artifacts/14426765444)，外层 ZIP 499,296,194 bytes，SHA256 6dc0d7231e4bb3fabb5f76947c86a2fc6327ebc0d2e564cd7af0f8304e295d8e；外层 CRC 通过。内层 Phase1-Mainland-Windows-Tools.zip 为 499,153,986 bytes，SHA256 fd00ce49ac9c960079678dd22bd8cd56e898cbe528cdc99cb9ac3fff0ed26082；内层 CRC 通过。
+- 内层 ZIP 共 68 entries（66 个文件、2 个目录），包含 31 个 EXE（30 款业务软件 + 1 个工具箱启动器）、31 份逐款中文说明书，另有说明书索引 README、包级 README、分类套餐目录、套餐说明和 inspection JSON。逐款说明书数量不把说明书索引 README 重复计入。所有文件时间戳统一为 2026-11-18 12:07:46 UTC（北京时间 20:07:46）。
+- 客户包实际包含闲鱼定价、订单利润、商品发布、发货物流四款工具；30 号发货工具说明书已包含历史日期补录指引。README 声明软件数据默认位于当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools，本地运行，不依赖 VPN、ChatGPT 或外部 AI。
+- 套餐说明与分类目录均已核验：A 办公效率 5 款/29.9 元；B 门店经营 9 款/29.9 元；C 财务与交易 9 款/29.9 元；D 合同工程物业 4 款/29.9 元；E 客户与个人事务 3 款/19.9 元；F 全系列 30 款业务软件 + 工具箱启动器/39.9 元。均为待市场验证建议价，不是实际成交价。
+- 分类套餐 artifact [14425613019](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44300473507/artifacts/14425613019)，484,626,190 bytes，外层 CRC 通过；A 5 EXE/5 说明书、B 9/9、C 9/9、D 4/4、E 3/3，五个内层 ZIP CRC 全部通过。
+- Manifest artifact [14426356076](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44300473507/artifacts/14426356076)，2,575 bytes；声明内层 ZIP 为 499,153,986 bytes、SHA256 fd00ce49ac9c960079678dd22bd8cd56e898cbe528cdc99cb9ac3fff0ed26082，与下载文件一致。
+- 分片 artifact [14426375991](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44300473507/artifacts/14426375991)，499,158,184 bytes，包含 24 个分片；已全部下载、重组，重组文件为 499,153,986 bytes，SHA256 与内层 ZIP 完全一致。
+- 工作流检查标记：MAINLAND_PACKAGE_INSPECTION_OK、POST_UPLOAD_PACKAGE_REDOWNLOAD_OK、MAINLAND_PACKAGE_CHUNKING_OK parts=24；上传后重新下载的客户包与原始检查包逐字节一致。
+
+## 最新 Autonomous Business Engine run #486
+- [ABE run #486](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44300473455)，main push head 419d8a66，build/deploy 2/2 success。
+- build job 134788581491：624 passed in 5.77s；数据状态 live；生成 12 个产品页及 12 个闲鱼目录条目，包含 live Stripe checkout links。deploy job 134788837322 成功，Pages 地址：https://ldc-12.github.io/Chatgpt-business-automatic/。
+- Pages artifact [14426585090](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44300473455/artifacts/14426585090)，47,809 bytes，SHA256 85a138fa5f6c05c0b922f18adfb220b154f7ab6217a0aeeb5d8b3516134f1732；下载后 ZIP CRC 通过，内部 TAR 198 项（17 个 product.json、12 个 listing.txt）。
+
+## 历史失败 job 日志复核
+- Mainland Windows run #431：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44075064607)，代表 job 134010848071 的失败点是打包测试把逐款说明书数量预期写成 28，实际为 29；该测试 1 failed、79 passed。当前主线检查器已按 31 份逐款说明书验收，run #449 32/32 通过。
+- run #427：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44010461941)，job 133795967770 为 6 failed、94 passed；日志显示定价测试预期 671.00、当前计算为 670.00，同时旧打包夹具预期 28 EXE、实际 26。后续定价/包装测试与产品目录继续迭代，最新 run #449 全部通过。
+- run #425：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44008942912)，job 133791043420 为 1 failed、96 passed；重复 SKU 行测试的历史断言期望净收入 60.00，日志实际为 40.00。当前 main 对应测试在 run #449 通过。
+- run #407：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/43798989422)，job 133075070190 的分片步骤因旧上限 20 × 20 MiB 无法容纳约 499 MB 客户包而失败。当前工作流使用 24 片上限，run #449 已成功生成并独立重组验证 24 片。
+- 当前 main 未完成 PR：0。历史失败均不是当前 run #449 的失败；本次 main Windows 和 ABE 均成功。
+
+## 授权与真实 Windows 最终验收（仍然阻塞正式销售）
+- 当前 main src/license.py 内嵌 Ed25519 公钥 DER SHA256：B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741；config/mainland_license_public_key.pem DER SHA256：7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961。两者仍不一致。
+- 未读取、上传、猜测、生成、替换或轮换任何生产卖家私钥/公钥。代码侧仍有临时测试密钥签发/验签、设备绑定、产品 ID/路径、错误签名、篡改签名、过期授权和卖家密钥不匹配测试；CI 冻结 EXE 自检通过不等于真实卖家电脑激活成功。
+- 仍未完成可信 Windows 电脑上的真实 GUI 流程、生产公钥匹配、真实签发/激活、退出重启后复验。所有产品继续标记为“待最终验收”，不能宣称已经正式可销售。
+- 唯一需要用户配合的授权动作：在持有原始卖家私钥的可信 Windows 电脑本地运行 tools/export_license_public_key.py，导出 PUBLIC_KEY_PEM 或 SHA256 指纹，只提供公钥/指纹用于比对；绝不上传 seller-private.pem 或任何私钥。
+
+---
+
 # 2026-11-18 产品合并记录 41a877：闲鱼发货承运商分析与候选包复核
 
 ## 当前主线与产品 PR

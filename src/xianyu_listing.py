@@ -308,10 +308,10 @@ class ListingStore:
             "updated_at": datetime.now().isoformat(timespec="seconds"),
             "items": normalized,
         }
-        _atomic_write(
-            self.path,
-            json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8"),
-        )
+        data = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+        if len(data) > MAX_DATA_BYTES:
+            raise ValueError("本地台账序列化后超过 50 MiB 安全上限")
+        _atomic_write(self.path, data)
 
     def add(self, row):
         item = normalize_row(row)
@@ -434,10 +434,10 @@ class ListingStore:
             "items": items,
             "sha256": hashlib.sha256(canonical).hexdigest(),
         }
-        _atomic_write(
-            Path(path),
-            json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8"),
-        )
+        data = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+        if len(data) > MAX_DATA_BYTES:
+            raise ValueError("备份序列化后超过 50 MiB 安全上限")
+        _atomic_write(Path(path), data)
 
     def restore(self, path):
         try:

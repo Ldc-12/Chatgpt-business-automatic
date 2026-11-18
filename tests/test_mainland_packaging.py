@@ -207,7 +207,7 @@ def test_every_standalone_delivery_zip_has_its_matching_chinese_manual():
         if line.strip().startswith("manual: ")
     ]
     assert len(manual_names) == 30
-    assert len(set(manual_names)) == 29
+    assert len(set(manual_names)) == 30
     for name in manual_names:
         assert (root / "docs" / "manuals" / name).is_file(), name
     assert "z.write('docs/manuals/${{ matrix.manual }}','说明书/${{ matrix.manual }}')" in workflow

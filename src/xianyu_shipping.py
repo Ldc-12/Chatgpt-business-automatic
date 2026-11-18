@@ -433,7 +433,7 @@ class ShippingStore:
         self.save(updated)
         self.rows = updated
 
-    def update(self, shipment_id, row):
+    def update(self, shipment_id, row, changed_on: date | None = None):
         index = next((i for i, old in enumerate(self.rows) if old["发货编号"] == shipment_id), None)
         if index is None:
             raise ValueError("找不到要编辑的发货记录")
@@ -445,7 +445,7 @@ class ShippingStore:
         if new_status != current["物流状态"]:
             if new_status not in STATUS_TRANSITIONS[current["物流状态"]]:
                 raise ValueError(f"不允许从“{current['物流状态']}”变更为“{new_status}”")
-            today = date.today().isoformat()
+            today = (changed_on or date.today()).isoformat()
             if new_status == "待揽收" and not str(candidate.get("实际发货日期", "")).strip():
                 candidate["实际发货日期"] = today
             if new_status in {"运输中", "派送中"} and not str(candidate.get("揽收确认日期", "")).strip():
@@ -491,7 +491,7 @@ class ShippingStore:
             if not changed["实际发货日期"]:
                 changed["实际发货日期"] = today.isoformat()
             changed["签收日期"] = today.isoformat()
-        self.update(shipment_id, changed)
+        self.update(shipment_id, changed, changed_on=today)
 
     def import_csv(self, path):
         source = Path(path)

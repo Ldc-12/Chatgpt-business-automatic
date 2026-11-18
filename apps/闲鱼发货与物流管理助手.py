@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
 from src.xianyu_shipping import (
     CARRIERS, FIELDS, STATUSES, ShippingStore, default_data_path,
+    carrier_performance, export_carrier_performance_csv,
     self_test, shipping_risk, shipping_summary,
 )
 
@@ -32,7 +33,9 @@ class App:
         actions = [
             ("新增发货", self.add), ("编辑记录", self.edit), ("删除记录", self.delete),
             ("导入 CSV", self.import_csv), ("导出 CSV", self.export_csv),
-            ("物流汇总", self.summary), ("备份", self.backup), ("恢复备份", self.restore),
+            ("物流汇总", self.summary), ("承运商分析", self.carrier_analysis),
+            ("导出承运商分析", self.export_carrier_analysis),
+            ("备份", self.backup), ("恢复备份", self.restore),
         ]
         for label, action in actions:
             ttk.Button(toolbar, text=label, command=action).pack(side="left", padx=2)
@@ -217,6 +220,40 @@ class App:
             f"发货总数：{report['发货总数']}\n累计运费：¥{report['累计运费(元)']}\n"
             f"{counts}\n\n" + "\n".join(sections),
         )
+
+    def carrier_analysis(self):
+        report = carrier_performance(self.store.rows)
+        lines = [
+            f"承运商：{report['承运商数量']} 家｜未填写承运商：{report['未填写承运商单数']} 单",
+            "准时率只统计已签收且填写预计送达日期的记录；缺失预计日期单独列出。",
+            "平均时长按揽收确认日至签收日计算，数据来自卖家手工录入。",
+            "",
+        ]
+        for item in report["承运商明细"][:20]:
+            rate = item["准时率(%)"] + "%" if item["准时率(%)"] else "暂无可评估记录"
+            average = item["平均揽收到签收天数"] + " 天" if item["平均揽收到签收天数"] else "暂无签收记录"
+            lines.append(
+                f"{item['承运商']}｜发货 {item['发货单数']}｜签收 {item['已签收单数']}｜"
+                f"准时率 {rate}｜逾期签收 {item['逾期签收单数']}｜"
+                f"平均揽收到签收 {average}｜累计运费 ¥{item['累计运费(元)']}"
+            )
+        if not report["承运商明细"]:
+            lines.append("暂无已填写承运商的记录。")
+        messagebox.showinfo("承运商履约分析", "\n".join(lines))
+
+    def export_carrier_analysis(self):
+        path = filedialog.asksaveasfilename(
+            initialfile="承运商履约分析.csv",
+            defaultextension=".csv", filetypes=[("CSV 文件", "*.csv")],
+        )
+        if path:
+            try:
+                count = export_carrier_performance_csv(self.store.rows, path)
+                messagebox.showinfo(
+                    "导出完成", f"已导出 {count} 家承运商的履约分析（UTF-8 BOM）。"
+                )
+            except (OSError, ValueError) as exc:
+                messagebox.showerror("导出失败", str(exc))
 
     def backup(self):
         path = filedialog.asksaveasfilename(

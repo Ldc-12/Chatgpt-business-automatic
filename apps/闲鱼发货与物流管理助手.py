@@ -11,6 +11,7 @@ from src.license import require_license
 from src.xianyu_shipping import (
     CARRIERS, FIELDS, STATUSES, ShippingStore, default_data_path,
     carrier_performance, export_carrier_performance_csv,
+    export_shipping_attention_csv,
     self_test, shipping_risk, shipping_summary,
 )
 
@@ -35,6 +36,7 @@ class App:
             ("导入 CSV", self.import_csv), ("导出 CSV", self.export_csv),
             ("物流汇总", self.summary), ("承运商分析", self.carrier_analysis),
             ("导出承运商分析", self.export_carrier_analysis),
+            ("导出待处理清单", self.export_attention),
             ("备份", self.backup), ("恢复备份", self.restore),
         ]
         for label, action in actions:
@@ -254,6 +256,22 @@ class App:
                 )
             except (OSError, ValueError) as exc:
                 messagebox.showerror("导出失败", str(exc))
+
+    def export_attention(self):
+        path = filedialog.asksaveasfilename(
+            initialfile="物流待处理清单.csv",
+            defaultextension=".csv", filetypes=[("CSV 文件", "*.csv")],
+        )
+        if path:
+            try:
+                count = export_shipping_attention_csv(self.store.rows, path)
+                messagebox.showinfo(
+                    "导出完成",
+                    f"已导出 {count} 条待处理发货记录（UTF-8 BOM）；无待处理记录时仅导出表头。",
+                )
+            except (OSError, ValueError) as exc:
+                messagebox.showerror("导出失败", str(exc))
+
 
     def backup(self):
         path = filedialog.asksaveasfilename(

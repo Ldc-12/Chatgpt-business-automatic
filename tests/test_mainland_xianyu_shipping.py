@@ -319,3 +319,83 @@ def test_transition_status_respects_backdated_change_dates(tmp_path):
     store.transition_status("XY-S-001", "已签收", changed_on=signed_on)
     assert store.rows[0]["签收日期"] == signed_on.isoformat()
     assert module.ShippingStore(store.path).rows == store.rows
+
+
+
+def test_attention_export_contains_only_actionable_rows_and_is_formula_safe(tmp_path):
+    today = date.today()
+    late_dispatch = sample(**{
+        "发货编号": "XY-S-A1",
+        "订单编号": "=HYPERLINK(\"https://bad.example\",\"open\")",
+        "下单日期": (today - timedelta(days=5)).isoformat(),
+        "承诺发货日期": (today - timedelta(days=2)).isoformat(),
+    })
+    awaiting_pickup = sample(**{
+        "发货编号": "XY-S-A2",
+        "订单编号": "ORDER-A2",
+        "承运商": "顺丰速运",
+        "运单号": "SF-A2",
+        "下单日期": (today - timedelta(days=4)).isoformat(),
+        "承诺发货日期": (today - timedelta(days=3)).isoformat(),
+        "实际发货日期": (today - timedelta(days=1)).isoformat(),
+        "物流状态": "待揽收",
+    })
+    overdue_delivery = sample(**{
+        "发货编号": "XY-S-A3",
+        "订单编号": "ORDER-A3",
+        "承运商": "中通快递",
+        "运单号": "ZT-A3",
+        "下单日期": (today - timedelta(days=7)).isoformat(),
+        "承诺发货日期": (today - timedelta(days=6)).isoformat(),
+        "实际发货日期": (today - timedelta(days=5)).isoformat(),
+        "揽收确认日期": (today - timedelta(days=4)).isoformat(),
+        "预计送达日期": (today - timedelta(days=1)).isoformat(),
+        "物流状态": "运输中",
+    })
+    exception = sample(**{
+        "发货编号": "XY-S-A4",
+        "订单编号": "ORDER-A4",
+        "物流状态": "异常",
+        "异常说明": "买家地址需要人工核实",
+    })
+    normal = sample(**{
+        "发货编号": "XY-S-A5",
+        "订单编号": "ORDER-A5",
+        "承诺发货日期": (today + timedelta(days=1)).isoformat(),
+    })
+    delivered = delivered_sample("XY-S-A6", expected_days=2, signed_days=1)
+    rows = [
+        late_dispatch, awaiting_pickup, overdue_delivery,
+        exception, normal, delivered,
+    ]
+    before = [dict(row) for row in rows]
+    path = tmp_path / "attention.csv"
+
+    assert module.export_shipping_attention_csv(rows, path, as_of=today) == 4
+    assert rows == before
+    assert path.read_bytes().startswith(b"\xef\xbb\xbf")
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        exported = list(csv.DictReader(handle))
+
+    assert [row["待处理类型"] for row in exported] == [
+        "发货逾期", "物流异常", "送达逾期", "等待揽收",
+    ]
+    assert exported[0]["订单编号"].startswith("'=HYPERLINK")
+    assert exported[0]["逾期天数"] == "2"
+    assert exported[2]["逾期天数"] == "1"
+    assert exported[1]["逾期天数"] == ""
+    assert exported[3]["逾期天数"] == ""
+    assert "XY-S-A5" not in {row["发货编号"] for row in exported}
+    assert "XY-S-A6" not in {row["发货编号"] for row in exported}
+
+
+def test_attention_export_writes_header_when_no_follow_up_is_needed(tmp_path):
+    row = sample(**{
+        "承诺发货日期": (date.today() + timedelta(days=2)).isoformat(),
+    })
+    path = tmp_path / "empty-attention.csv"
+    assert module.export_shipping_attention_csv([row], path) == 0
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.reader(handle)
+        assert next(reader) == list(module.ATTENTION_FIELDS)
+        assert list(reader) == []

@@ -379,7 +379,11 @@ def export_shipping_attention_csv(
         record = {field: item[field] for field in ATTENTION_FIELDS}
         record["待处理类型"] = kind
         record["提醒"] = risk["提醒"]
-        record["逾期天数"] = risk["逾期天数"]
+        record["逾期天数"] = (
+            (today - date.fromisoformat(item["承诺发货日期"])).days
+            if kind == "发货逾期"
+            else risk["逾期天数"] if kind == "送达逾期" else ""
+        )
         attention.append(record)
 
     attention.sort(key=lambda row: (

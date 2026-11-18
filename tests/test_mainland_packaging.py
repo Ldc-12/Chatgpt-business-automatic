@@ -45,6 +45,7 @@ APP_ENTRYPOINTS = [
     "闲鱼订单利润与售后成本核算助手.py",
     "闲鱼二手商品定价与议价助手.py",
     "闲鱼商品发布管理助手.py",
+    "闲鱼发货与物流管理助手.py",
     "装修材料用量与预算核算助手.py",
 ]
 
@@ -100,7 +101,7 @@ def test_expense_reimbursement_product_is_in_build_matrix_and_customer_package()
     assert 'product: "费用报销管理助手"' in workflow
     assert "tests/test_mainland_expense_reimbursement.py" in workflow
     assert "MainlandExpenseReimbursement" in workflow
-    assert "30 款 Windows EXE（29 款业务工具及工具箱启动器）" in workflow
+    assert "31 款 Windows EXE（30 款业务工具及工具箱启动器）" in workflow
     assert "费用报销管理助手.json" in workflow
 
 
@@ -127,7 +128,7 @@ def test_repair_work_order_product_is_in_build_matrix_and_customer_package():
     assert "售后维修工单管理助手.json" in workflow
     launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
     assert "MainlandRepairWorkOrderManager.exe" in launcher
-    assert "assert len(TOOLS) == 29" in launcher
+    assert "assert len(TOOLS) == 30" in launcher
 
 
 def test_mainland_windows_build_concurrency_is_scoped_per_ref():
@@ -159,7 +160,7 @@ def test_contract_ledger_product_is_in_build_matrix_and_customer_package():
     assert "MainlandContractLedgerAssistant" in workflow
     assert "合同台账与到期提醒助手.json" in workflow
     assert "MainlandContractLedgerAssistant.exe" in launcher
-    assert len(APP_ENTRYPOINTS) == 30
+    assert len(APP_ENTRYPOINTS) == 31
 
 
 
@@ -175,7 +176,7 @@ def test_construction_settlement_product_is_in_build_matrix_launcher_and_custome
     assert "MainlandConstructionSettlementAssistant.exe" in launcher
     assert "assert len(TOOLS) == 29" in launcher
     assert "30 款 Windows EXE（29 款业务工具及工具箱启动器）" in workflow
-    assert "29 款业务工具 + 工具箱启动器" in workflow
+    assert "30 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 30
 
 
@@ -194,7 +195,7 @@ def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package()
     assert "MainlandRentalLedgerAssistant.exe" in launcher
     assert "物业租金与押金管理助手" in license_tests
     assert "30 款 Windows EXE（29 款业务工具及工具箱启动器）" in workflow
-    assert "全部 29 款业务工具 + 工具箱启动器" in workflow
+    assert "全部 30 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 30
 
 

@@ -1,3 +1,33 @@
+# 2026-11-18 main HEAD 41a877：闲鱼发货承运商分析合并与候选包复核
+
+## 当前主线与产品 PR
+- 当前 main HEAD：`41a87725db4336d09af01b006b07a4e19f95ac24`。PR [#80 Add carrier delivery performance analysis to Xianyu shipping ledger](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/80) 已 squash 合并，合并提交即当前 HEAD。
+- PR #80 为「闲鱼发货与物流管理助手」增加离线承运商履约分析：按承运商汇总发货记录、签收、准时/逾期、缺少预计送达日期、揽收到签收平均天数及运费；准时率只统计已签收且填写预计送达日期的记录，缺失 ETA 单独计数、不进入分母。
+- 新增独立 UTF-8 BOM 分析 CSV 导出；承运商文本经过公式注入防护，文件使用原子写入；增加 GUI 查看/导出入口、中文说明书和产品 README。未增加闲鱼/快递 API、VPN、ChatGPT、外部 AI、云端依赖；未修改授权逻辑、公钥或私钥。
+
+## PR #80 Windows 候选构建（不是主线构建）
+- PR run #446：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44228064103)，head `49ba243e3af62febf65df57e9d7e6b48258d9e13`，工作流结论 success。工作流 run artifact 列表包含 31 个单品/启动器 Windows 构建 artifact；jobs 接口首页面返回的 30 个 job 全部 success、0 failed。产品专属 job `134546027974` 成功。
+- 闲鱼发货工具 job `134546027974`：111 passed in 1.48s；源码自检 `SELF_TEST_OK`；PyInstaller 6.22.3 构建成功；冻结 EXE 自检 `FROZEN_EXE_SELF_TEST_OK`，进程退出码 0。单品候选 artifact ID `14393786418`，下载后外层 ZIP CRC 通过，包含 EXE 和单品 ZIP；单品 ZIP CRC 通过，含 EXE、README 和 30 号中文说明书。
+- 客户包候选 artifact ID `14393861607`（499,294,298 bytes），外层 SHA256 `3d071752cd6825046c4bbb6dabfed72ca231a2de291941c9369832fe59946ca7`；外层 ZIP CRC 通过。内层 `Phase1-Mainland-Windows-Tools.zip` 为 499,151,936 bytes，SHA256 `c6bdd5f0a6c27223fbb1164b8bb64968c7fd0fdbf8b3627c14bfd34148c1b9b7`；内层 CRC 通过，68 个条目（66 个文件、2 个目录），31 个 EXE、31 份逐款中文说明书，另有说明书索引 README。独立清单复核与 inspection JSON 一致；文件时间戳统一为 `2026-11-18 03:10:10 UTC`。
+- 客户包 A–F 套餐说明齐全：A 办公效率 5 款/29.9 元；B 门店经营 9 款/29.9 元；C 财务与交易 9 款/29.9 元；D 合同工程物业 4 款/29.9 元；E 客户与个人事务 3 款/19.9 元；F 全系列 30 款业务软件 + 工具箱启动器/39.9 元。均为待市场验证建议价，不代表已成交。
+- 内层 ZIP 实际包含闲鱼定价、订单利润、商品发布、发货物流 4 款 EXE；30 号发货工具说明书存在。A–E 系列 ZIP artifact ID `14394191366`（484,620,832 bytes），外层 CRC 通过；独立解压检查：A 5 EXE/5 说明书、B 9/9、C 9/9、D 4/4、E 3/3，五个 ZIP CRC 全部通过。
+- Manifest artifact ID `14392994540`（2,577 bytes），外层 SHA256 `225173a27acd6addbbe7def984db6e4f7adba32c3751c9714124ddd672ae19cf`；其中 `Phase1-Mainland-Windows-Tools.zip.sha256` 声明的 SHA256 为 `c6bdd5f0a6c27223fbb1164b8bb64968c7fd0fdbf8b3627c14bfd34148c1b9b7`，与实际下载内层 ZIP 完全一致。分片 artifact ID `14394580305` 已生成；本次未单独下载并重组所有分片，不把分片重组记为本轮独立验证。
+- PR #80 候选客户包不是 main 正式包；上述构建/包检查只证明该 PR 候选提交。不能将其称为当前 main 发布 artifact。
+
+## main push 与 Autonomous Business Engine 的可核实范围
+- 当前 main HEAD 已从 PR #80 合并提交更新为 `41a87725db4336d09af01b006b07a4e19f95ac24`。本次 GitHub connector 的 `fetch_commit_workflow_runs` 只返回 pull-request-triggered runs，查询当前 main merge SHA 没有返回 push/scheduled runs。因此，PR #80 合并后的 main push Windows EXE run 和 ABE run 的 ID、job 日志及 artifact 尚无法通过当前连接器核实；不将 PR #80 的 #446 候选构建冒充为 main build，也不猜测 run ID。
+- 最近仍可直接检查的 main Windows run 是旧 run #439：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44082046996)，head `17bcb568e017b41d2afb7a514c432143e9f36db3`，早于本次 main HEAD。其 customer-package artifact `14327608229` 实际只有 29 EXE/29 份逐款说明书（28 款业务软件 + 启动器），缺少后来加入的闲鱼商品发布与发货工具；虽 CRC 和旧 manifest SHA256 均通过，但明确不是当前 main 包，禁止用于本次上架。
+- 最近仍可直接检查的 ABE run 是旧 run #478：[Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44082046909)，head 同为旧 `17bcb...`；build/deploy 2/2 success，build job `134034824368` 为 570 passed，生成 12 个产品页和 12 个闲鱼目录条目，`error: null`。Pages artifact ID `14327112332`，47,266 bytes，SHA256 `fc03a163fb62d18eab79f44950072bf7950576141ef913f429182d8165052df2`；下载后 ZIP CRC 通过，内部 TAR 198 项（17 个 `product.json`、12 个 `listing.txt`）。该 run 不是本次 main HEAD 的 ABE 结果。
+- 上述旧 main run #439 和 ABE #478 未发现失败 job；PR #80 run #446 总体 success。由于当前连接器对 push/scheduled runs 的可见性限制，不能断言它们是最新 main runs，也不能声称本次 main push 构建已通过。
+
+## 授权与最终上架阻塞
+- 当前 main `src/license.py` 内嵌 Ed25519 公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`，仍不一致。
+- PR #80 未改动授权路径、公钥或私钥；本轮没有请求、生成、上传、猜测或替换卖家私钥。
+- Windows CI 的冻结 EXE 自检不等于卖家电脑上的真实 GUI 使用验收。真实 GUI 全流程、卖家公钥匹配、真实签发/激活、退出重启后持续有效性仍未完成；所有产品继续标记为待最终验收，不得宣称正式可销售。
+- 唯一需要用户配合的授权动作：在可信 Windows 电脑上本地导出卖家公钥 PEM 或 SHA256 指纹，只提供公钥/指纹，绝不提供私钥。
+
+---
+
 # 2026-11-17 main 产品提交 17bcb568：闲鱼定价分析导出与主线客户包复核
 
 ## 当前主线与 PR

@@ -46,6 +46,11 @@ TEXT_FIELDS = {
     "下单日期", "承诺发货日期", "实际发货日期", "揽收确认日期",
     "预计送达日期", "签收日期", "物流状态", "异常说明", "备注",
 }
+PERFORMANCE_FIELDS = (
+    "承运商", "发货单数", "已签收单数", "准时评估单数", "准时签收单数",
+    "逾期签收单数", "未设置预计送达单数", "异常件数", "准时率(%)",
+    "平均揽收到签收天数", "累计运费(元)", "已签收运费(元)",
+)
 
 
 def _decimal(value, label: str, *, allow_blank: bool = False) -> Decimal | None:
@@ -239,6 +244,107 @@ def shipping_summary(rows: list[dict], as_of: date | None = None) -> dict:
         "送达逾期清单": late_delivery,
         "异常件清单": exceptions,
     }
+
+
+def carrier_performance(rows: list[dict]) -> dict:
+    """Summarize carrier performance from seller-entered, signed delivery records.
+
+    On-time rate excludes signed records without an estimated delivery date.
+    Transit duration is measured from pickup confirmation to signed date.
+    """
+    groups = {}
+    unassigned = 0
+    for raw in rows:
+        item = normalize_row(raw)
+        carrier = item["承运商"]
+        if not carrier:
+            unassigned += 1
+            continue
+        stat = groups.setdefault(carrier, {
+            "承运商": carrier,
+            "发货单数": 0,
+            "已签收单数": 0,
+            "准时评估单数": 0,
+            "准时签收单数": 0,
+            "逾期签收单数": 0,
+            "未设置预计送达单数": 0,
+            "异常件数": 0,
+            "_累计运费": Decimal("0"),
+            "_已签收运费": Decimal("0"),
+            "_揽收到签收天数": 0,
+        })
+        stat["发货单数"] += 1
+        stat["_累计运费"] += Decimal(item["运费(元)"])
+        if item["物流状态"] == "异常":
+            stat["异常件数"] += 1
+        if item["物流状态"] != "已签收":
+            continue
+        stat["已签收单数"] += 1
+        stat["_已签收运费"] += Decimal(item["运费(元)"])
+        pickup = date.fromisoformat(item["揽收确认日期"])
+        signed = date.fromisoformat(item["签收日期"])
+        stat["_揽收到签收天数"] += (signed - pickup).days
+        expected = item["预计送达日期"]
+        if not expected:
+            stat["未设置预计送达单数"] += 1
+            continue
+        stat["准时评估单数"] += 1
+        if signed <= date.fromisoformat(expected):
+            stat["准时签收单数"] += 1
+        else:
+            stat["逾期签收单数"] += 1
+
+    details = []
+    for carrier, stat in groups.items():
+        assessed = stat["准时评估单数"]
+        delivered = stat["已签收单数"]
+        on_time_rate = ""
+        if assessed:
+            rate = (
+                Decimal(stat["准时签收单数"]) * Decimal("100")
+                / Decimal(assessed)
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            on_time_rate = format(rate, "f")
+        average_days = ""
+        if delivered:
+            average = (
+                Decimal(stat["_揽收到签收天数"]) / Decimal(delivered)
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            average_days = format(average, "f")
+        details.append({
+            "承运商": carrier,
+            "发货单数": stat["发货单数"],
+            "已签收单数": delivered,
+            "准时评估单数": assessed,
+            "准时签收单数": stat["准时签收单数"],
+            "逾期签收单数": stat["逾期签收单数"],
+            "未设置预计送达单数": stat["未设置预计送达单数"],
+            "异常件数": stat["异常件数"],
+            "准时率(%)": on_time_rate,
+            "平均揽收到签收天数": average_days,
+            "累计运费(元)": _money(stat["_累计运费"], "累计运费"),
+            "已签收运费(元)": _money(stat["_已签收运费"], "已签收运费"),
+        })
+    details.sort(key=lambda item: (-item["发货单数"], item["承运商"]))
+    return {
+        "承运商数量": len(details),
+        "未填写承运商单数": unassigned,
+        "承运商明细": details,
+    }
+
+
+def export_carrier_performance_csv(rows: list[dict], path: str | Path) -> int:
+    report = carrier_performance(rows)
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=PERFORMANCE_FIELDS, extrasaction="raise")
+    writer.writeheader()
+    for row in report["承运商明细"]:
+        writer.writerow({
+            field: _safe_csv_text(row[field]) if field == "承运商" else row[field]
+            for field in PERFORMANCE_FIELDS
+        })
+    _atomic_write(Path(path), buffer.getvalue().encode("utf-8-sig"))
+    return len(report["承运商明细"])
 
 
 def _safe_csv_text(value) -> str:
@@ -499,6 +605,12 @@ def self_test() -> None:
         store.update("XY-S-SELF-001", prepared)
         store.transition_status("XY-S-SELF-001", "待揽收", changed_on=today)
         store.transition_status("XY-S-SELF-001", "运输中", changed_on=today)
+        store.transition_status("XY-S-SELF-001", "派送中", changed_on=today)
+        store.transition_status("XY-S-SELF-001", "已签收", changed_on=today)
+        performance = carrier_performance(store.rows)
+        assert performance["承运商明细"][0]["已签收单数"] == 1
+        analysis_path = root / "carrier-performance.csv"
+        assert export_carrier_performance_csv(store.rows, analysis_path) == 1
         csv_path = root / "shipping.csv"
         store.export_csv(csv_path)
         imported = ShippingStore(root / "imported.json")

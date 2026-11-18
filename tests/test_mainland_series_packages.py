@@ -20,11 +20,11 @@ def _make_inputs(tmp_path):
     return release, manuals, output
 
 
-def test_series_catalog_covers_all_29_products_once():
+def test_series_catalog_covers_all_30_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 29
-    assert len(assigned) == 29
+    assert len(MODULE.PRODUCTS) == 30
+    assert len(assigned) == 30
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "29 款业务软件 + 工具箱启动器" in catalog
+    assert "30 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -156,6 +156,9 @@ def test_finance_series_contains_xianyu_order_profit_assistant():
 def test_finance_series_contains_xianyu_listing_lifecycle_manager():
     finance = next(item for item in MODULE.SERIES if item["code"] == "C")
     assert "xianyu-listing" in finance["products"]
+    assert "xianyu-shipping" in finance["products"]
+    assert MODULE.PRODUCTS["xianyu-shipping"][1] == "MainlandXianyuShippingAssistant.exe"
+    assert MODULE.PRODUCTS["xianyu-shipping"][2] == "30-闲鱼发货与物流管理助手-用户说明书.md"
     assert MODULE.PRODUCTS["xianyu-listing"][1] == "MainlandXianyuListingManager.exe"
     assert MODULE.PRODUCTS["xianyu-listing"][2] == "29-闲鱼商品发布管理助手-用户说明书.md"
 
@@ -165,5 +168,5 @@ def test_static_series_catalog_lists_each_business_product_once():
     catalog = catalog_path.read_text(encoding="utf-8")
     for name, _, _ in MODULE.PRODUCTS.values():
         assert catalog.count(f"- {name}\n") == 1, name
-    assert "| C | 财务与交易系列 | 8 |" in catalog
-    assert "| F | 全系列综合套餐 | 29 款业务软件 + 工具箱启动器 |" in catalog
+    assert "| C | 财务与交易系列 | 9 |" in catalog
+    assert "| F | 全系列综合套餐 | 30 款业务软件 + 工具箱启动器 |" in catalog

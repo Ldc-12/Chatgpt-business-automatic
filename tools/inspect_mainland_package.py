@@ -27,7 +27,7 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def inspect_package(path: str | Path, *, expected_exes: int = 30, expected_manuals: int = 30) -> dict:
+def inspect_package(path: str | Path, *, expected_exes: int = 31, expected_manuals: int = 31) -> dict:
     archive_path = Path(path)
     if not archive_path.is_file():
         raise ValueError(f"客户 ZIP 不存在：{archive_path}")
@@ -147,8 +147,8 @@ def inspect_package(path: str | Path, *, expected_exes: int = 30, expected_manua
 def main() -> int:
     parser = argparse.ArgumentParser(description="Inspect the Mainland Phase 1 customer ZIP.")
     parser.add_argument("--package", required=True, help="Path to Phase1-Mainland-Windows-Tools.zip")
-    parser.add_argument("--expected-exes", type=int, default=30)
-    parser.add_argument("--expected-manuals", type=int, default=30)
+    parser.add_argument("--expected-exes", type=int, default=31)
+    parser.add_argument("--expected-manuals", type=int, default=31)
     parser.add_argument("--report", required=True, help="Write the JSON inspection report to this path")
     args = parser.parse_args()
     try:

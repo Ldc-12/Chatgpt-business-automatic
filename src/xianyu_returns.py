@@ -166,6 +166,8 @@ def normalize_row(row: dict, today: date | None = None) -> dict:
         raise ValueError("卖家收货日期需要先填写买家寄回日期")
     if item["退款完成日期"] and refunded <= 0:
         raise ValueError("退款完成日期需要填写大于 0 的实际退款金额")
+    if item["处理状态"] == "已完成" and refunded > 0 and not item["退款完成日期"]:
+        raise ValueError("已完成的退款案件必须填写退款完成日期")
     if item["处理状态"] == "待买家寄回" and item["售后类型"] not in RETURN_TYPES:
         raise ValueError("仅退款或补偿案件不能进入待买家寄回状态")
     if item["买家寄回日期"] and item["买家寄回日期"] < item["申请日期"]:

@@ -9,7 +9,7 @@ from pathlib import Path
 import tempfile
 
 CHUNK_SIZE_BYTES = 20 * 1024 * 1024
-MAX_CHUNKS = 24
+MAX_CHUNKS = 48
 
 
 def chunk_count(size_bytes: int, chunk_size: int = CHUNK_SIZE_BYTES) -> int:

@@ -10,12 +10,14 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
-def test_current_customer_package_fits_bounded_24_chunk_capacity():
-    # The 2026-11-16 PR package is 425,249,695 bytes. A 20 MiB limit
-    # therefore needs 21 chunks, not the old 20-chunk ceiling.
+def test_current_customer_package_fits_bounded_48_chunk_capacity():
+    # The 31-business-tool candidate exceeds the previous 24-chunk ceiling.
+    # Keep 20 MiB chunks but allow a bounded 48-part package for future growth.
     assert MODULE.chunk_count(425_249_695) == 21
-    assert MODULE.chunk_count(24 * MODULE.CHUNK_SIZE_BYTES) == 24
-    assert MODULE.chunk_count(24 * MODULE.CHUNK_SIZE_BYTES + 1) == 25
+    assert MODULE.chunk_count(25 * MODULE.CHUNK_SIZE_BYTES) == 25
+    assert MODULE.chunk_count(48 * MODULE.CHUNK_SIZE_BYTES) == 48
+    assert MODULE.chunk_count(48 * MODULE.CHUNK_SIZE_BYTES + 1) == 49
+    assert MODULE.MAX_CHUNKS == 48
 
 
 def test_split_package_writes_ordered_chunks_and_sha256_manifest(tmp_path):
@@ -76,5 +78,5 @@ def test_workflow_uses_the_tested_chunker_and_keeps_downloads_bounded():
     workflow = (ROOT / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
     assert "tests/test_mainland_package_chunks.py" in workflow
     assert "tools/split_mainland_package.py" in workflow
-    assert "--max-chunks 24" in workflow
+    assert "--max-chunks 48" in workflow
     assert "release/Phase1-Mainland-Windows-Tools.zip.part-*" in workflow

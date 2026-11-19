@@ -7,6 +7,7 @@ import hmac
 import io
 import json
 import os
+import sys
 import tempfile
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -552,7 +553,8 @@ def self_test() -> None:
         assert restored.rows == store.rows
         store.transition_status("XY-R-SELF-001", "待平台处理")
         assert store.rows[0]["处理状态"] == "待平台处理"
-    print("SELF_TEST_OK", flush=True)
+    if sys.stdout is not None:
+        print("SELF_TEST_OK", flush=True)
 
 
 if __name__ == "__main__":

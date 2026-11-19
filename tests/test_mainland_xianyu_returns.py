@@ -24,6 +24,7 @@ def sample(**overrides):
         "责任归属": "待核实",
         "处理状态": "待退款",
         "处理截止日期": today.isoformat(),
+        "下次跟进日期": "",
         "下一步动作": "核对退货商品后退款",
         "买家寄回运单号": "SF-001",
         "买家寄回日期": (today - timedelta(days=1)).isoformat(),
@@ -59,6 +60,7 @@ def test_normalize_money_and_required_fields():
         ({"实际退款金额(元)": "81"}, "不能超过申请金额"),
         ({"申请日期": "2026/11/18"}, "YYYY-MM-DD"),
         ({"处理截止日期": "2026/11/18"}, "YYYY-MM-DD"),
+        ({"下次跟进日期": "2026/11/18"}, "YYYY-MM-DD"),
         ({"售后类型": "仅退款", "买家寄回日期": "2026-11-18"}, "不能填写买家寄回日期"),
         ({"卖家收货日期": "2026-11-18", "买家寄回日期": ""}, "需要先填写买家寄回日期"),
         ({"退款完成日期": "2026-11-18", "实际退款金额(元)": "0"}, "需要填写大于 0"),
@@ -170,6 +172,100 @@ def test_actionable_cases_are_sorted_and_exclude_terminal_or_far_deadlines():
     assert result[0]["逾期天数"] == 1
 
 
+
+
+
+def test_followup_date_is_independent_and_cannot_hide_an_overdue_deadline():
+    today = date.today()
+    followup_today = sample(**{
+        "记录编号": "XY-R-FOLLOWUP-TODAY",
+        "订单编号": "ORDER-FOLLOWUP-TODAY",
+        "处理截止日期": (today + timedelta(days=5)).isoformat(),
+        "下次跟进日期": today.isoformat(),
+    })
+    deadline_overdue = sample(**{
+        "记录编号": "XY-R-DEADLINE-OVERDUE",
+        "订单编号": "ORDER-DEADLINE-OVERDUE",
+        "处理截止日期": (today - timedelta(days=4)).isoformat(),
+        "下次跟进日期": (today + timedelta(days=2)).isoformat(),
+    })
+    followup_overdue = sample(**{
+        "记录编号": "XY-R-FOLLOWUP-OVERDUE",
+        "订单编号": "ORDER-FOLLOWUP-OVERDUE",
+        "处理截止日期": (today + timedelta(days=5)).isoformat(),
+        "下次跟进日期": (today - timedelta(days=2)).isoformat(),
+    })
+    far = sample(**{
+        "记录编号": "XY-R-FAR",
+        "订单编号": "ORDER-FAR",
+        "处理截止日期": (today + timedelta(days=9)).isoformat(),
+        "下次跟进日期": (today + timedelta(days=8)).isoformat(),
+    })
+
+    risk = module.case_risk(followup_today, as_of=today)
+    assert risk["待处理类型"] == "今日到期"
+    assert risk["提醒事项"] == "下次跟进"
+    assert risk["提醒日期"] == today.isoformat()
+
+    risk = module.case_risk(deadline_overdue, as_of=today)
+    assert risk["待处理类型"] == "已逾期"
+    assert risk["提醒事项"] == "处理截止"
+    assert risk["逾期天数"] == 4
+
+    risk = module.case_risk(followup_overdue, as_of=today)
+    assert risk["提醒事项"] == "下次跟进"
+    assert risk["逾期天数"] == 2
+    assert module.case_risk(far, as_of=today)["需要跟进"] is False
+
+    report = module.after_sales_summary(
+        [followup_today, deadline_overdue, followup_overdue, far],
+        as_of=today,
+    )
+    assert report["逾期案件数"] == 2
+
+
+def test_followup_date_may_be_overdue_but_not_before_application():
+    today = date.today()
+    application = today - timedelta(days=10)
+    overdue = module.normalize_row(sample(**{
+        "申请日期": application.isoformat(),
+        "下次跟进日期": (today - timedelta(days=2)).isoformat(),
+    }), today=today)
+    assert overdue["下次跟进日期"] == (today - timedelta(days=2)).isoformat()
+    with pytest.raises(ValueError, match="不能早于申请日期"):
+        module.normalize_row(sample(**{
+            "申请日期": today.isoformat(),
+            "下次跟进日期": (today - timedelta(days=1)).isoformat(),
+        }), today=today)
+
+
+def test_legacy_json_without_followup_field_remains_loadable(tmp_path):
+    path = tmp_path / "legacy.json"
+    legacy = sample()
+    legacy.pop("下次跟进日期")
+    path.write_text(json.dumps({
+        "format": module.FORMAT,
+        "version": module.VERSION,
+        "items": [legacy],
+    }, ensure_ascii=False), encoding="utf-8")
+    store = module.ReturnFollowupStore(path)
+    assert store.rows[0]["下次跟进日期"] == ""
+
+
+def test_legacy_csv_without_followup_column_remains_importable(tmp_path):
+    legacy_fields = list(module.LEGACY_FIELDS)
+    legacy = sample()
+    legacy.pop("下次跟进日期")
+    path = tmp_path / "legacy.csv"
+    with path.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=legacy_fields)
+        writer.writeheader()
+        writer.writerow(legacy)
+    store = module.ReturnFollowupStore(tmp_path / "legacy-import.json")
+    assert store.import_csv(path) == 1
+    assert store.rows[0]["下次跟进日期"] == ""
+
+
 def test_store_persists_and_status_transitions_are_validated(tmp_path):
     path = tmp_path / "returns.json"
     store = module.ReturnFollowupStore(path)
@@ -265,6 +361,8 @@ def test_action_export_is_formula_safe_and_writes_header_when_empty(tmp_path):
         exported = list(csv.DictReader(handle))
     assert exported[0]["订单编号"].startswith("'=")
     assert exported[0]["待处理类型"] == "今日到期"
+    assert exported[0]["提醒事项"] == "处理截止"
+    assert exported[0]["提醒日期"] == today.isoformat()
 
     empty = module.ReturnFollowupStore(tmp_path / "empty.json")
     empty_path = tmp_path / "empty-actions.csv"

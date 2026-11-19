@@ -45,17 +45,18 @@ FIELDS = (
     "记录编号", "订单编号", "商品/SKU", "售后类型", "申请日期",
     "订单成交金额(元)", "申请金额(元)", "实际退款金额(元)",
     "补偿金额(元)", "退货运费(元)", "运费承担方", "责任归属",
-    "处理状态", "处理截止日期", "下一步动作", "买家寄回运单号",
+    "处理状态", "处理截止日期", "下次跟进日期", "下一步动作", "买家寄回运单号",
     "买家寄回日期", "卖家收货日期", "退款完成日期",
     "本地证据目录", "处理摘要", "备注",
 )
+LEGACY_FIELDS = tuple(field for field in FIELDS if field != "下次跟进日期")
 TEXT_FIELDS = set(FIELDS) - {
     "订单成交金额(元)", "申请金额(元)", "实际退款金额(元)",
     "补偿金额(元)", "退货运费(元)",
 }
 ACTION_FIELDS = (
     "记录编号", "订单编号", "商品/SKU", "售后类型", "处理状态",
-    "处理截止日期", "待处理类型", "逾期天数", "下一步动作",
+    "处理截止日期", "下次跟进日期", "待处理类型", "提醒事项", "提醒日期", "逾期天数", "下一步动作",
     "责任归属", "实际退款金额(元)", "补偿金额(元)", "退货运费(元)", "备注",
 )
 ACTION_TEXT_FIELDS = set(ACTION_FIELDS) - {
@@ -140,6 +141,9 @@ def normalize_row(row: dict, today: date | None = None) -> dict:
     )
     for field in ("买家寄回日期", "卖家收货日期", "退款完成日期"):
         item[field] = _date(item[field], field, today)
+    item["下次跟进日期"] = _date(
+        item["下次跟进日期"], "下次跟进日期", today, allow_future=True
+    )
 
     amount_fields = (
         "订单成交金额(元)", "申请金额(元)", "实际退款金额(元)",
@@ -172,6 +176,8 @@ def normalize_row(row: dict, today: date | None = None) -> dict:
         raise ValueError("仅退款或补偿案件不能进入待买家寄回状态")
     if item["买家寄回日期"] and item["买家寄回日期"] < item["申请日期"]:
         raise ValueError("买家寄回日期不能早于申请日期")
+    if item["下次跟进日期"] and item["下次跟进日期"] < item["申请日期"]:
+        raise ValueError("下次跟进日期不能早于申请日期")
     if item["卖家收货日期"] and item["卖家收货日期"] < item["买家寄回日期"]:
         raise ValueError("卖家收货日期不能早于买家寄回日期")
     if item["退款完成日期"] and item["退款完成日期"] < item["申请日期"]:
@@ -182,24 +188,61 @@ def normalize_row(row: dict, today: date | None = None) -> dict:
 def case_risk(row: dict, as_of: date | None = None) -> dict:
     today = as_of or date.today()
     item = normalize_row(row, today=today)
-    deadline = item["处理截止日期"]
-    if not deadline or item["处理状态"] in TERMINAL_STATUSES:
-        return {"需要跟进": False, "待处理类型": "", "逾期天数": 0, "剩余天数": ""}
-    due = date.fromisoformat(deadline)
-    delta = (today - due).days
-    if delta > 0:
-        label = "已逾期"
-    elif delta == 0:
-        label = "今日到期"
-    elif delta >= -3:
-        label = "3日内到期"
-    else:
-        return {"需要跟进": False, "待处理类型": "", "逾期天数": 0, "剩余天数": -delta}
+    empty = {
+        "需要跟进": False,
+        "待处理类型": "",
+        "逾期天数": 0,
+        "剩余天数": "",
+        "提醒事项": "",
+        "提醒日期": "",
+    }
+    if item["处理状态"] in TERMINAL_STATUSES:
+        return empty
+
+    candidates = []
+    for label, field in (
+        ("处理截止", "处理截止日期"),
+        ("下次跟进", "下次跟进日期"),
+    ):
+        value = item[field]
+        if not value:
+            continue
+        due = date.fromisoformat(value)
+        delta = (today - due).days
+        if delta > 0:
+            kind, priority = "已逾期", 0
+        elif delta == 0:
+            kind, priority = "今日到期", 1
+        elif delta >= -3:
+            kind, priority = "3日内到期", 2
+        else:
+            continue
+        candidates.append({
+            "优先级": priority,
+            "待处理类型": kind,
+            "逾期天数": delta if delta > 0 else 0,
+            "剩余天数": -delta if delta < 0 else 0,
+            "提醒事项": label,
+            "提醒日期": value,
+        })
+
+    if not candidates:
+        return empty
+    selected = min(
+        candidates,
+        key=lambda candidate: (
+            candidate["优先级"],
+            candidate["提醒日期"],
+            0 if candidate["提醒事项"] == "处理截止" else 1,
+        ),
+    )
     return {
         "需要跟进": True,
-        "待处理类型": label,
-        "逾期天数": delta if delta > 0 else 0,
-        "剩余天数": -delta if delta < 0 else 0,
+        "待处理类型": selected["待处理类型"],
+        "逾期天数": selected["逾期天数"],
+        "剩余天数": selected["剩余天数"],
+        "提醒事项": selected["提醒事项"],
+        "提醒日期": selected["提醒日期"],
     }
 
 
@@ -256,12 +299,14 @@ def actionable_cases(rows: list[dict], as_of: date | None = None) -> list[dict]:
         results.append({
             **{field: item[field] for field in FIELDS},
             "待处理类型": risk["待处理类型"],
+            "提醒事项": risk["提醒事项"],
+            "提醒日期": risk["提醒日期"],
             "逾期天数": risk["逾期天数"],
         })
     priority = {"已逾期": 0, "今日到期": 1, "3日内到期": 2}
     results.sort(key=lambda row: (
         priority[row["待处理类型"]],
-        row["处理截止日期"],
+        row["提醒日期"],
         row["订单编号"],
     ))
     return results
@@ -408,8 +453,8 @@ class ReturnFollowupStore:
         incoming = []
         with source.open("r", encoding="utf-8-sig", newline="") as handle:
             reader = csv.DictReader(handle)
-            if reader.fieldnames != list(FIELDS):
-                raise ValueError("CSV 表头必须与软件导出的字段和顺序完全一致")
+            if reader.fieldnames not in (list(FIELDS), list(LEGACY_FIELDS)):
+                raise ValueError("CSV 表头必须与当前或旧版软件导出的字段和顺序完全一致")
             for line, row in enumerate(reader, start=2):
                 if None in row:
                     raise ValueError(f"第 {line} 行包含多余字段")
@@ -530,6 +575,7 @@ def self_test() -> None:
         "责任归属": "待核实",
         "处理状态": "待退款",
         "处理截止日期": today.isoformat(),
+        "下次跟进日期": today.isoformat(),
         "下一步动作": "核对退货商品后退款",
         "买家寄回运单号": "SF-SELF-001",
         "买家寄回日期": today.isoformat(),

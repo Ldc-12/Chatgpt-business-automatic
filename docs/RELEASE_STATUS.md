@@ -1,11 +1,11 @@
-# Release status — 2026-11-19 (main HEAD 0bb61fa; product source fae787f; post-merge main verification pending)
+# Release status — 2026-11-19 (product source fae787f; post-merge main verification pending)
 
 ## Current main, open PRs and release decision
 
 - Repository: `Ldc-12/Chatgpt-business-automatic`.
-- Current main HEAD: `0bb61fabc494dcb2eae6bbbb76346b27644c4c33`, the docs-only release-status correction merged through PR #90. Current product-source commit: `fae787fd984a09e2e346680cf42f8bc9e413f63a`, squash-merged through PR [#88 Add offline Xianyu return and refund follow-up assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/88). PR #88's verified candidate head was `7e7dfaa921aed89bc7c2264237c4f29e595abd92`.
+- Current product-source commit: `fae787fd984a09e2e346680cf42f8bc9e413f63a`, squash-merged through PR [#88 Add offline Xianyu return and refund follow-up assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/88). PR #88's verified candidate head was `7e7dfaa921aed89bc7c2264237c4f29e595abd92`. Docs-only release-ledger corrections were merged through PRs #90 and #91; they do not change this product-source tree.
 - PR #88 merged only after its Windows candidate workflow #463 succeeded and the candidate customer ZIP, manifest, 25-part reassembly and all A–E series ZIPs were downloaded and independently inspected. The candidate is not a main-branch release.
-- Docs-only PR #89 was closed as superseded; PR #90 merged the refreshed release ledger. There are currently no open PRs.
+- Docs-only PR #89 was closed as superseded; PRs #90 and #91 merged release-ledger corrections. No product-code PR is open.
 - No post-merge main-push Mainland Windows EXE run, ABE run or main artifact has yet been independently verified in this status. The last verified main Windows run #455 and ABE run #492 below predate PR #88 and are stale relative to current main. Do not distribute their package as current.
 - Release decision: **待最终验收 / pending final acceptance**. The PR #88 candidate package is fully inspected but must not be passed off as a main release. A new main-push Windows build/package and a post-merge ABE run still need independent verification.
 

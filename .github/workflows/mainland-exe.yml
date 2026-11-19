@@ -406,7 +406,7 @@ jobs:
           python tools/split_mainland_package.py \
             --package release/Phase1-Mainland-Windows-Tools.zip \
             --output-dir release \
-            --max-chunks 24
+            --max-chunks 48
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-manifest

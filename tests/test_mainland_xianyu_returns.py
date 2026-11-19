@@ -159,6 +159,7 @@ def test_actionable_cases_are_sorted_and_exclude_terminal_or_far_deadlines():
             "记录编号": "XY-R-DONE",
             "订单编号": "ORDER-DONE",
             "处理状态": "已完成",
+            "退款完成日期": today.isoformat(),
             "处理截止日期": (today - timedelta(days=2)).isoformat(),
         }),
     ]

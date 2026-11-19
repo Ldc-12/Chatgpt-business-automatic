@@ -17,7 +17,7 @@ from src.xianyu_returns import (
 PRODUCT = "闲鱼退货退款跟进助手"
 DISPLAY_COLUMNS = (
     "订单编号", "商品/SKU", "售后类型", "处理状态",
-    "处理截止日期", "实际退款金额(元)", "提醒",
+    "处理截止日期", "下次跟进日期", "实际退款金额(元)", "提醒事项", "提醒",
 )
 
 
@@ -47,7 +47,7 @@ class App:
         area = ttk.Frame(root, padding=(8, 0, 8, 4))
         area.pack(fill="both", expand=True)
         self.tree = ttk.Treeview(area, columns=DISPLAY_COLUMNS, show="headings")
-        widths = (180, 210, 110, 120, 120, 130, 120)
+        widths = (160, 190, 105, 105, 120, 120, 130, 100, 120)
         for column, width in zip(DISPLAY_COLUMNS, widths):
             self.tree.heading(column, text=column)
             self.tree.column(column, width=width, minwidth=90, stretch=True)
@@ -67,14 +67,17 @@ class App:
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
         today = date.today()
-        ordered = sorted(
-            self.store.rows,
-            key=lambda row: (
+
+        def sort_key(row):
+            risk = case_risk(row, as_of=today)
+            return (
                 row["处理状态"] in {"已完成", "已关闭"},
-                row["处理截止日期"] or "9999-12-31",
+                not risk["需要跟进"],
+                risk["提醒日期"] or "9999-12-31",
                 row["订单编号"],
-            ),
-        )
+            )
+
+        ordered = sorted(self.store.rows, key=sort_key)
         for row in ordered:
             risk = case_risk(row, as_of=today)
             reminder = risk["待处理类型"]
@@ -84,8 +87,8 @@ class App:
                 "", "end", iid=row["记录编号"],
                 values=(
                     row["订单编号"], row["商品/SKU"], row["售后类型"],
-                    row["处理状态"], row["处理截止日期"],
-                    row["实际退款金额(元)"], reminder,
+                    row["处理状态"], row["处理截止日期"], row["下次跟进日期"],
+                    row["实际退款金额(元)"], risk["提醒事项"], reminder,
                 ),
             )
         report = after_sales_summary(self.store.rows, as_of=today)
@@ -121,6 +124,7 @@ class App:
             "责任归属": "待核实",
             "处理状态": "待沟通",
             "处理截止日期": "",
+            "下次跟进日期": "",
             "下一步动作": "",
             "买家寄回运单号": "",
             "买家寄回日期": "",
@@ -171,8 +175,9 @@ class App:
         body.columnconfigure(1, weight=1)
         body.columnconfigure(3, weight=1)
         note = (
-            "日期使用 YYYY-MM-DD；金额使用人民币元。处理截止日期由卖家手工填写，"
-            "软件只按本机日期提醒，不代表平台官方时限。"
+            "日期使用 YYYY-MM-DD；金额使用人民币元。处理截止日期是需完成处理的期限，"
+            "下次跟进日期是你计划再次检查/联系的日期；两项分别提醒，未填写下次跟进日期时"
+            "仍按处理截止日期提醒。提醒只按本机日期计算，不代表平台官方时限。"
         )
         ttk.Label(body, text=note, foreground="#666", wraplength=880).grid(
             row=(len(FIELDS) + 1) // 2, column=0, columnspan=4,

@@ -43,6 +43,7 @@ PRODUCTS = {
     "xianyu-used-pricing": ("闲鱼二手商品定价与议价助手", "MainlandXianyuUsedPricingAssistant.exe", "28-闲鱼二手商品定价与议价助手-用户说明书.md"),
     "xianyu-listing": ("闲鱼商品发布管理助手", "MainlandXianyuListingManager.exe", "29-闲鱼商品发布管理助手-用户说明书.md"),
     "xianyu-shipping": ("闲鱼发货与物流管理助手", "MainlandXianyuShippingAssistant.exe", "30-闲鱼发货与物流管理助手-用户说明书.md"),
+    "xianyu-returns": ("闲鱼退货退款跟进助手", "MainlandXianyuReturnFollowup.exe", "31-闲鱼退货退款跟进助手-用户说明书.md"),
 }
 
 SERIES = (
@@ -67,8 +68,8 @@ SERIES = (
         "slug": "finance-trading",
         "title": "财务与交易系列",
         "price": "29.9",
-        "products": ("freelancer", "finance", "quotation", "expense-reimbursement", "supplier-ap", "xianyu-profit", "xianyu-used-pricing", "xianyu-listing", "xianyu-shipping"),
-        "summary": "催款跟进、经营收支、报价、费用报销、供应商应付对账、账龄分析、闲鱼订单利润核算、二手商品定价和发布节奏管理。",
+        "products": ("freelancer", "finance", "quotation", "expense-reimbursement", "supplier-ap", "xianyu-profit", "xianyu-used-pricing", "xianyu-listing", "xianyu-shipping", "xianyu-returns"),
+        "summary": "催款跟进、经营收支、报价、费用报销、供应商应付对账、账龄分析、闲鱼订单利润核算、二手商品定价、发布节奏、退货退款案件和处理期限跟进。",
     },
     {
         "code": "D",
@@ -127,8 +128,8 @@ def render_catalog() -> str:
     lines = [
         "# 大陆版 Windows 软件分类套餐目录",
         "",
-        "五个分类系列 A–E 各自独立打包，30 款业务软件不重复、无遗漏。",
-        "全系列 F 为主客户包：30 款业务软件 + 工具箱启动器；建议售价 39.9 元，本脚本不重复生成 F 包。",
+        "五个分类系列 A–E 各自独立打包，31 款业务软件不重复、无遗漏。",
+        "全系列 F 为主客户包：31 款业务软件 + 工具箱启动器；建议售价 39.9 元，本脚本不重复生成 F 包。",
         "价格均为待市场验证的建议价，不代表已发生的闲鱼成交。",
         "",
         "| 编号 | 系列 | 软件数量 | 建议售价 | 商品内容 |",
@@ -146,7 +147,7 @@ def render_catalog() -> str:
         "",
         "- 单品：每个单品 ZIP 独立交付 EXE、README 和对应中文说明书。",
         "- A–E：按业务场景购买，避免用户为无关软件付费。",
-        "- F：完整综合套餐，包含全部 30 款业务软件和工具箱启动器。",
+        "- F：完整综合套餐，包含全部 31 款业务软件和工具箱启动器。",
         "",
         "所有软件均为本地 Windows 程序；首次运行的设备授权须在最终 Windows 验收后开放销售。",
         "",

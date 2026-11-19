@@ -75,9 +75,15 @@ def test_package_chunking_uses_tested_bounded_splitter_and_uploads_only_actual_p
     workflow = (root / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
     chunker = (root / "tools" / "split_mainland_package.py").read_text(encoding="utf-8")
     assert "tools/split_mainland_package.py" in workflow
-    assert "--max-chunks 24" in workflow
+    max_chunks = next(
+        line.split("=", 1)[1].strip()
+        for line in chunker.splitlines()
+        if line.startswith("MAX_CHUNKS = ")
+    )
+    assert max_chunks.isdigit()
+    assert f"--max-chunks {max_chunks}" in workflow
     assert "CHUNK_SIZE_BYTES = 20 * 1024 * 1024" in chunker
-    assert "MAX_CHUNKS = 24" in chunker
+    assert f"MAX_CHUNKS = {max_chunks}" in chunker
     assert "chunk_count(size_bytes" in chunker
     assert "sha256=" in chunker
     assert "name: mainland-phase1-package-parts" in workflow

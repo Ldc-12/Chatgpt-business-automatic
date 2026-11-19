@@ -1,55 +1,98 @@
-# Release status — 2026-11-18 (product code HEAD 2bc4159; docs-only PR #87 merged as 91a6e01)
+# Release status — 2026-11-19 (main HEAD fae787f; PR #88 merged; post-merge main verification pending)
 
-## Current source and pull requests
+## Current main, open PRs and release decision
 
 - Repository: `Ldc-12/Chatgpt-business-automatic`.
-- Product-code main HEAD after PR #86: `2bc415985720a7b5793390dda8f7c368cc1bebb4`.
-- Docs-only PR #87 merged as `91a6e010f873f32780276e31b04f3e4d802ff7d7`; the current main branch includes this release-status update.
-- PR #85 merged as `1c6ee9f3a4798ab52a01c8df2e2755d352583315`: added seller-only shipping follow-up CSV for overdue dispatch, waiting pickup, overdue delivery and logistics exceptions.
-- PR #86 merged as `2bc415985720a7b5793390dda8f7c368cc1bebb4`: added `等待揽收天数`, sorted pickup-waiting rows by actual dispatch date (oldest first), preserved `逾期天数` for dispatch/delivery overdue only, and extended the frozen self-test, regression suite and Chinese manual.
-- Open PRs at this check: 0.
+- Current main HEAD after squash-merging PR [#88 Add offline Xianyu return and refund follow-up assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/88): `fae787fd984a09e2e346680cf42f8bc9e413f63a`. PR #88's verified candidate head was `7e7dfaa921aed89bc7c2264237c4f29e595abd92`.
+- PR #88 merged only after its Windows candidate workflow #463 succeeded and the candidate customer ZIP, manifest, 25-part reassembly and all A–E series ZIPs were downloaded and independently inspected. The candidate is not a main-branch release.
+- The only open PR after the merge is docs-only PR [#89 Record verified main package #455 and ABE #492](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/89). It must be refreshed against the new main HEAD before merging.
+- No post-merge main-push Mainland Windows EXE run, ABE run or main artifact has yet been independently verified in this status. The last verified main Windows run #455 and ABE run #492 below predate PR #88 and are stale relative to current main. Do not distribute their package as current.
+- Release decision: **待最终验收 / pending final acceptance**. The PR #88 candidate package is fully inspected but must not be passed off as a main release. A new main-push Windows build/package and a post-merge ABE run still need independent verification.
 
-## Mainland Windows EXE and customer package
+## PR #88 candidate validation (not a main release)
 
-### Latest confirmed main-branch package (now stale relative to main)
+- Candidate Windows run [#463](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44453201935), head `7e7dfaa921aed89bc7c2264237c4f29e595abd92`, workflow conclusion **success**.
+- Return/refund Windows job `135321900888`: 116 tests passed; `SELF_TEST_OK`; PyInstaller 6.22.3 build succeeded; frozen EXE self-test exited with code 0. Other returned matrix jobs completed successfully; the package job produced all expected artifacts.
+- A previous candidate run #462 failed because `tests/test_mainland_packaging.py` hard-coded `--max-chunks 24` while the tested splitter/workflow had moved to 48. All 29 failed matrix-job logs showed that same stale assertion at line 78; the product-specific tests themselves were passing. Commit `7e7dfaa921aed89bc7c2264237c4f29e595abd92` replaced the duplicated numeric assertions with a regression check that reads `MAX_CHUNKS` from the splitter and verifies the workflow uses that same value. Run #463 then passed.
+- Candidate customer-package artifact `14497071248`: downloaded outer ZIP 514,071,338 bytes; SHA256 `0e4c00f69e52129123325875ea2e927e1d955619ca7709b1c1cac6d2c708e8e8`; outer CRC passed.
+- Inner `Phase1-Mainland-Windows-Tools.zip`: 513,924,766 bytes; SHA256 `387c04964a92da08c98c6233df3e754fb547a2748fe3530f1e703808bc5567b0`; CRC passed; 70 entries / 68 files; 32 EXEs (31 business tools + launcher) and 32 product manuals; all 68 files timestamped `2026-11-19 03:44:30 UTC`. Inspection JSON counts and SHA256 match the downloaded inner ZIP.
+- Manifest artifact `14496383377` (2,610 bytes) declares the same inner ZIP size and SHA256. Parts artifact `14496134018` contains 25 parts; reassembly produced 513,924,766 bytes and matched the inner ZIP byte-for-byte and SHA256.
+- Series artifact `14497021309`: outer ZIP CRC passed; A 5 EXEs/5 manuals, B 9/9, C 10/10, D 4/4, E 3/3; every nested series ZIP CRC passed. Series C includes the new return/refund assistant. Bundle F is described as 31 business tools + launcher, with proposed ¥39.9 pricing still unvalidated.
+- Standalone return/refund artifact `14497031199`: ZIP CRC passed; includes `MainlandXianyuReturnFollowup.exe` and a nested ZIP containing the EXE, mainland README and Chinese manual.
+- The new product uses local JSON persistence with atomic writes, strict all-or-nothing CSV import, formula-safe CSV exports, SHA256 backup/restore, case amount/date/status validation, and no platform/API/cloud/AI dependency. The Chinese manual documents that seller-entered deadlines are not official platform deadlines.
 
-- Main run #449: https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44300473507
-- Customer package artifact: `14426765444`; series artifact: `14425613019`; manifest: `14426356076`; parts: `14426375991`.
-- The customer ZIP was downloaded and independently checked: outer ZIP CRC passed, inner ZIP CRC passed, 68 entries / 66 files, 31 EXEs and 31 product manuals. Inner ZIP size: `499153986` bytes; SHA256: `fd00ce49ac9c960079678dd22bd8cd56e898cbe528cdc99cb9ac3fff0ed26082`.
-- All 24 parts were downloaded, reassembled, and matched the inner ZIP byte-for-byte and SHA256.
-- This main-run package predates PR #85, so it does not contain the seller-only follow-up CSV feature. It must not be treated as the current main product package.
+## Main and ABE evidence before PR #88 (historical; stale relative to current main)
 
-### Latest fully verified candidate matching current main source
+- Last verified main Windows run [#455](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44310088984), product source head `2bc415985720a7b5793390dda8f7c368cc1bebb4`, completed successfully with 32/32 jobs. Its customer artifact `14430640820` is the 30-business-tool package, not the current 31-business-tool source.
+- Last verified ABE run [#492](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44392425122), head `c76ac76a13f10f1db2170b3c2180f2f832e6f8be`, build/deploy 2/2 success, 627 tests passed. Optional opportunity-data retrieval used `fallback: HTTPError`; the engine continued with fallback data. This is pre-PR #88 and not post-merge ABE evidence.
 
-- PR #86 Mainland Windows EXE run #454: https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44308949947
-- Run conclusion: success. The 30 jobs visible through the available jobs page all concluded success; no failed/cancelled job was returned.
-- Shipping product job: `134817761566`; `115 passed in 1.27s`, `SELF_TEST_OK`, PyInstaller build succeeded, frozen EXE self-test exited 0.
-- Shipping standalone artifact: `14427614754`; 29,563,886 bytes; SHA256 `ede5bb487dec4f31e31102ab063ececbb927b84e3f39f71b2427ad5a7a5484f1`. Its ZIP and inner delivery ZIP CRCs passed; it contains the shipping EXE, README and Chinese manual with the waiting-pickup-age instructions.
-- Customer-package candidate artifact: `14429303002`; series packages: `14429527237`; manifest: `14428514495`; parts: `14428953723`.
-- The customer package was downloaded and independently inspected: outer ZIP SHA256 `7d317c58326cb1bd9435f10d40212af41b5fe7457a1ca6a7f2cb83ba1a289d3d`; inner ZIP size `499158716` bytes; inner SHA256 `408f1da508656d7c7874bf1817a1169e970731f7ca6731a74f7ceddbfdf4a9fc`; 68 entries / 66 files; 31 EXEs and 31 product manuals; CRC passed. All ZIP entries share build timestamp 2026-11-18 13:01:14 UTC (21:01:14 China time).
-- The 24 package parts were downloaded and reassembled; the resulting 499,158,716-byte file matches the inner ZIP byte-for-byte and SHA256.
-- A–E series ZIPs were independently checked: A 5 EXEs/5 manuals, B 9/9, C 9/9, D 4/4, E 3/3; each inner ZIP CRC passed.
-- The package includes 30 business tools plus the toolbox launcher. Bundle prices remain proposed only: A–D ¥29.9 each, E ¥19.9, F ¥39.9; these are not verified transaction prices.
-- Important provenance: run #454 was triggered from PR #86 before merge. Its head tree is the same product tree now merged to main, but it is a PR candidate build, not a main-push release run. Do not label it a main-branch release artifact.
+## Authorization and real-device acceptance blockers
 
-### Main-push workflow visibility limitation
+- Embedded Ed25519 public key in `src/license.py`: DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`.
+- Configured public key in `config/mainland_license_public_key.pem`: DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`. These fingerprints do not match.
+- No seller private key was read, requested, created, uploaded, guessed, replaced or rotated. The mismatch remains documented; code-side license/product/signature tests may continue.
+- Real Windows GUI/use-flow acceptance, seller-key match, genuine issue/activate test, and exit/restart/re-verify test have not been completed. CI frozen-EXE self-test is not a substitute.
+- All releases remain **待最终验收**. The PR candidate package is not approved for commercial Xianyu listing.
 
-- The GitHub connector returned PR-triggered workflow runs for the commit but did not expose a list of main push/scheduled workflow runs. The combined commit status for the latest docs-only main commit `91a6e010f873f32780276e31b04f3e4d802ff7d7` returned no statuses. Therefore no post-merge main-push Mainland Windows EXE run or newer main ABE run is asserted here.
-- The last independently retrievable main ABE run remains #486: https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44300473455. It had 624 passing tests, generated 12 products with live Stripe checkout links, and deployed successfully. Pages artifact: `14426585090` (47,809 bytes; SHA256 `85a138fa5f6c05c0b922f18adfb220b154f7ab6217a0aeeb5d8b3516134f1732`). The downloaded ZIP CRC passed; its TAR contains 198 entries, including 17 product.json and 12 listing.txt files. This ABE run predates PR #85/#86 and is not claimed as current-main output.
+---
 
-## Historical CI failures reviewed
+# Historical snapshot before PR #88 merge
 
-- Run #431 job `134010848071`: 1 failed / 79 passed. The packaging regression expected 28 manuals but found 29 after a new manual was added. Later packaging tests were corrected.
-- Run #427 job `133795967770`: 6 failed / 94 passed. Root causes included a stale ¥671 pricing expectation (actual rule output ¥670) and packaging fixtures expecting old EXE/manual counts; later PRs corrected the tests and package inspection.
-- Run #425 job `133791043420`: 1 failed / 96 passed. The repeated-SKU order-profit test expected ¥60 but the implemented deduplication rule returned ¥40; later code/test changes resolved the mismatch.
-- PR #85 run #452 completed successfully with 30/30 visible jobs and produced candidate customer package artifact `14426784313`; it was superseded by the later PR #86 candidate for current source.
+# Release status — 2026-11-19 (pre-PR #88 merge; historical snapshot)
 
-## Authorization and final acceptance
+## Current main and pull requests
 
-- Production key material remains untouched. The embedded public key in `src/license.py` fingerprints to `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`; `config/mainland_license_public_key.pem` fingerprints to `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`. They do not match.
-- The seller private key is not in the repository and must never be requested or uploaded. Do not guess, replace, rotate or generate a production private key.
-- Final signing/activation acceptance still requires the owner to export the public key or SHA256 fingerprint locally on a trusted Windows computer using `tools/export_license_public_key.py`; only the public key or fingerprint should be shared.
-- Real Windows GUI acceptance, persistence/backup/restore acceptance and production-key activation have not been completed. Status remains **待最终验收 / not ready to mark as commercially releasable**.
+- Repository: `Ldc-12/Chatgpt-business-automatic`.
+- Current main HEAD: `c76ac76a13f10f1db2170b3c2180f2f832e6f8be`. This commit changes only `docs/RELEASE_STATUS.md`; its parent is `91a6e010f873f32780276e31b04f3e4d802ff7d7`. It does not change the product source tree built by the latest main Windows run.
+- Current product-code main commit: `2bc415985720a7b5793390dda8f7c368cc1bebb4`, merged through PR [#86 Show waiting-for-pickup age in Xianyu follow-up export](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/86). PR #87 added the preceding release-status update; commit `c76ac76` is a later docs-only correction.
+- Current open PR at this check: [#88 Add offline Xianyu return and refund follow-up assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/88), draft, not merged. Latest observed head: `9178ffd2406f8043f1379c19986f57f6b8f7ea33`. This candidate adds a 31st business tool and has not produced a successful full Windows/customer-package run yet.
+- Releases remain **待最终验收 / pending final acceptance**. The main package below is the latest verified main build, not a claim that real-world GUI and production licensing acceptance are complete.
+
+## Latest main Mainland Windows EXE build and customer package
+
+### Main Windows run #455
+
+- [Main push run #455](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44310088984), run ID `44310088984`, product source head `2bc415985720a7b5793390dda8f7c368cc1bebb4`; completed 2026-11-18 13:08:56 UTC; conclusion **success**.
+- The complete Jobs API returned 32/32 jobs success: 30 product/launcher build jobs plus the phase-1 customer delivery package job; no failed or cancelled jobs in this run.
+- Xianyu shipping job `134821675538`: 115 regression tests passed; `SELF_TEST_OK`; PyInstaller 6.22.3 build succeeded; frozen EXE self-test exited with code 0. Standalone shipping artifact: `14430137003`.
+- Customer package job `134823026174`: five independent series packages, customer ZIP inspection, upload, re-download, re-inspection, chunk creation and manifest upload all succeeded. Log markers: `MAINLAND_PACKAGE_INSPECTION_OK`, `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`, and `MAINLAND_PACKAGE_CHUNKING_OK parts=24`.
+- Latest main customer package artifact [`14430640820`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44310088984/artifacts/14430640820), created 2026-11-18 13:08:30 UTC, 499,296,236 bytes. Downloaded outer ZIP SHA256: `cdb0dec3707e6d0d0296a2439094f8efab54d883a915a92718fd6796f6271ce7`; outer ZIP CRC passed.
+- Inner `Phase1-Mainland-Windows-Tools.zip`: 499,153,897 bytes; SHA256 `d9dfe03bdfe6e4e23f9b88dab91bcfe02328d2f186e91a029751dc047d403010`; inner ZIP CRC passed. It contains 68 entries (66 files, 2 directories), 31 EXEs (30 business tools + toolbox launcher), and 31 product manuals (30 business-tool manuals + toolbox manual). The separate `说明书/README.md` index is included but is not counted as a product manual. Also present: mainland README, bundle description TXT, static bundle catalog and inspection JSON.
+- All 66 inner files have the same ZIP timestamp: `2026-11-18 13:08:00 UTC` (21:08 China time). Inspection JSON reports `entry_count=68`, `file_count=66`, `exe_count=31`, `manual_count=31`, `crc=passed`.
+- The six bundle descriptions are present: A Office Efficiency ¥29.9; B Store Operations ¥29.9; C Finance & Trading ¥29.9; D Contracts/Projects/Property ¥29.9; E Customer & Personal Affairs ¥19.9; F Full Collection ¥39.9. These remain proposed test prices, not verified transaction prices. The static bundle catalog describes F as 30 business tools + launcher.
+- Series artifact [`14429947247`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44310088984/artifacts/14429947247), 484,624,693 bytes; outer CRC passed. Each nested series ZIP was independently opened and CRC-checked: A 5 EXEs/5 manuals, B 9/9, C 9/9, D 4/4, E 3/3. The bundle descriptions and series counts match the current 30-business-tool package.
+- Manifest artifact [`14430740309`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44310088984/artifacts/14430740309), 2,577 bytes. Its `.bytes` and `.sha256` entries declare 499,153,897 bytes and SHA256 `d9dfe03bdfe6e4e23f9b88dab91bcfe02328d2f186e91a029751dc047d403010`, matching the downloaded inner ZIP exactly.
+- Parts artifact [`14429013819`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44310088984/artifacts/14429013819), 499,158,095 bytes. All 24 parts were downloaded and reassembled; the 499,153,897-byte result matches the inner ZIP byte-for-byte and SHA256.
+- The customer artifact was downloaded and independently inspected; the workflow also downloaded its own uploaded artifact and confirmed byte-for-byte equality with the inspected source ZIP. This is the current main package for the 30-business-tool source tree. It does not include PR #88's unmerged return/refund tool.
+
+## Latest Autonomous Business Engine run
+
+- [ABE run #492](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44392425122), run ID `44392425122`, head `c76ac76a13f10f1db2170b3c2180f2f832e6f8be`; build/deploy 2/2 success.
+- Build job `135113323721`: 627 tests passed in 3.88s; generated 12 products with live Stripe checkout links and 12 Xianyu catalog entries. The optional external opportunity-data request returned `fallback: HTTPError`; the engine used its fallback data and continued. This is an ABE data-source warning, not a dependency of the offline Windows utilities.
+- Pages artifact [`14469017265`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44392425122/artifacts/14469017265), 47,770 bytes; outer ZIP SHA256 `6ca6951c1193619099ed047c3b9eb2851d26d6c9a00eca2e760df2efb308ed85`; ZIP CRC passed. Its `artifact.tar` is 307,200 bytes, SHA256 `37c5b4485ce4d0eb9978788e436b7f0d8f41734ceb04155bae06b9d614af25d1`; TAR contains 198 entries, including 17 `product.json` and 12 `listing.txt` files.
+
+## Current PR #88 candidate status (not a release)
+
+- PR [#88](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/88) adds the offline Xianyu return/refund follow-up assistant, with local JSON persistence, atomic writes, strict CSV import, formula-safe full/action CSV export, SHA256 backup/restore, status-transition and amount/date validation, Tkinter GUI, Chinese manual, toolbox/series/build-matrix entries, and listing-copy draft.
+- The new tool is added to finance series C. If accepted, the catalogue will become 31 business tools + launcher (32 EXEs), and package inspection expectations are updated to 32 EXEs and 32 product manuals. The current main package above remains 30 business tools + launcher until PR #88 is merged and a new main build passes.
+- Earlier candidate run #456 failed in the new product test because the invalid-state fixture retained a return date while asserting a status error; this was corrected. Run #459 new-product job `135315997340` failed 1 test / passed 115 because a completed-refund fixture omitted `退款完成日期`; the test fixture was corrected in commit `9178ffd2406f8043f1379c19986f57f6b8f7ea33`.
+- Latest observed candidate Windows run #460: [Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44451660129), head `9178ffd2406f8043f1379c19986f57f6b8f7ea33`, pending at last check. No candidate artifact is accepted or advertised as current until the full Windows matrix, package job, downloaded ZIP inspection and re-download verification pass.
+- Do not merge PR #88 until the new product's regression suite, every required Windows matrix job, frozen EXE self-test, 32-EXE/32-manual customer package and series ZIP checks all pass. After merge, a new main-push build must be inspected independently; do not reuse this main package or any PR artifact as the post-merge release.
+
+## Historical failures reviewed in this cycle
+
+- PR #88 run #456: new-product test fixture failed; 114 other tests passed in that product job. The fixture was corrected in later commits.
+- PR #88 run #459: job `135315997340` failed 1 test / 115 passed because the completed-refund action-list fixture omitted the newly required refund completion date. The fixture was corrected in `9178ffd`; run #460 is the next validation attempt.
+- Main Windows run #455 and ABE run #492 had no failed jobs. The ABE HTTPError fallback is documented above.
+
+## Authorization and final acceptance blockers
+
+- Embedded Ed25519 public key in `src/license.py`: DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`.
+- Configured public key in `config/mainland_license_public_key.pem`: DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`. These fingerprints do not match.
+- No seller private key was read, requested, created, uploaded, guessed, replaced or rotated. The mismatch remains documented; code-side product/license-path/signature tests may continue.
+- Real Windows GUI/use-flow acceptance, seller-key match, genuine issue/activate test, and exit/restart/re-verify test have not been completed. CI frozen-EXE self-test is not a substitute for those real-device checks.
+- All releases remain **待最终验收**. The current main package is verified as a build artifact, but is not yet approved for commercial Xianyu listing.
+
 
 ---
 

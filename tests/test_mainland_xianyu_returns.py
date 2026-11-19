@@ -110,6 +110,7 @@ def test_case_risk_and_summary_use_seller_entered_deadline():
         "记录编号": "XY-R-DONE",
         "订单编号": "ORDER-DONE",
         "处理状态": "已完成",
+        "退款完成日期": today.isoformat(),
         "处理截止日期": (today - timedelta(days=5)).isoformat(),
     })
     assert module.case_risk(overdue, as_of=today)["逾期天数"] == 4
@@ -178,7 +179,7 @@ def test_store_persists_and_status_transitions_are_validated(tmp_path):
     loaded.transition_status("XY-R-001", "待平台处理")
     assert loaded.rows[0]["处理状态"] == "待平台处理"
     loaded.transition_status("XY-R-001", "待退款")
-    loaded.transition_status("XY-R-001", "已完成")
+    loaded.update("XY-R-001", dict(loaded.rows[0], **{"处理状态": "已完成", "退款完成日期": date.today().isoformat()}))
     assert module.ReturnFollowupStore(path).rows == loaded.rows
 
 
@@ -294,3 +295,9 @@ def test_backup_restore_checks_sha256_before_replacing_current_data(tmp_path):
 def test_self_test_runs_without_network_or_user_data(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "default_data_path", lambda: tmp_path / "default.json")
     module.self_test()
+
+
+
+def test_completed_refund_requires_completion_date():
+    with pytest.raises(ValueError, match="必须填写退款完成日期"):
+        module.normalize_row(sample(**{"处理状态": "已完成"}))

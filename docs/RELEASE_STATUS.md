@@ -1,6 +1,47 @@
-# Release status — 2026-11-20 (main build #473 verified; final acceptance pending)
+# Release status — 2026-11-20 (PR #97 merged; post-merge main package verification pending)
 
-## Current main and release decision
+## Current checkpoint after PR #97 merge
+
+- Repository: `Ldc-12/Chatgpt-business-automatic`.
+- Current main HEAD: `fc420c1dfb64c522f4c559d53a6728f2a4c42de4` (merge commit for PR #97).
+- Product PR [#97 Add offline store coupon campaign and redemption assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/97) merged at `fc420c1dfb64c522f4c559d53a6728f2a4c42de4`.
+- Open PRs at this check: **0**.
+- Release decision remains **待最终验收**. The PR-triggered Windows build succeeded, but the post-merge main-push package and real Windows activation have not yet been independently verified.
+
+### PR #97 Windows candidate build (not a main-push release)
+
+- Mainland Windows EXE PR run [#478](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44732267316), run ID `44732267316`, head `0e69a6c350f141990e40c9e9e2f411b46262ab8f`, completed with conclusion **success**.
+- The workflow matrix contains 34 Windows product builds (33 business tools plus the toolbox launcher) followed by the customer-package job. The run concluded successfully with no failed jobs.
+- Coupon product job `136274832753`: **120 passed** in 1.81s; `SELF_TEST_OK`; PyInstaller 6.22.3 succeeded; frozen EXE self-test printed `FROZEN_EXE_SELF_TEST_OK` and exited 0.
+- Standalone coupon EXE artifact [`14626837082`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44732267316/artifacts/14626837082): 29,618,607 bytes; uploaded artifact ZIP SHA256 `11dafa183399e84cafa903d634530d9b7da0bc4500e6a1e3098babdb5d61f886`. It was downloaded through the connector and materialized at 29,618,607 bytes.
+- PR candidate customer artifact [`14627535997`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44732267316/artifacts/14627535997): 543,678,635 bytes. Candidate manifest artifact `14626159973` (2,676 bytes), package-parts artifact `14627485878` (543,528,174 bytes), and category-series artifact `14627935133` (529,015,574 bytes).
+- The candidate package workflow is configured to require **34 EXEs and 34 manuals**, with 33 business tools plus the launcher. Bundle A–F: A 5, B 11, C 10, D 4, E 3, F 33 business tools plus launcher. Suggested prices remain A–D ¥29.9, E ¥19.9, F ¥39.9; these are unvalidated market suggestions.
+- The customer artifact exceeds the GitHub connector's 536,870,912-byte download limit by 6,807,723 bytes. The connector therefore could not download the candidate customer ZIP for a second local extraction. The PR workflow itself completed successfully and published the package, manifest, parts and series artifacts; this candidate is **not** represented as an independently unpacked main release.
+
+### Main-push package status
+
+- The last main-push package that could be fully inspected through its workflow report is run [#473](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44667169892), artifact [`14598790968`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44667169892/artifacts/14598790968).
+- That pre-PR-#97 package contained 33 EXEs and 33 manuals (32 business tools plus launcher), inner ZIP 528,721,981 bytes, SHA256 `6d63e40768f4eb4ced0804abea53558e7d9a560e8412ef6076bb9aca4cb42f50`, CRC passed, 72 entries / 70 files, timestamp `2026-11-20 03:25:02 UTC`. It does **not** contain the new coupon assistant and is superseded by the PR #97 merge.
+- The artifact was downloaded by the connector. Local materialization was refused because it exceeded the Files 100 MiB materialization limit; the Windows package job independently re-downloaded the uploaded artifact, reran the ZIP inspector, and reported byte-for-byte match, CRC pass, 33 EXEs and 33 manuals.
+- The post-merge main-push run is not exposed by the current GitHub workflow-run connector: `fetch_commit_workflow_runs` returns PR-triggered runs only, and the combined-status query for merge commit `fc420c1...` returned no status entries. Therefore no post-merge main artifact ID, job log or package SHA is invented here. The next accessible main-push artifact must be checked before calling the 34-EXE package the current main release.
+
+### Autonomous Business Engine status
+
+- Latest directly verifiable ABE run remains #501, run ID `44667169717`, with 688 tests passed; it used fallback data after an HTTP 502 source error. Pages artifact `14598705462` was previously recorded.
+- `.github/workflows/business-engine.yml` triggers on pushes to main and on a six-hour schedule. The connector cannot enumerate main-push/scheduled runs, so the ABE run triggered by the PR #97 merge cannot currently be identified or certified from this connection.
+
+### Authorization and final acceptance
+
+- The production public-key mismatch remains unchanged: `src/license.py` embedded key SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`; `config/mainland_license_public_key.pem` SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`.
+- No seller private key was accessed, uploaded, guessed, generated or replaced.
+- Real Windows GUI acceptance and production license issue/activation/restart verification remain **待最终验收**. CI frozen self-test is not a substitute for interactive Windows acceptance.
+- The only required seller-side action is to run `tools/export_license_public_key.py` on the trusted Windows machine that already holds the seller private key, then provide only `PUBLIC_KEY_PEM` or its SHA256 fingerprint. Never upload `seller-private.pem`.
+
+---
+
+
+
+## Historical checkpoint before PR #97 merge
 
 - Repository: `Ldc-12/Chatgpt-business-automatic`.
 - Current main HEAD: `e1af9b509462b3bf3b47b4154866577920963da1`.
@@ -8,7 +49,7 @@
 - At this check there were no open pull requests.
 - Release decision remains **待最终验收 / pending final acceptance**. The current main Windows package is now CI-verified for content and integrity, but real Windows GUI/use acceptance and production authorization acceptance are not complete.
 
-## Latest main Windows builds and customer package
+## Main Windows package verified before PR #97 merge (historical)
 
 - Latest Mainland Windows EXE main-push run [#473](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44667169892), run ID `44667169892`, head `e1af9b509462b3bf3b47b4154866577920963da1`, completed 2026-11-20 03:25:56 UTC; conclusion **success**. The full Jobs API returned 34/34 jobs successful (33 Windows EXE build jobs, including the toolbox launcher, plus the customer-package job); no failed or cancelled jobs.
 - Store membership job `136059171314`: 115 regression tests passed; `SELF_TEST_OK`; PyInstaller 6.22.3 build succeeded; frozen EXE self-test printed `FROZEN_EXE_SELF_TEST_OK` and exited with code 0.

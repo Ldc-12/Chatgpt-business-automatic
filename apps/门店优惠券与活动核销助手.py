@@ -9,7 +9,7 @@ import tkinter as tk
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
-from src.store_coupon import CouponStore, self_test as core_self_test
+from src.store_coupon import CouponStore, filter_coupon_rows, paginate_coupon_rows, self_test as core_self_test
 
 PRODUCT = "门店优惠券与活动核销助手"
 
@@ -26,6 +26,8 @@ class App(tk.Tk):
         self.title(PRODUCT)
         self.geometry("1180x740")
         self.minsize(1040, 640)
+        self.page = 1
+        self.page_size = 100
 
         ttk.Label(self, text=PRODUCT, font=("Microsoft YaHei UI", 18, "bold")).pack(
             anchor="w", padx=18, pady=(16, 4)
@@ -38,6 +40,27 @@ class App(tk.Tk):
 
         self.summary_var = tk.StringVar()
         ttk.Label(self, textvariable=self.summary_var).pack(anchor="w", padx=18, pady=(0, 8))
+
+        filter_bar = ttk.Frame(self, padding=(18, 0))
+        filter_bar.pack(fill="x", pady=(0, 4))
+        ttk.Label(filter_bar, text="关键词").pack(side="left", padx=(0, 6))
+        self.search_var = tk.StringVar(value="")
+        ttk.Entry(filter_bar, textvariable=self.search_var, width=28).pack(side="left", padx=(0, 10))
+        ttk.Label(filter_bar, text="状态").pack(side="left", padx=(0, 6))
+        self.status_var = tk.StringVar(value="全部")
+        self.status_combo = ttk.Combobox(
+            filter_bar, textvariable=self.status_var, state="readonly",
+            values=("全部", "未使用", "已核销", "已作废"), width=9,
+        )
+        self.status_combo.pack(side="left")
+        self.page_info = tk.StringVar(value="第 1/1 页")
+        ttk.Label(filter_bar, textvariable=self.page_info, anchor="e").pack(side="right", padx=(8, 0))
+        self.next_button = ttk.Button(filter_bar, text="下一页", command=self.next_page)
+        self.next_button.pack(side="right", padx=(4, 0))
+        self.prev_button = ttk.Button(filter_bar, text="上一页", command=self.prev_page)
+        self.prev_button.pack(side="right", padx=(4, 0))
+        self.search_var.trace_add("write", self._filter_changed)
+        self.status_combo.bind("<<ComboboxSelected>>", self._filter_changed)
 
         columns = (
             "code", "campaign", "discount", "minimum", "status",
@@ -84,7 +107,7 @@ class App(tk.Tk):
             )
         for column in range(7):
             actions.columnconfigure(column, weight=1)
-        self.refresh()
+        self.refresh(reset_page=True)
 
     def _campaign_text(self):
         if not self.store.campaigns:
@@ -106,10 +129,27 @@ class App(tk.Tk):
     def _ask_operator(self):
         return simpledialog.askstring("操作人", "请输入操作人（可留空）：", parent=self) or "本机用户"
 
-    def refresh(self):
+    def _filter_changed(self, *_):
+        self.page = 1
+        self.refresh()
+
+    def prev_page(self):
+        self.page = max(1, self.page - 1)
+        self.refresh()
+
+    def next_page(self):
+        self.page += 1
+        self.refresh()
+
+    def refresh(self, reset_page=False):
+        if reset_page:
+            self.page = 1
         for item in self.tree.get_children():
             self.tree.delete(item)
-        for coupon in self.store.coupons:
+        filtered = filter_coupon_rows(self.store.coupons, self.search_var.get(), self.status_var.get())
+        filtered.reverse()  # newest coupons appear first
+        page_rows, self.page, page_count, total = paginate_coupon_rows(filtered, self.page, self.page_size)
+        for coupon in page_rows:
             self.tree.insert(
                 "",
                 "end",
@@ -125,6 +165,11 @@ class App(tk.Tk):
                     coupon["实际优惠金额"],
                 ),
             )
+        start = (self.page - 1) * self.page_size + 1 if total else 0
+        end = min(self.page * self.page_size, total)
+        self.page_info.set(f"第 {self.page}/{page_count} 页 · 显示 {start}-{end} / {total} 张（每页 {self.page_size} 张）")
+        self.prev_button.configure(state="normal" if self.page > 1 else "disabled")
+        self.next_button.configure(state="normal" if self.page < page_count else "disabled")
         summary = self.store.summary()
         self.summary_var.set(
             f"活动 {summary['活动数量']} 个　已发行 {summary['发行优惠券']} 张"
@@ -172,7 +217,7 @@ class App(tk.Tk):
                 },
                 actor=self._ask_operator(),
             )
-            self.refresh()
+            self.refresh(reset_page=True)
             messagebox.showinfo("活动已建立", f"活动编号：{campaign_id}", parent=self)
         except (OSError, ValueError) as exc:
             messagebox.showerror("新建活动失败", str(exc), parent=self)
@@ -193,7 +238,7 @@ class App(tk.Tk):
             return
         try:
             codes = self.store.issue_coupons(campaign_id.strip(), count, actor=self._ask_operator())
-            self.refresh()
+            self.refresh(reset_page=True)
             messagebox.showinfo(
                 "发行完成",
                 f"已生成 {len(codes)} 张本地券码。\n"
@@ -216,7 +261,7 @@ class App(tk.Tk):
         note = simpledialog.askstring("核销备注", "备注（可留空）：", parent=self) or ""
         try:
             self.store.redeem(coupon_id, order, spend, actor=self._ask_operator(), note=note)
-            self.refresh()
+            self.refresh(reset_page=True)
             messagebox.showinfo("核销完成", "优惠券已记录为已核销。请按门店实际收款结果核对。", parent=self)
         except (OSError, ValueError) as exc:
             messagebox.showerror("核销失败", str(exc), parent=self)
@@ -230,7 +275,7 @@ class App(tk.Tk):
             return
         try:
             self.store.void_coupon(coupon_id, reason, actor=self._ask_operator())
-            self.refresh()
+            self.refresh(reset_page=True)
             messagebox.showinfo("作废完成", "优惠券已作废，不能再次核销。", parent=self)
         except (OSError, ValueError) as exc:
             messagebox.showerror("作废失败", str(exc), parent=self)
@@ -251,7 +296,7 @@ class App(tk.Tk):
             target = "停用" if campaign["状态"] == "启用" else "启用"
             reason = simpledialog.askstring("状态变更原因", "原因（可留空）：", parent=self) or ""
             self.store.set_campaign_status(campaign_id.strip(), target, self._ask_operator(), reason)
-            self.refresh()
+            self.refresh(reset_page=True)
         except (OSError, ValueError) as exc:
             messagebox.showerror("修改活动状态失败", str(exc), parent=self)
 
@@ -261,7 +306,7 @@ class App(tk.Tk):
             return
         try:
             count = self.store.import_campaigns_csv(path)
-            self.refresh()
+            self.refresh(reset_page=True)
             messagebox.showinfo(
                 "导入完成",
                 f"成功导入 {count} 个活动。任何一行无效都会导致整批不写入。",
@@ -316,7 +361,7 @@ class App(tk.Tk):
             return
         try:
             self.store.restore(path)
-            self.refresh()
+            self.refresh(reset_page=True)
             messagebox.showinfo("恢复完成", "备份校验通过，恢复操作已写入本地日志。", parent=self)
         except (OSError, ValueError, UnicodeError, json.JSONDecodeError) as exc:
             messagebox.showerror("恢复失败", str(exc), parent=self)

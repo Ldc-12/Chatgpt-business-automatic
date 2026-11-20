@@ -379,3 +379,27 @@ def test_coupon_state_requires_existing_campaign_and_unique_order_on_load(tmp_pa
 
 def test_self_test_runs_without_gui():
     MODULE.self_test()
+
+
+def test_coupon_search_filters_case_insensitively_by_code_campaign_order_and_status():
+    rows = [
+        {"券编号": "CP-ALPHA", "活动编号": "SUMMER", "活动名称": "夏季活动", "核销订单号": "ORDER-88", "操作人": "店员甲", "备注": "现场核验", "状态": "已核销"},
+        {"券编号": "CP-BETA", "活动编号": "WINTER", "活动名称": "冬季活动", "核销订单号": "", "操作人": "店员乙", "备注": "", "状态": "未使用"},
+    ]
+    assert MODULE.filter_coupon_rows(rows, "order-88", "已核销") == [rows[0]]
+    assert MODULE.filter_coupon_rows(rows, "冬季", "全部") == [rows[1]]
+    assert MODULE.filter_coupon_rows(rows, "CP-ALPHA", "未使用") == []
+    with pytest.raises(ValueError, match="筛选状态无效"):
+        MODULE.filter_coupon_rows(rows, "", "未知状态")
+
+
+def test_coupon_pagination_is_bounded_and_clamps_after_filtering():
+    rows = [{"券编号": f"CP-{index:03d}"} for index in range(205)]
+    first, page, pages, total = MODULE.paginate_coupon_rows(rows, 1, 100)
+    assert (len(first), page, pages, total) == (100, 1, 3, 205)
+    last, page, pages, total = MODULE.paginate_coupon_rows(rows, 99, 100)
+    assert (len(last), page, pages, total) == (5, 3, 3, 205)
+    empty, page, pages, total = MODULE.paginate_coupon_rows([], 7, 100)
+    assert (empty, page, pages, total) == ([], 1, 1, 0)
+    with pytest.raises(ValueError, match="每页数量"):
+        MODULE.paginate_coupon_rows(rows, 1, 0)

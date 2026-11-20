@@ -20,11 +20,11 @@ def _make_inputs(tmp_path):
     return release, manuals, output
 
 
-def test_series_catalog_covers_all_32_products_once():
+def test_series_catalog_covers_all_33_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 32
-    assert len(assigned) == 32
+    assert len(MODULE.PRODUCTS) == 33
+    assert len(assigned) == 33
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "32 款业务软件 + 工具箱启动器" in catalog
+    assert "33 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -169,7 +169,7 @@ def test_static_series_catalog_lists_each_business_product_once():
     for name, _, _ in MODULE.PRODUCTS.values():
         assert catalog.count(f"- {name}\n") == 1, name
     assert "| C | 财务与交易系列 | 10 |" in catalog
-    assert "| F | 全系列综合套餐 | 32 款业务软件 + 工具箱启动器 |" in catalog
+    assert "| F | 全系列综合套餐 | 33 款业务软件 + 工具箱启动器 |" in catalog
 
 
 
@@ -184,6 +184,14 @@ def test_finance_series_contains_xianyu_return_refund_followup_assistant():
 def test_store_series_contains_member_stored_value_and_points_ledger():
     store_series = next(item for item in MODULE.SERIES if item["code"] == "B")
     assert "store-membership" in store_series["products"]
-    assert len(store_series["products"]) == 10
+    assert len(store_series["products"]) == 11
     assert MODULE.PRODUCTS["store-membership"][1] == "MainlandStoreMembershipLedger.exe"
     assert MODULE.PRODUCTS["store-membership"][2] == "32-门店会员储值与积分台账助手-用户说明书.md"
+
+
+def test_store_series_contains_coupon_campaign_redemption_assistant():
+    store_series = next(item for item in MODULE.SERIES if item["code"] == "B")
+    assert "store-coupons" in store_series["products"]
+    assert MODULE.PRODUCTS["store-coupons"][1] == "MainlandStoreCouponRedemption.exe"
+    assert MODULE.PRODUCTS["store-coupons"][2] == "33-门店优惠券与活动核销助手-用户说明书.md"
+    assert len(store_series["products"]) == 11

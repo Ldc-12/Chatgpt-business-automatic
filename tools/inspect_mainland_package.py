@@ -27,7 +27,7 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def inspect_package(path: str | Path, *, expected_exes: int = 33, expected_manuals: int = 33) -> dict:
+def inspect_package(path: str | Path, *, expected_exes: int = 34, expected_manuals: int = 34) -> dict:
     archive_path = Path(path)
     if not archive_path.is_file():
         raise ValueError(f"客户 ZIP 不存在：{archive_path}")

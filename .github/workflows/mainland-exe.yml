@@ -239,6 +239,12 @@ jobs:
             test: tests/test_mainland_store_membership.py
             exe: MainlandStoreMembershipLedger
             manual: 32-门店会员储值与积分台账助手-用户说明书.md
+          - key: store-coupons
+            product: "门店优惠券与活动核销助手"
+            source: apps/门店优惠券与活动核销助手.py
+            test: tests/test_mainland_store_coupon.py
+            exe: MainlandStoreCouponRedemption
+            manual: 33-门店优惠券与活动核销助手-用户说明书.md
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -314,11 +320,11 @@ jobs:
           cat > release/README-大陆版.md <<'EOF'
           # 第一阶段 Windows 工具包
 
-          本包包含 33 款 Windows EXE（32 款业务工具及工具箱启动器）。
+          本包包含 34 款 Windows EXE（33 款业务工具及工具箱启动器）。
           使用方式：双击对应 EXE 即可运行。
           数据默认保存在当前 Windows 用户的 %LOCALAPPDATA%/MainlandBusinessTools。
           工具本地运行，不要求 ChatGPT、VPN 或外部 AI 服务。
-          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“小店库存盘点助手.json”“食品批次与保质期追踪助手.json”“门店食品安全巡检与整改闭环助手.json”“售后纠纷证据链管理助手.json”“供应商采购比价助手.json”“报价单生成器.json”“费用报销管理助手.json”“供应商对账与应付账龄管理助手.json”“闲鱼订单利润与售后成本核算助手.json”“装修材料用量与预算核算助手.json”“售后维修工单管理助手.json”“门店排班考勤助手.json”“合同台账与到期提醒助手.json”“装修工程签证与进度款管理助手.json”“物业租金与押金管理助手.json”“设备维保巡检与保养计划助手.json”“车辆维保与费用台账助手.json”“门店日结与收银差异核对助手.json”“门店会员储值与积分台账助手.json”“闲鱼二手商品定价与议价助手.json”“闲鱼商品发布管理助手.json”“闲鱼发货与物流管理助手.json”“闲鱼退货退款跟进助手.json”）。每款产品的授权文件分开保存。
+          首次运行会显示设备码；购买后由卖家为每款产品提供专属授权文件。请将对应的“产品名.json”放入 %LOCALAPPDATA%/MainlandBusinessTools/licenses/（例如“小店库存盘点助手.json”“食品批次与保质期追踪助手.json”“门店食品安全巡检与整改闭环助手.json”“售后纠纷证据链管理助手.json”“供应商采购比价助手.json”“报价单生成器.json”“费用报销管理助手.json”“供应商对账与应付账龄管理助手.json”“闲鱼订单利润与售后成本核算助手.json”“装修材料用量与预算核算助手.json”“售后维修工单管理助手.json”“门店排班考勤助手.json”“合同台账与到期提醒助手.json”“装修工程签证与进度款管理助手.json”“物业租金与押金管理助手.json”“设备维保巡检与保养计划助手.json”“车辆维保与费用台账助手.json”“门店日结与收银差异核对助手.json”“门店会员储值与积分台账助手.json”“门店优惠券与活动核销助手.json”“闲鱼二手商品定价与议价助手.json”“闲鱼商品发布管理助手.json”“闲鱼发货与物流管理助手.json”“闲鱼退货退款跟进助手.json”）。每款产品的授权文件分开保存。
           EOF
           mkdir -p release/package
           mkdir -p release/package/说明书
@@ -329,7 +335,7 @@ jobs:
           文件整理助手 Pro、图片批量处理助手 Pro、PDF 批量工具 Pro、会议行动项管理、SOP 项目执行管理。
 
           系列 B｜门店经营系列｜建议售价 29.9 元
-          小店库存盘点助手、食品批次与保质期追踪助手、门店食品安全巡检与整改闭环助手、供应商采购比价助手、售后维修工单管理助手、售后纠纷证据链管理助手、门店排班考勤助手、设备维保巡检与保养计划助手、门店日结与收银差异核对助手、门店会员储值与积分台账助手。
+          小店库存盘点助手、食品批次与保质期追踪助手、门店食品安全巡检与整改闭环助手、供应商采购比价助手、售后维修工单管理助手、售后纠纷证据链管理助手、门店排班考勤助手、设备维保巡检与保养计划助手、门店日结与收银差异核对助手、门店会员储值与积分台账助手、门店优惠券与活动核销助手。
 
           系列 C｜财务与交易系列｜建议售价 29.9 元
           自由职业催款管理工具、小微企业经营收支管理、报价单生成器、费用报销管理助手、供应商对账与应付账龄管理助手、闲鱼订单利润与售后成本核算助手、闲鱼二手商品定价与议价助手、闲鱼商品发布管理助手、闲鱼发货与物流管理助手、闲鱼退货退款跟进助手。
@@ -341,7 +347,7 @@ jobs:
           轻量销售客户跟进工具、求职申请管理 Pro、车辆维保与费用台账助手。
 
           系列 F｜全系列综合套餐｜建议售价 39.9 元
-          全部 32 款业务工具 + 工具箱启动器。
+          全部 33 款业务工具 + 工具箱启动器。
 
           以上均为待市场验证的建议售价，不代表实际成交价。分类 ZIP 独立提供，每款软件附对应中文说明书；全系列包保留全部软件及说明书。
           EOF
@@ -353,8 +359,8 @@ jobs:
         run: >-
           python tools/inspect_mainland_package.py
           --package release/Phase1-Mainland-Windows-Tools.zip
-          --expected-exes 33
-          --expected-manuals 33
+          --expected-exes 34
+          --expected-manuals 34
           --report release/Phase1-Mainland-Windows-Tools.inspection.json
       - uses: actions/upload-artifact@v4
         with:
@@ -394,7 +400,7 @@ jobs:
       - name: Verify re-downloaded customer package
         shell: bash
         run: |
-          python tools/inspect_mainland_package.py --package release/downloaded-artifact/Phase1-Mainland-Windows-Tools.zip --expected-exes 33 --expected-manuals 33 --report release/downloaded-artifact/reinspection.json
+          python tools/inspect_mainland_package.py --package release/downloaded-artifact/Phase1-Mainland-Windows-Tools.zip --expected-exes 34 --expected-manuals 34 --report release/downloaded-artifact/reinspection.json
           python - <<'PY'
           import json
           from pathlib import Path

@@ -306,6 +306,47 @@ def validate_state(raw_campaigns, raw_coupons):
     return campaigns, coupons
 
 
+def filter_coupon_rows(coupons, keyword="", status="全部"):
+    """Filter coupon rows by text and state without mutating the source list."""
+    allowed_statuses = {"全部", *COUPON_STATUSES}
+    if status not in allowed_statuses:
+        raise ValueError("优惠券筛选状态无效")
+    needle = str(keyword or "").strip().casefold()
+    rows = []
+    for coupon in coupons:
+        if status != "全部" and coupon.get("状态") != status:
+            continue
+        if needle:
+            searchable = " ".join(
+                str(coupon.get(field, "") or "")
+                for field in ("券编号", "活动编号", "活动名称", "核销订单号", "操作人", "备注")
+            ).casefold()
+            if needle not in searchable:
+                continue
+        rows.append(coupon)
+    return rows
+
+
+def paginate_coupon_rows(rows, page, page_size=100):
+    """Return one bounded page and clamp stale page numbers after filtering."""
+    if isinstance(page_size, bool) or not isinstance(page_size, int) or page_size < 1:
+        raise ValueError("每页数量必须是正整数")
+    if isinstance(page, bool):
+        raise ValueError("页码必须是正整数")
+    try:
+        requested_page = int(page)
+    except (TypeError, ValueError):
+        raise ValueError("页码必须是正整数") from None
+    if requested_page < 1:
+        requested_page = 1
+    items = list(rows)
+    total = len(items)
+    page_count = max(1, (total + page_size - 1) // page_size)
+    current_page = min(requested_page, page_count)
+    start = (current_page - 1) * page_size
+    return items[start:start + page_size], current_page, page_count, total
+
+
 class CouponStore:
     def __init__(self, path):
         self.path = Path(path)

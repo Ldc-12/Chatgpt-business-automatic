@@ -210,7 +210,7 @@ def test_signed_formula_text_is_still_escaped_in_csv(tmp_path):
     exported = tmp_path / "transactions.csv"
     store.export_transactions_csv(exported)
     rows = list(csv.DictReader(exported.open(encoding="utf-8-sig", newline="")))
-    assert rows[0]["备注"] == ''-1+HYPERLINK("x")'
+    assert rows[0]["备注"] == "'-1+HYPERLINK(\"x\")"
 
 
 def test_backup_restore_replaces_data_and_records_restore_event(tmp_path):

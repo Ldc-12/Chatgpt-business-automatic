@@ -449,7 +449,9 @@ class MemberStore:
         return self._append_transaction(member, "消费", value, points, operator=operator, note=note)
 
     def refund(self, member_id, amount, reference_id, operator="本机用户", note=""):
-        member = self._active_member(member_id)
+        # Refunds reverse an existing consumption and remain available after a
+        # member is deactivated; deactivation must not block after-sales settlement.
+        member = self._member(member_id)
         original = next((tx for tx in self.transactions if tx["流水编号"] == reference_id), None)
         if original is None or original["交易类型"] != "消费" or original["会员编号"] != member_id:
             raise ValueError("退款必须选择该会员此前的一笔消费流水")

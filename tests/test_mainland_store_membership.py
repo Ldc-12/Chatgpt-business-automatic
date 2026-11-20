@@ -86,6 +86,25 @@ def test_points_redemption_requires_positive_integer_and_sufficient_points(tmp_p
     assert store.get_balance(member_id)["积分余额"] == 2
 
 
+def test_inactive_member_can_still_receive_refund_for_prior_consumption(tmp_path):
+    store = MODULE.MemberStore(tmp_path / "members.json")
+    member_id = add_member(store)
+    store.recharge(member_id, "50")
+    consume_id = store.consume(member_id, "10")
+    store.set_member_status(member_id, "停用", reason="会员注销")
+
+    with pytest.raises(ValueError, match="停用会员"):
+        store.recharge(member_id, "1")
+    with pytest.raises(ValueError, match="停用会员"):
+        store.consume(member_id, "1")
+    with pytest.raises(ValueError, match="停用会员"):
+        store.redeem_points(member_id, 1)
+
+    # A refund is a reversal of an existing consumption, not a new sale.
+    store.refund(member_id, "5", consume_id)
+    assert store.get_balance(member_id) == {"储值余额": "45.00", "积分余额": 5}
+
+
 def test_inactive_member_cannot_start_new_transactions(tmp_path):
     store = MODULE.MemberStore(tmp_path / "members.json")
     member_id = add_member(store)

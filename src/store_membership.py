@@ -70,6 +70,10 @@ def signed_points(value, field="积分变动"):
 
 def csv_safe(value):
     text = "" if value is None else str(value)
+    # Preserve a plain negative integer/decimal as numeric ledger data (for example
+    # points clawed back on a refund). Formula-like signed expressions stay escaped.
+    if re.fullmatch(r"-\d+(?:\.\d+)?", text):
+        return text
     if text.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
         return "'" + text
     return text

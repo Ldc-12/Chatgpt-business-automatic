@@ -180,6 +180,39 @@ def test_transaction_export_is_formula_safe_and_balance_export_is_derived(tmp_pa
     assert rows[0]["积分余额"] == "0"
 
 
+def test_refund_after_redeemed_points_creates_debt_and_exports_numeric_delta(tmp_path):
+    store = MODULE.MemberStore(tmp_path / "members.json")
+    member_id = add_member(store)
+    store.recharge(member_id, "100")
+    consume_id = store.consume(member_id, "30")
+    store.redeem_points(member_id, 30)
+    store.refund(member_id, "30", consume_id)
+
+    assert store.get_balance(member_id)["积分余额"] == -30
+    with pytest.raises(ValueError, match="积分余额不足"):
+        store.redeem_points(member_id, 1)
+
+    # Later earned points first offset the refund clawback debt.
+    store.consume(member_id, "35")
+    assert store.get_balance(member_id)["积分余额"] == 5
+
+    exported = tmp_path / "transactions.csv"
+    store.export_transactions_csv(exported)
+    rows = list(csv.DictReader(exported.open(encoding="utf-8-sig", newline="")))
+    refund_row = next(row for row in rows if row["交易类型"] == "退款")
+    assert refund_row["积分变动"] == "-30"
+
+
+def test_signed_formula_text_is_still_escaped_in_csv(tmp_path):
+    store = MODULE.MemberStore(tmp_path / "members.json")
+    member_id = add_member(store)
+    store.recharge(member_id, "10", note='-1+HYPERLINK("x")')
+    exported = tmp_path / "transactions.csv"
+    store.export_transactions_csv(exported)
+    rows = list(csv.DictReader(exported.open(encoding="utf-8-sig", newline="")))
+    assert rows[0]["备注"] == ''-1+HYPERLINK("x")'
+
+
 def test_backup_restore_replaces_data_and_records_restore_event(tmp_path):
     path = tmp_path / "members.json"
     store = MODULE.MemberStore(path)

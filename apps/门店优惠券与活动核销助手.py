@@ -72,6 +72,7 @@ class App(tk.Tk):
             ("导出活动", self.export_campaigns),
             ("导出优惠券", self.export_coupons),
             ("导出核销报表", self.export_redemptions),
+            ("导出活动汇总", self.export_campaign_report),
             ("备份", self.backup),
             ("恢复", self.restore),
             ("校验日志", self.verify_log),
@@ -291,6 +292,9 @@ class App(tk.Tk):
 
     def export_redemptions(self):
         self._export("导出核销报表", self.store.export_redemptions_csv)
+
+    def export_campaign_report(self):
+        self._export("导出活动汇总", self.store.export_campaign_report_csv)
 
     def backup(self):
         path = filedialog.asksaveasfilename(

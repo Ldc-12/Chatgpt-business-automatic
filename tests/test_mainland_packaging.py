@@ -216,8 +216,8 @@ def test_every_standalone_delivery_zip_has_its_matching_chinese_manual():
         for line in workflow.splitlines()
         if line.strip().startswith("manual: ")
     ]
-    assert len(manual_names) == 33
-    assert len(set(manual_names)) == 33
+    assert len(manual_names) == 34
+    assert len(set(manual_names)) == 34
     for name in manual_names:
         assert (root / "docs" / "manuals" / name).is_file(), name
     assert "z.write('docs/manuals/${{ matrix.manual }}','说明书/${{ matrix.manual }}')" in workflow
@@ -314,8 +314,8 @@ def test_customer_zip_inspection_runs_before_artifact_upload_and_is_retained():
     customer_upload = workflow.index("name: mainland-phase1-customer-package")
     assert inspection_step < customer_upload
     assert "tools/inspect_mainland_package.py" in workflow
-    assert "--expected-exes 33" in workflow
-    assert "--expected-manuals 33" in workflow
+    assert "--expected-exes 34" in workflow
+    assert "--expected-manuals 34" in workflow
     report = "release/Phase1-Mainland-Windows-Tools.inspection.json"
     assert workflow.count(report) >= 2
     assert "tests/test_mainland_package_inspection.py" in workflow
@@ -371,8 +371,8 @@ def test_vehicle_ledger_product_is_in_build_matrix_launcher_license_and_package(
     assert "23-车辆维保与费用台账助手-用户说明书.md" in workflow
     assert "MainlandVehicleMaintenanceLedger.exe" in launcher
     assert "车辆维保与费用台账助手" in license_tests
-    assert "--expected-exes 33" in workflow
-    assert "--expected-manuals 33" in workflow
+    assert "--expected-exes 34" in workflow
+    assert "--expected-manuals 34" in workflow
 
 
 def test_store_cash_close_product_is_in_build_matrix_launcher_license_and_series():
@@ -485,8 +485,8 @@ def test_xianyu_listing_product_is_in_build_matrix_launcher_license_and_customer
     assert "MainlandXianyuListingManager.exe" in launcher
     assert "闲鱼商品发布管理助手" in license_tests
     assert '"xianyu-listing"' in series_builder
-    assert "--expected-exes 33" in workflow
-    assert "--expected-manuals 33" in workflow
+    assert "--expected-exes 34" in workflow
+    assert "--expected-manuals 34" in workflow
 
 
 def test_xianyu_listing_readme_discloses_offline_refresh_and_private_floor():
@@ -509,8 +509,8 @@ def test_xianyu_shipping_product_is_in_build_matrix_launcher_license_and_custome
     assert "MainlandXianyuShippingAssistant.exe" in launcher
     assert "闲鱼发货与物流管理助手" in license_tests
     assert '"xianyu-shipping"' in series_builder
-    assert "--expected-exes 33" in workflow
-    assert "--expected-manuals 33" in workflow
+    assert "--expected-exes 34" in workflow
+    assert "--expected-manuals 34" in workflow
 
 
 def test_xianyu_shipping_readme_discloses_manual_tracking_and_no_network():

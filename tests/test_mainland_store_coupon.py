@@ -254,6 +254,23 @@ def test_campaign_report_aggregates_redemptions_and_unused_coupons(tmp_path):
     assert report["实际优惠合计"] == "10.00"
 
 
+def test_campaign_report_csv_exports_all_campaign_counters(tmp_path):
+    store = MODULE.CouponStore(tmp_path / "coupons.json")
+    campaign_id = add_campaign(store)
+    first, second = store.issue_coupons(campaign_id, 2)
+    store.redeem(first, "ORDER-REPORT", "100")
+    store.void_coupon(second, "用户取消")
+    report_path = tmp_path / "campaign-report.csv"
+    store.export_campaign_report_csv(report_path)
+    rows = list(csv.DictReader(report_path.open(encoding="utf-8-sig", newline="")))
+    assert len(rows) == 1
+    assert rows[0]["活动编号"] == campaign_id
+    assert rows[0]["发行数量"] == "2"
+    assert rows[0]["已核销"] == "1"
+    assert rows[0]["已作废"] == "1"
+    assert rows[0]["实际优惠合计"] == "10.00"
+
+
 def test_backup_restore_replaces_data_and_records_restore_event(tmp_path):
     store = MODULE.CouponStore(tmp_path / "coupons.json")
     campaign_id = add_campaign(store)

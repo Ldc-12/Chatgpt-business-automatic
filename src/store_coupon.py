@@ -42,6 +42,10 @@ REDEMPTION_FIELDS = [
     "券编号", "活动编号", "活动名称", "核销订单号", "核销时间",
     "实际消费金额", "实际优惠金额", "操作人", "备注",
 ]
+CAMPAIGN_REPORT_FIELDS = [
+    "活动编号", "活动名称", "活动状态", "发行数量", "已核销",
+    "未使用", "已作废", "已过期", "实际优惠合计",
+]
 
 
 def canonical(value):
@@ -529,6 +533,9 @@ class CouponStore:
     def export_redemptions_csv(self, path):
         rows = [item for item in self.coupons if item["状态"] == "已核销"]
         self._write_csv(path, REDEMPTION_FIELDS, rows)
+
+    def export_campaign_report_csv(self, path):
+        self._write_csv(path, CAMPAIGN_REPORT_FIELDS, self.campaign_report())
 
     def campaign_report(self):
         today = local_today()

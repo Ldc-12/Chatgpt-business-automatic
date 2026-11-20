@@ -185,7 +185,7 @@ def test_construction_settlement_product_is_in_build_matrix_launcher_and_custome
     assert "MainlandConstructionSettlementAssistant.exe" in launcher
     assert "assert len(TOOLS) == 33" in launcher
     assert "34 款 Windows EXE（33 款业务工具及工具箱启动器）" in workflow
-    assert "32 款业务工具 + 工具箱启动器" in workflow
+    assert "33 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 34
 
 
@@ -204,7 +204,7 @@ def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package()
     assert "MainlandRentalLedgerAssistant.exe" in launcher
     assert "物业租金与押金管理助手" in license_tests
     assert "34 款 Windows EXE（33 款业务工具及工具箱启动器）" in workflow
-    assert "全部 32 款业务工具 + 工具箱启动器" in workflow
+    assert "全部 33 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 34
 
 

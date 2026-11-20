@@ -1,4 +1,41 @@
-# Release status — 2026-11-19 (product source fae787f; post-merge main verification pending)
+# Release status — 2026-11-20 (main build #473 verified; final acceptance pending)
+
+## Current main and release decision
+
+- Repository: `Ldc-12/Chatgpt-business-automatic`.
+- Current main HEAD: `e1af9b509462b3bf3b47b4154866577920963da1`.
+- Product PR [#95 Add offline store membership stored-value and points ledger](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/95) merged at `e1af9b509462b3bf3b47b4154866577920963da1`; candidate head was `5434afdcaf9cc60c1a3df7646ebd26a101d8ef94`.
+- At this check there were no open pull requests.
+- Release decision remains **待最终验收 / pending final acceptance**. The current main Windows package is now CI-verified for content and integrity, but real Windows GUI/use acceptance and production authorization acceptance are not complete.
+
+## Latest main Windows builds and customer package
+
+- Latest Mainland Windows EXE main-push run [#473](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44667169892), run ID `44667169892`, head `e1af9b509462b3bf3b47b4154866577920963da1`, completed 2026-11-20 03:25:56 UTC; conclusion **success**. The full Jobs API returned 34/34 jobs successful (33 Windows EXE build jobs, including the toolbox launcher, plus the customer-package job); no failed or cancelled jobs.
+- Store membership job `136059171314`: 115 regression tests passed; `SELF_TEST_OK`; PyInstaller 6.22.3 build succeeded; frozen EXE self-test printed `FROZEN_EXE_SELF_TEST_OK` and exited with code 0.
+- Customer delivery job `136060187999` completed successfully. Customer artifact [`14598790968`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44667169892/artifacts/14598790968), created 2026-11-20 03:25:32 UTC, outer artifact size 528,872,239 bytes, outer artifact SHA256 `195ad02a341e8a0488369d4e74cd5b9584d1c1ca6b64ba9b26da5ecbda551c32`.
+- Inner `Phase1-Mainland-Windows-Tools.zip`: 528,721,981 bytes; SHA256 `6d63e40768f4eb4ced0804abea53558e7d9a560e8412ef6076bb9aca4cb42f50`; ZIP CRC **passed**; 72 entries / 70 files; 33 EXEs (32 business tools + launcher) and 33 product manuals. All files share timestamp `2026-11-20 03:25:02 UTC`.
+- The package inspector lists all 33 EXEs and all 33 manuals, including `MainlandStoreMembershipLedger.exe` and `32-门店会员储值与积分台账助手-用户说明书.md`.
+- Bundle descriptions A–F are all present: A Office Efficiency ¥29.9; B Store Operations ¥29.9; C Finance & Trading ¥29.9; D Contracts/Projects/Property ¥29.9; E Customer & Personal Affairs ¥19.9; F Full Collection ¥39.9. These are proposed prices, not verified transaction prices. The catalog reports A/B/C/D/E counts 5/10/10/4/3 and F as 32 business tools + launcher.
+- Manifest artifact [`14598446832`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44667169892/artifacts/14598446832), 2,638 bytes. Package-parts artifact [`14599420009`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44667169892/artifacts/14599420009), 528,726,527 bytes. The splitter log reports 26 parts for a 528,721,981-byte inner ZIP and the same inner SHA256.
+- Series-package artifact [`14598990722`](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44667169892/artifacts/14598990722), 514,205,741 bytes. The series builder validates required EXEs/manuals, CRC and per-series file counts before upload.
+- The customer artifact was downloaded by the GitHub artifact connector. More importantly, the workflow itself re-downloaded the uploaded artifact, verified the downloaded outer digest against the expected digest, reran `tools/inspect_mainland_package.py`, and emitted `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`. Its reinspection compares ZIP size, inner SHA256, CRC, entry count, EXE/manual lists, bundle descriptions/catalog and timestamps against the original inspection JSON. This run's local container extractor was unavailable, so no separate local ZIP re-extraction is claimed beyond the successful workflow re-download/reinspection.
+- The latest generic Windows EXE workflow run [#257](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44667169787), run ID `44667169787`, head `e1af9b509462b3bf3b47b4154866577920963da1`, completed successfully with 2/2 jobs; it builds the standalone FreelancerInvoiceKit sample, not the full mainland matrix.
+
+## Latest Autonomous Business Engine run
+
+- ABE run [#501](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44667169717), run ID `44667169717`, head `e1af9b509462b3bf3b47b4154866577920963da1`, completed successfully with build/deploy 2/2 jobs.
+- Build job `136059168355`: 688 tests passed in 4.09 seconds; product factory and Xianyu factory steps succeeded; Pages artifact `14598705462` uploaded successfully.
+- Optional opportunity-data retrieval returned `fallback: HTTPError` with HTTP 502; the engine used its fallback and completed. This is not a failure of the offline Windows products.
+
+## Authorization and real-device acceptance blockers
+
+- Embedded Ed25519 public key in `src/license.py`: DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`.
+- Configured public key in `config/mainland_license_public_key.pem`: DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`. They do not match.
+- No seller private key was read, requested, created, uploaded, guessed, replaced or rotated. The mismatch remains documented; code-side license path/product/signature tests may continue.
+- Real Windows GUI/use-flow acceptance, seller-key match, genuine issue/activate test, and exit/restart/re-verify test remain incomplete. CI frozen-EXE self-test is not a substitute.
+- All releases remain **待最终验收**. Do not advertise this package as production-ready until those blockers are closed.
+
+---
 
 ## Current main, open PRs and release decision
 

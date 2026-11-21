@@ -36,7 +36,7 @@ def test_group_chunks_rejects_missing_or_non_contiguous_parts(tmp_path):
     source.mkdir()
     (source / f"{MODULE.PART_PREFIX}00").write_bytes(b"first")
     (source / f"{MODULE.PART_PREFIX}02").write_bytes(b"third")
-    with pytest.raises(ValueError, match="連續遞增"):
+    with pytest.raises(ValueError, match="连续递增"):
         MODULE.group_chunks(source, tmp_path / "grouped", groups=2)
 
 

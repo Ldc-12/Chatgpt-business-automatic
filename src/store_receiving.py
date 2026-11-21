@@ -34,6 +34,10 @@ REPORT_FIELDS = [
     "破损数量", "拒收数量", "采购单价", "验收金额", "差异金额",
     "差异状态", "差异原因", "差异处理", "处理备注",
 ]
+SUPPLIER_SUMMARY_FIELDS = [
+    "供应商", "收货单数", "收货明细数", "差异明细数", "待处理差异",
+    "短缺数量", "超收数量", "破损数量", "拒收数量", "验收金额", "差异金额", "待处理差异金额",
+]
 RESOLUTION_STATES = ("待处理", "已补发", "已折让", "已退款", "已关闭", "无需处理")
 
 
@@ -336,6 +340,61 @@ class ReceivingStore:
             "差异金额": decimal_text(sum((Decimal(row["差异金额"]) for row in differences), Decimal("0")), places=2),
         }
 
+    def supplier_summary_rows(self):
+        """Aggregate receiving and discrepancy exposure by supplier."""
+        groups = {}
+        quantity_fields = ("短缺数量", "超收数量", "破损数量", "拒收数量")
+        for row in self.report_rows():
+            key = row["供应商"].casefold()
+            group = groups.get(key)
+            if group is None:
+                group = {
+                    "供应商": row["供应商"],
+                    "_收货单号": set(),
+                    "收货明细数": 0,
+                    "差异明细数": 0,
+                    "待处理差异": 0,
+                    "短缺数量": Decimal("0"),
+                    "超收数量": Decimal("0"),
+                    "破损数量": Decimal("0"),
+                    "拒收数量": Decimal("0"),
+                    "验收金额": Decimal("0"),
+                    "差异金额": Decimal("0"),
+                    "待处理差异金额": Decimal("0"),
+                }
+                groups[key] = group
+
+            group["_收货单号"].add(row["收货单号"].casefold())
+            group["收货明细数"] += 1
+            for field in quantity_fields:
+                group[field] += Decimal(row[field])
+            group["验收金额"] += Decimal(row["验收金额"])
+
+            if row["差异状态"] == "有差异":
+                group["差异明细数"] += 1
+                group["差异金额"] += Decimal(row["差异金额"])
+                if row["差异处理"] == "待处理":
+                    group["待处理差异"] += 1
+                    group["待处理差异金额"] += Decimal(row["差异金额"])
+
+        result = []
+        for group in groups.values():
+            result.append({
+                "供应商": group["供应商"],
+                "收货单数": len(group["_收货单号"]),
+                "收货明细数": group["收货明细数"],
+                "差异明细数": group["差异明细数"],
+                "待处理差异": group["待处理差异"],
+                "短缺数量": decimal_text(group["短缺数量"]),
+                "超收数量": decimal_text(group["超收数量"]),
+                "破损数量": decimal_text(group["破损数量"]),
+                "拒收数量": decimal_text(group["拒收数量"]),
+                "验收金额": decimal_text(group["验收金额"], places=2),
+                "差异金额": decimal_text(group["差异金额"], places=2),
+                "待处理差异金额": decimal_text(group["待处理差异金额"], places=2),
+            })
+        return sorted(result, key=lambda row: row["供应商"].casefold())
+
     @staticmethod
     def _write_csv(path, fields, rows):
         buffer = io.StringIO(newline="")
@@ -362,6 +421,9 @@ class ReceivingStore:
 
     def export_difference_csv(self, path):
         self._write_csv(path, REPORT_FIELDS, self.difference_rows())
+
+    def export_supplier_summary_csv(self, path):
+        self._write_csv(path, SUPPLIER_SUMMARY_FIELDS, self.supplier_summary_rows())
 
     def backup(self, path):
         data = canonical(self._payload(self.lines)) + b"\n"

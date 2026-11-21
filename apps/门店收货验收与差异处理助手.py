@@ -53,6 +53,7 @@ class App(tk.Tk):
             ("导入 CSV", self.import_csv),
             ("导出全部 CSV", self.export_csv),
             ("导出差异报告", self.export_difference_csv),
+            ("导出供应商汇总", self.export_supplier_summary_csv),
             ("备份", self.backup),
             ("恢复", self.restore),
         ]
@@ -201,6 +202,17 @@ class App(tk.Tk):
             rows = self.store.difference_rows()
             self.store.export_difference_csv(path)
             messagebox.showinfo("导出完成", f"已导出 {len(rows)} 条差异明细")
+        except Exception as exc:
+            messagebox.showerror("导出失败", str(exc))
+
+    def export_supplier_summary_csv(self):
+        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV 文件", "*.csv")])
+        if not path:
+            return
+        try:
+            rows = self.store.supplier_summary_rows()
+            self.store.export_supplier_summary_csv(path)
+            messagebox.showinfo("导出完成", f"已导出 {len(rows)} 家供应商的汇总")
         except Exception as exc:
             messagebox.showerror("导出失败", str(exc))
 

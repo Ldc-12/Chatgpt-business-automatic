@@ -304,3 +304,80 @@ def test_search_matches_supplier_receipt_and_sku(tmp_path):
 
 def test_self_test_runs_without_gui_or_network():
     MODULE.self_test()
+
+
+def test_supplier_summary_groups_receipts_and_separates_pending_from_resolved_amounts(tmp_path):
+    store = store_with_line(
+        tmp_path,
+        **{
+            "实收数量": "7",
+            "破损数量": "0",
+            "拒收数量": "0",
+            "采购单价": "10.00",
+            "差异原因": "少货",
+            "差异处理": "待处理",
+        },
+    )
+    store.add_line(
+        line(
+            **{
+                "明细编号": "RCV-LINE-002",
+                "收货单号": "RCV-2026-002",
+                "采购单号": "PO-2026-002",
+                "SKU": "SKU-002",
+                "商品名称": "超收商品",
+                "订购数量": "10",
+                "实收数量": "12",
+                "破损数量": "0",
+                "拒收数量": "0",
+                "采购单价": "5.00",
+                "差异原因": "供应商多送",
+                "差异处理": "已折让",
+            }
+        )
+    )
+    store.add_line(
+        line(
+            **{
+                "明细编号": "RCV-LINE-003",
+                "SKU": "SKU-003",
+                "商品名称": "正常商品",
+                "订购数量": "10",
+                "实收数量": "10",
+                "破损数量": "0",
+                "拒收数量": "0",
+                "采购单价": "1.00",
+                "差异原因": "",
+                "差异处理": "",
+            }
+        )
+    )
+
+    rows = store.supplier_summary_rows()
+    assert len(rows) == 1
+    assert rows[0] == {
+        "供应商": "供应商甲",
+        "收货单数": 2,
+        "收货明细数": 3,
+        "差异明细数": 2,
+        "待处理差异": 1,
+        "短缺数量": "3",
+        "超收数量": "2",
+        "破损数量": "0",
+        "拒收数量": "0",
+        "验收金额": "130.00",
+        "差异金额": "40.00",
+        "待处理差异金额": "30.00",
+    }
+
+
+def test_supplier_summary_export_is_utf8_bom_and_formula_safe(tmp_path):
+    store = store_with_line(tmp_path, **{"供应商": "=Vendor"})
+    output = tmp_path / "supplier-summary.csv"
+    store.export_supplier_summary_csv(output)
+
+    raw = output.read_bytes()
+    assert raw.startswith(b"\\xef\\xbb\\xbf")
+    content = raw.decode("utf-8-sig")
+    assert "'=Vendor" in content
+    assert "待处理差异金额" in content

@@ -35,7 +35,7 @@ REPORT_FIELDS = [
     "差异状态", "差异原因", "差异处理", "处理备注",
 ]
 SUPPLIER_SUMMARY_FIELDS = [
-    "供应商", "收货单数", "收货明细数", "差异明细数", "待处理差异",
+    "供应商", "统计开始日期", "统计结束日期", "收货单数", "收货明细数", "差异明细数", "待处理差异",
     "短缺数量", "超收数量", "破损数量", "拒收数量", "验收金额", "差异金额", "待处理差异金额",
 ]
 RESOLUTION_STATES = ("待处理", "已补发", "已折让", "已退款", "已关闭", "无需处理")
@@ -340,11 +340,27 @@ class ReceivingStore:
             "差异金额": decimal_text(sum((Decimal(row["差异金额"]) for row in differences), Decimal("0")), places=2),
         }
 
-    def supplier_summary_rows(self):
-        """Aggregate receiving and discrepancy exposure by supplier."""
+    def supplier_summary_rows(self, start_date=None, end_date=None):
+        """Aggregate supplier exposure within an inclusive arrival-date range.
+
+        Blank boundaries mean unbounded. The normalized boundaries are included
+        in each result row so exported statements retain their reporting period.
+        """
+        start_text = parse_date(start_date, "统计开始日期") if str(start_date or "").strip() else ""
+        end_text = parse_date(end_date, "统计结束日期") if str(end_date or "").strip() else ""
+        start_day = date.fromisoformat(start_text) if start_text else None
+        end_day = date.fromisoformat(end_text) if end_text else None
+        if start_day and end_day and start_day > end_day:
+            raise ValueError("统计开始日期不能晚于统计结束日期")
+
         groups = {}
         quantity_fields = ("短缺数量", "超收数量", "破损数量", "拒收数量")
         for row in self.report_rows():
+            arrival_day = date.fromisoformat(row["到货日期"])
+            if start_day and arrival_day < start_day:
+                continue
+            if end_day and arrival_day > end_day:
+                continue
             key = row["供应商"].casefold()
             group = groups.get(key)
             if group is None:
@@ -381,6 +397,8 @@ class ReceivingStore:
         for group in groups.values():
             result.append({
                 "供应商": group["供应商"],
+                "统计开始日期": start_text or "不限",
+                "统计结束日期": end_text or "不限",
                 "收货单数": len(group["_收货单号"]),
                 "收货明细数": group["收货明细数"],
                 "差异明细数": group["差异明细数"],
@@ -422,8 +440,12 @@ class ReceivingStore:
     def export_difference_csv(self, path):
         self._write_csv(path, REPORT_FIELDS, self.difference_rows())
 
-    def export_supplier_summary_csv(self, path):
-        self._write_csv(path, SUPPLIER_SUMMARY_FIELDS, self.supplier_summary_rows())
+    def export_supplier_summary_csv(self, path, start_date=None, end_date=None):
+        self._write_csv(
+            path,
+            SUPPLIER_SUMMARY_FIELDS,
+            self.supplier_summary_rows(start_date=start_date, end_date=end_date),
+        )
 
     def backup(self, path):
         data = canonical(self._payload(self.lines)) + b"\n"

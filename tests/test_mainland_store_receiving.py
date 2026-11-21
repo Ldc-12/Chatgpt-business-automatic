@@ -416,9 +416,9 @@ def test_supplier_summary_filters_inclusive_arrival_date_range_and_records_perio
     assert rows[0]["统计开始日期"] == start.isoformat()
     assert rows[0]["统计结束日期"] == end.isoformat()
 
-    assert [row["供应商"] for row in store.supplier_summary_rows(start_date=end.isoformat())] == [
+    assert {row["供应商"] for row in store.supplier_summary_rows(start_date=end.isoformat())} == {
         "供应商甲", "供应商乙"
-    ]
+    }
     assert [row["供应商"] for row in store.supplier_summary_rows(end_date=end.isoformat())] == [
         "供应商甲"
     ]

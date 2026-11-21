@@ -431,6 +431,8 @@ jobs:
             --package release/Phase1-Mainland-Windows-Tools.zip \
             --output-dir release \
             --max-chunks 48
+      - name: Group bounded package chunks for independent downloads
+        run: python tools/group_mainland_package_chunks.py --input-dir release --output-dir release/package-chunks --groups 2
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-manifest
@@ -441,8 +443,6 @@ jobs:
             release/Phase1-Mainland-Windows-Tools.manifest.txt
             release/Phase1-Mainland-Windows-Tools.inspection.json
             release/package-chunks/chunk-groups.json
-      - name: Group bounded package chunks for independent downloads
-        run: python tools/group_mainland_package_chunks.py --input-dir release --output-dir release/package-chunks --groups 2
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-parts-01

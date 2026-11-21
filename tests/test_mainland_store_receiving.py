@@ -432,12 +432,40 @@ def test_supplier_summary_rejects_invalid_or_reversed_period(tmp_path):
         store.supplier_summary_rows(date.today().isoformat(), (date.today() - timedelta(days=1)).isoformat())
 
 
+
+def test_supplier_summary_all_time_export_preserves_legacy_csv_header(tmp_path):
+    store = store_with_line(tmp_path, **{"供应商": "=Vendor"})
+    output = tmp_path / "supplier-summary-all-time.csv"
+    store.export_supplier_summary_csv(output)
+
+    with output.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        rows = list(reader)
+    assert reader.fieldnames == MODULE.SUPPLIER_SUMMARY_FIELDS
+    assert "统计开始日期" not in reader.fieldnames
+    assert len(rows) == 1
+    assert rows[0]["供应商"] == "'=Vendor"
+
+
+def test_supplier_summary_unbounded_period_export_keeps_explicit_metadata(tmp_path):
+    store = store_with_line(tmp_path)
+    output = tmp_path / "supplier-summary-unbounded.csv"
+    store.export_supplier_summary_period_csv(output, "", "")
+
+    with output.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        rows = list(reader)
+    assert reader.fieldnames == MODULE.SUPPLIER_SUMMARY_PERIOD_FIELDS
+    assert len(rows) == 1
+    assert rows[0]["统计开始日期"] == "不限"
+    assert rows[0]["统计结束日期"] == "不限"
+
 def test_supplier_summary_period_export_includes_filter_metadata(tmp_path):
     store = store_with_line(tmp_path)
     start = date.today().isoformat()
     end = start
     output = tmp_path / "supplier-summary-period.csv"
-    store.export_supplier_summary_csv(output, start, end)
+    store.export_supplier_summary_period_csv(output, start, end)
 
     with output.open("r", encoding="utf-8-sig", newline="") as handle:
         rows = list(csv.DictReader(handle))

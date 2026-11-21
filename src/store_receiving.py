@@ -35,8 +35,11 @@ REPORT_FIELDS = [
     "差异状态", "差异原因", "差异处理", "处理备注",
 ]
 SUPPLIER_SUMMARY_FIELDS = [
-    "供应商", "统计开始日期", "统计结束日期", "收货单数", "收货明细数", "差异明细数", "待处理差异",
+    "供应商", "收货单数", "收货明细数", "差异明细数", "待处理差异",
     "短缺数量", "超收数量", "破损数量", "拒收数量", "验收金额", "差异金额", "待处理差异金额",
+]
+SUPPLIER_SUMMARY_PERIOD_FIELDS = [
+    "供应商", "统计开始日期", "统计结束日期", *SUPPLIER_SUMMARY_FIELDS[1:],
 ]
 RESOLUTION_STATES = ("待处理", "已补发", "已折让", "已退款", "已关闭", "无需处理")
 
@@ -440,10 +443,15 @@ class ReceivingStore:
     def export_difference_csv(self, path):
         self._write_csv(path, REPORT_FIELDS, self.difference_rows())
 
-    def export_supplier_summary_csv(self, path, start_date=None, end_date=None):
+    def export_supplier_summary_csv(self, path):
+        """Export the original all-time supplier CSV schema for compatibility."""
+        self._write_csv(path, SUPPLIER_SUMMARY_FIELDS, self.supplier_summary_rows())
+
+    def export_supplier_summary_period_csv(self, path, start_date=None, end_date=None):
+        """Export a date-filtered supplier summary with explicit period metadata."""
         self._write_csv(
             path,
-            SUPPLIER_SUMMARY_FIELDS,
+            SUPPLIER_SUMMARY_PERIOD_FIELDS,
             self.supplier_summary_rows(start_date=start_date, end_date=end_date),
         )
 

@@ -244,7 +244,7 @@ class App(tk.Tk):
             )
             if not path:
                 return
-            self.store.export_supplier_summary_csv(path, start_date, end_date)
+            self.store.export_supplier_summary_period_csv(path, start_date, end_date)
             messagebox.showinfo(
                 "导出完成",
                 f"统计期间：{start_date.strip() or '不限'} 至 {end_date.strip() or '不限'}\n"

@@ -153,7 +153,7 @@ def normalize_line(row, *, today=None):
         if not state:
             state = "待处理"
         if state not in RESOLUTION_STATES[:-1]:
-            raise ValueError("有差异的明细必须选择待处理、已补发、已折让、已退款或已关闭")
+            raise ValueError("差异处理状态无效：有差异的明细必须选择待处理、已补发、已折让、已退款或已关闭")
     else:
         if state not in ("", "无需处理", "已关闭"):
             raise ValueError("没有数量差异的明细不能设置差异处理状态")

@@ -1,7 +1,7 @@
 # Latest checkpoint — 2026-11-21 (PR #107 merged; main package re-verification pending)
 
 ## Repository and pull requests
-- Current main HEAD: `0ecbcf1b2af7c64f2389c15c3ea22c9ca6fc7802`, squash merge of PR [#107 Preserve legacy all-time supplier summary CSV schema](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/107).
+- Product-code HEAD after PR #107: `0ecbcf1b2af7c64f2389c15c3ea22c9ca6fc7802`, squash merge of PR [#107 Preserve legacy all-time supplier summary CSV schema](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/107). The release-ledger-only merge commit for this checkpoint is `35c16b1c32fb5845346a55f31fbf0b4920decc80` (PR #108); it does not change product source.
 - PR [#106 Add arrival-date range to supplier summaries](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/106) merged at `c90d84e2a873dbab79cdfbf524bcac256c92bc08`.
 - PR #107 restores the original all-time supplier-summary CSV field order and keeps date-filtered period export in a separate method/header. The period export includes explicit start/end metadata, including “不限” for open boundaries. Added regression coverage for the legacy header and unbounded period metadata; updated the Chinese manual.
 - Open PRs after PR #107 merge: **0**.

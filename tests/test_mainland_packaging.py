@@ -79,6 +79,7 @@ def test_package_chunking_uses_tested_bounded_splitter_and_uploads_only_actual_p
     workflow = (root / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
     chunker = (root / "tools" / "split_mainland_package.py").read_text(encoding="utf-8")
     assert "tools/split_mainland_package.py" in workflow
+    assert "tools/group_mainland_package_chunks.py" in workflow
     max_chunks = next(
         line.split("=", 1)[1].strip()
         for line in chunker.splitlines()
@@ -90,8 +91,10 @@ def test_package_chunking_uses_tested_bounded_splitter_and_uploads_only_actual_p
     assert f"MAX_CHUNKS = {max_chunks}" in chunker
     assert "chunk_count(size_bytes" in chunker
     assert "sha256=" in chunker
-    assert "name: mainland-phase1-package-parts" in workflow
-    assert "path: release/Phase1-Mainland-Windows-Tools.zip.part-*" in workflow
+    assert "name: mainland-phase1-package-parts-01" in workflow
+    assert "name: mainland-phase1-package-parts-02" in workflow
+    assert "release/package-chunks/group-01/*" in workflow
+    assert "release/package-chunks/group-02/*" in workflow
     assert "for part in 00 01 02" not in workflow
     assert "mainland-phase1-package-part-14" not in workflow
 

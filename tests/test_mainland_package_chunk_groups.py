@@ -1,0 +1,71 @@
+import importlib.util
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "tools" / "group_mainland_package_chunks.py"
+SPEC = importlib.util.spec_from_file_location("group_mainland_package_chunks", SCRIPT)
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+
+
+def test_group_chunks_creates_two_ordered_independent_download_sets(tmp_path):
+    source = tmp_path / "parts"
+    source.mkdir()
+    contents = [bytes([index]) * (index + 1) for index in range(5)]
+    for index, content in enumerate(contents):
+        (source / f"{MODULE.PART_PREFIX}{index:02d}").write_bytes(content)
+
+    output = tmp_path / "grouped"
+    result = MODULE.group_chunks(source, output, groups=2)
+
+    assert result["part_count"] == 5
+    assert result["group_count"] == 2
+    assert [len(group["parts"]) for group in result["groups"]] == [3, 2]
+    for group in result["groups"]:
+        for item in group["parts"]:
+            copied = output / group["name"] / item["name"]
+            assert copied.stat().st_size == item["bytes"]
+            assert MODULE._sha256(copied) == item["sha256"]
+    assert (output / "chunk-groups.json").is_file()
+
+
+def test_group_chunks_rejects_missing_or_non_contiguous_parts(tmp_path):
+    source = tmp_path / "parts"
+    source.mkdir()
+    (source / f"{MODULE.PART_PREFIX}00").write_bytes(b"first")
+    (source / f"{MODULE.PART_PREFIX}02").write_bytes(b"third")
+    with pytest.raises(ValueError, match="連續遞增"):
+        MODULE.group_chunks(source, tmp_path / "grouped", groups=2)
+
+
+def test_group_chunks_rejects_empty_parts_and_invalid_group_count(tmp_path):
+    source = tmp_path / "parts"
+    source.mkdir()
+    (source / f"{MODULE.PART_PREFIX}00").write_bytes(b"")
+    (source / f"{MODULE.PART_PREFIX}01").write_bytes(b"second")
+    with pytest.raises(ValueError, match="不能为空"):
+        MODULE.group_chunks(source, tmp_path / "grouped", groups=2)
+    with pytest.raises(ValueError, match="2 至 8"):
+        MODULE.group_chunks(source, tmp_path / "grouped", groups=1)
+
+
+def test_group_chunks_rejects_symlink_parts(tmp_path):
+    source = tmp_path / "parts"
+    source.mkdir()
+    target = tmp_path / "target"
+    target.write_bytes(b"target")
+    (source / f"{MODULE.PART_PREFIX}00").symlink_to(target)
+    (source / f"{MODULE.PART_PREFIX}01").write_bytes(b"second")
+    with pytest.raises(ValueError, match="不是普通文件"):
+        MODULE.group_chunks(source, tmp_path / "grouped", groups=2)
+
+
+def test_workflow_uploads_bounded_chunk_groups_and_keeps_full_package_manifest():
+    workflow = (ROOT / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    assert "tools/group_mainland_package_chunks.py" in workflow
+    assert "mainland-phase1-package-parts-01" in workflow
+    assert "mainland-phase1-package-parts-02" in workflow
+    assert "release/package-chunks/group-01/*" in workflow
+    assert "release/package-chunks/group-02/*" in workflow

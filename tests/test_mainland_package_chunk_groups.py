@@ -51,12 +51,10 @@ def test_group_chunks_rejects_empty_parts_and_invalid_group_count(tmp_path):
         MODULE.group_chunks(source, tmp_path / "grouped", groups=1)
 
 
-def test_group_chunks_rejects_symlink_parts(tmp_path):
+def test_group_chunks_rejects_directory_entries(tmp_path):
     source = tmp_path / "parts"
     source.mkdir()
-    target = tmp_path / "target"
-    target.write_bytes(b"target")
-    (source / f"{MODULE.PART_PREFIX}00").symlink_to(target)
+    (source / f"{MODULE.PART_PREFIX}00").mkdir()
     (source / f"{MODULE.PART_PREFIX}01").write_bytes(b"second")
     with pytest.raises(ValueError, match="不是普通文件"):
         MODULE.group_chunks(source, tmp_path / "grouped", groups=2)

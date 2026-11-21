@@ -200,6 +200,16 @@ def test_csv_import_is_all_or_nothing_and_requires_exact_header(tmp_path):
         store.import_csv(wrong)
 
 
+def test_csv_export_import_roundtrip_preserves_receipt_lines(tmp_path):
+    source = store_with_line(tmp_path)
+    exported = tmp_path / "receipts.csv"
+    source.export_csv(exported)
+
+    target = MODULE.ReceivingStore(tmp_path / "restored.json")
+    assert target.import_csv(exported) == 1
+    assert target.lines == source.lines
+
+
 def test_csv_exports_are_utf8_bom_and_formula_safe(tmp_path):
     store = store_with_line(
         tmp_path,

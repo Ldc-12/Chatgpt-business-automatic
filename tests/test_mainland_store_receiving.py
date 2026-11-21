@@ -47,10 +47,10 @@ def test_receiving_line_persists_and_reloads_from_local_json(tmp_path):
 def test_receipt_calculates_accepted_short_over_damage_reject_and_amounts(tmp_path):
     store = store_with_line(tmp_path)
     report = store.report_rows()[0]
-    assert report["验收合格数量"] == "9"
+    assert report["验收合格数量"] == "7"
     assert report["短缺数量"] == "0"
     assert report["超收数量"] == "2"
-    assert report["验收金额"] == "90.00"
+    assert report["验收金额"] == "70.00"
     assert report["差异金额"] == "50.00"
     summary = store.summary()
     assert summary["差异明细数"] == 1

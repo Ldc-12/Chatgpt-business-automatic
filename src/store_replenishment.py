@@ -199,7 +199,12 @@ class ReplenishmentStore:
 
     @staticmethod
     def _payload(items, sales):
-        body = {"格式": FORMAT, "版本": VERSION, "商品": items, "销量": sales}
+        body = {
+            "格式": FORMAT,
+            "版本": VERSION,
+            "商品": json.loads(canonical(items)),
+            "销量": json.loads(canonical(sales)),
+        }
         return {**body, "SHA256": hashlib.sha256(canonical(body)).hexdigest()}
 
     @staticmethod

@@ -3,7 +3,7 @@
 ## Latest verified main checkpoint — Mainland run #490 and ABE run #512
 
 ### Repository and product change
-- Current main HEAD: `d3d9a81a82037165290b227a1b6489eb703d98f3`, squash merge of PR [#102 Add supplier-level receiving discrepancy summary export](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/102). PR #102 merged only after its PR Windows run #489 completed successfully; merge commit `d3d9a81a82037165290b227a1b6489eb703d98f3`. Open PRs after merge: **0**.
+- Product-code main commit validated by run #490: `d3d9a81a82037165290b227a1b6489eb703d98f3`, squash merge of PR [#102 Add supplier-level receiving discrepancy summary export](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/102). PR #102 merged only after its PR Windows run #489 completed successfully. Subsequent main commits in this checkpoint are release-ledger documentation only; no product source changed after `d3d9a81`. Open PRs after merge: **0**.
 - The offline store receiving assistant now exports a supplier-level summary CSV: distinct receipt count, line count, discrepancy count, pending discrepancy count, shortage/overage/damage/rejection quantities, accepted amount, total discrepancy amount, and pending-only discrepancy amount. Resolved discrepancies remain in the historical total but are excluded from pending-only amounts.
 - Added Tkinter export action and Chinese manual instructions. Added regression tests for multi-receipt aggregation, pending vs. resolved amounts, UTF-8 BOM, and formula-injection safety. No JSON schema/version change, product ID/license path change, external dependency, network call, VPN, ChatGPT, or external AI.
 
@@ -28,6 +28,11 @@
 - ZIP entry timestamps range from `2026-11-21 11:41:40 UTC` to `11:41:42 UTC` (19:41:40–19:41:42 China Standard Time).
 - Bundle catalog: A 办公效率 5; B 门店经营 13; C 财务与交易 10; D 合同工程物业 4; E 客户与个人事务 3; F 全系列 35 business tools + toolbox launcher. Suggested prices A–D ¥29.9, E ¥19.9, F ¥39.9; all are unvalidated suggested prices, not verified sales.
 - Aggregate series artifact [14705687452](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44900071920/artifacts/14705687452), 558,597,560 bytes, exceeds the single-artifact download limit and was not independently downloaded. Bundle descriptions/catalog in the reconstructed customer ZIP were inspected; do not claim the aggregate series artifact itself was independently CRC-checked.
+
+### Documentation-only main ABE run #513
+- [ABE run #513](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44900640516) was triggered by the release-ledger documentation commit `836930dc426159e9ce23c07488304d78a4c34d24`; build/deploy 2/2 success.
+- Build job `136835598140`: `784 passed in 4.56s`; generated 12 product pages with live Stripe checkout links and 12 Xianyu catalog entries. Optional opportunity-data retrieval used fallback after HTTPError.
+- Pages artifact [14706275025](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44900640516/artifacts/14706275025), 46,385 bytes, downloaded and inspected; ZIP CRC passed, TAR has 198 entries including 17 `product.json` and 12 `listing.txt`; deploy job `136835756126` succeeded.
 
 ### Latest Autonomous Business Engine run #512
 - [ABE run #512](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/44900071896), run ID `44900071896`, main head `d3d9a81a82037165290b227a1b6489eb703d98f3`; build/deploy 2/2 success.

@@ -3,7 +3,7 @@
 ## Current checkpoint after PR #100 merge
 
 - Repository: Ldc-12/Chatgpt-business-automatic.
-- Current main HEAD: 6685754208e5c2d11486c11cf8c4477b2fc09761 (squash merge of PR #100).
+- Product main HEAD immediately after PR #100 and before this documentation-only PR: 6685754208e5c2d11486c11cf8c4477b2fc09761 (squash merge of PR #100).
 - Product PR [#100 Add offline store receiving and supplier discrepancy assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/100) merged successfully. Candidate head: 5341ff49a4c7a1dac988e4d8b095790f693b72f2.
 - Open PRs at this check: 0.
 - Release decision remains **待最终验收**. PR-triggered Windows build #486 and its candidate customer ZIP were verified, but the post-merge main-push Windows artifact and post-merge ABE run are not independently exposed by the current connector. The PR candidate is not represented as a main-push release.

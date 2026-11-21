@@ -1,0 +1,296 @@
+from datetime import date, timedelta
+import csv
+import json
+
+import pytest
+
+from src import store_receiving as MODULE
+
+
+def line(**changes):
+    row = {
+        "明细编号": "RCV-LINE-001",
+        "收货单号": "RCV-2026-001",
+        "采购单号": "PO-2026-001",
+        "供应商": "供应商甲",
+        "到货日期": date.today().isoformat(),
+        "经办人": "张三",
+        "备注": "",
+        "SKU": "SKU-001",
+        "商品名称": "测试商品",
+        "订购数量": "10",
+        "实收数量": "12",
+        "破损数量": "1",
+        "拒收数量": "2",
+        "采购单价": "10.00",
+        "差异原因": "外箱破损并有超收",
+        "差异处理": "",
+        "处理备注": "拍照留档",
+    }
+    row.update(changes)
+    return row
+
+
+def store_with_line(tmp_path, **changes):
+    store = MODULE.ReceivingStore(tmp_path / "receiving.json")
+    store.add_line(line(**changes))
+    return store
+
+
+def test_receiving_line_persists_and_reloads_from_local_json(tmp_path):
+    store = store_with_line(tmp_path)
+    loaded = MODULE.ReceivingStore(store.path)
+    assert loaded.lines == store.lines
+    assert loaded.summary()["收货单数"] == 1
+
+
+def test_receipt_calculates_accepted_short_over_damage_reject_and_amounts(tmp_path):
+    store = store_with_line(tmp_path)
+    report = store.report_rows()[0]
+    assert report["验收合格数量"] == "9"
+    assert report["短缺数量"] == "0"
+    assert report["超收数量"] == "2"
+    assert report["验收金额"] == "90.00"
+    assert report["差异金额"] == "50.00"
+    summary = store.summary()
+    assert summary["差异明细数"] == 1
+    assert summary["待处理差异"] == 1
+    assert summary["破损数量"] == "1"
+    assert summary["拒收数量"] == "2"
+
+
+def test_shortage_is_pending_and_can_be_resolved_without_erasing_exception(tmp_path):
+    store = store_with_line(
+        tmp_path,
+        **{
+            "实收数量": "7",
+            "破损数量": "0",
+            "拒收数量": "0",
+            "差异原因": "少货",
+            "差异处理": "",
+        },
+    )
+    report = store.report_rows()[0]
+    assert report["验收合格数量"] == "7"
+    assert report["短缺数量"] == "3"
+    assert report["差异金额"] == "30.00"
+    assert store.summary()["待处理差异"] == 1
+
+    changed = line(
+        **{
+            "实收数量": "7",
+            "破损数量": "0",
+            "拒收数量": "0",
+            "差异原因": "少货",
+            "差异处理": "已补发",
+        }
+    )
+    store.update_line("RCV-LINE-001", changed)
+    assert store.summary()["待处理差异"] == 0
+    assert store.summary()["差异明细数"] == 1
+
+
+def test_overdelivery_is_not_added_to_payable_quantity(tmp_path):
+    store = store_with_line(
+        tmp_path,
+        **{
+            "订购数量": "10",
+            "实收数量": "13",
+            "破损数量": "0",
+            "拒收数量": "0",
+            "采购单价": "2.00",
+            "差异原因": "供应商多送",
+        },
+    )
+    report = store.report_rows()[0]
+    assert report["验收合格数量"] == "10"
+    assert report["超收数量"] == "3"
+    assert report["验收金额"] == "20.00"
+    assert report["差异金额"] == "6.00"
+
+
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    [
+        ({"收货单号": "../escape"}, "收货单号"),
+        ({"SKU": "../escape"}, "SKU"),
+        ({"供应商": ""}, "供应商"),
+        ({"商品名称": ""}, "商品名称"),
+        ({"订购数量": "0"}, "订购数量"),
+        ({"实收数量": "-1"}, "实收数量"),
+        ({"采购单价": "NaN"}, "采购单价"),
+        ({"破损数量": "9", "拒收数量": "4"}, "之和不能超过实收数量"),
+    ],
+)
+def test_invalid_receipt_fields_are_rejected(tmp_path, changes, message):
+    store = MODULE.ReceivingStore(tmp_path / "bad.json")
+    with pytest.raises(ValueError, match=message):
+        store.add_line(line(**changes))
+    assert store.lines == []
+
+
+def test_future_receipt_date_is_rejected(tmp_path):
+    store = MODULE.ReceivingStore(tmp_path / "future.json")
+    future = (date.today() + timedelta(days=1)).isoformat()
+    with pytest.raises(ValueError, match="不能晚于今天"):
+        store.add_line(line(**{"到货日期": future}))
+    assert store.lines == []
+
+
+def test_difference_requires_reason_and_valid_resolution_state(tmp_path):
+    store = MODULE.ReceivingStore(tmp_path / "reason.json")
+    with pytest.raises(ValueError, match="必须填写差异原因"):
+        store.add_line(line(**{"差异原因": ""}))
+    with pytest.raises(ValueError, match="差异处理状态"):
+        store.add_line(line(**{"差异处理": "无需处理"}))
+    assert store.lines == []
+
+
+def test_no_difference_defaults_to_no_action(tmp_path):
+    store = store_with_line(
+        tmp_path,
+        **{
+            "实收数量": "10",
+            "破损数量": "0",
+            "拒收数量": "0",
+            "差异原因": "",
+            "差异处理": "",
+        },
+    )
+    assert store.lines[0]["差异处理"] == "无需处理"
+    assert store.report_rows()[0]["差异状态"] == "无差异"
+
+
+def test_duplicate_line_ids_are_rejected_case_insensitively(tmp_path):
+    store = store_with_line(tmp_path)
+    with pytest.raises(ValueError, match="编号已存在"):
+        store.add_line(line(**{"明细编号": "rcv-line-001"}))
+
+
+def test_same_receipt_header_must_be_consistent(tmp_path):
+    store = store_with_line(tmp_path)
+    with pytest.raises(ValueError, match="同一收货单号"):
+        store.add_line(
+            line(
+                **{
+                    "明细编号": "RCV-LINE-002",
+                    "SKU": "SKU-002",
+                    "供应商": "供应商乙",
+                }
+            )
+        )
+    assert len(store.lines) == 1
+
+
+def test_csv_import_is_all_or_nothing_and_requires_exact_header(tmp_path):
+    store = store_with_line(tmp_path)
+    path = tmp_path / "incoming.csv"
+    with path.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=MODULE.LINE_FIELDS)
+        writer.writeheader()
+        writer.writerow(line(**{"明细编号": "RCV-LINE-002", "收货单号": "RCV-2026-002"}))
+        writer.writerow(line(**{"明细编号": "RCV-LINE-001"}))
+    with pytest.raises(ValueError, match="重复收货明细编号"):
+        store.import_csv(path)
+    assert len(store.lines) == 1
+
+    wrong = tmp_path / "wrong.csv"
+    wrong.write_text("收货单号,供应商\nRCV-1,供应商甲\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="表头不匹配"):
+        store.import_csv(wrong)
+
+
+def test_csv_exports_are_utf8_bom_and_formula_safe(tmp_path):
+    store = store_with_line(
+        tmp_path,
+        **{
+            "备注": '=HYPERLINK("https://bad")',
+            "处理备注": "@supplier",
+        },
+    )
+    output = tmp_path / "all.csv"
+    store.export_csv(output)
+    content = output.read_text(encoding="utf-8-sig")
+    assert "'=HYPERLINK" in content
+    assert "'@supplier" in content
+
+    report = tmp_path / "differences.csv"
+    store.export_difference_csv(report)
+    assert "差异金额" in report.read_text(encoding="utf-8-sig")
+    assert "RCV-LINE-001" in report.read_text(encoding="utf-8-sig")
+
+
+def test_difference_export_excludes_normal_receipts(tmp_path):
+    store = store_with_line(tmp_path)
+    store.add_line(
+        line(
+            **{
+                "明细编号": "RCV-LINE-002",
+                "收货单号": "RCV-2026-002",
+                "实收数量": "10",
+                "破损数量": "0",
+                "拒收数量": "0",
+                "差异原因": "",
+                "差异处理": "",
+            }
+        )
+    )
+    assert len(store.difference_rows()) == 1
+
+
+def test_backup_restore_verifies_sha_and_replaces_current_state(tmp_path):
+    store = store_with_line(tmp_path)
+    backup = tmp_path / "backup.json"
+    digest = store.backup(backup)
+    assert len(digest) == 64
+    store.add_line(line(**{"明细编号": "RCV-LINE-002", "收货单号": "RCV-2026-002"}))
+    assert len(store.lines) == 2
+    assert store.restore(backup) == 1
+    assert len(MODULE.ReceivingStore(store.path).lines) == 1
+
+
+def test_corrupt_backup_does_not_replace_current_data(tmp_path):
+    store = store_with_line(tmp_path)
+    backup = tmp_path / "bad.json"
+    payload = MODULE.ReceivingStore._payload(store.lines)
+    payload["收货明细"][0]["商品名称"] = "被篡改"
+    backup.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError, match="SHA256"):
+        store.restore(backup)
+    assert store.lines[0]["商品名称"] == "测试商品"
+
+
+def test_tampered_local_state_is_rejected_on_reload(tmp_path):
+    store = store_with_line(tmp_path)
+    payload = json.loads(store.path.read_text(encoding="utf-8"))
+    payload["收货明细"][0]["实收数量"] = "999"
+    store.path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError, match="SHA256"):
+        MODULE.ReceivingStore(store.path)
+
+
+def test_failed_atomic_write_keeps_memory_and_disk_unchanged(tmp_path, monkeypatch):
+    store = store_with_line(tmp_path)
+    original_bytes = store.path.read_bytes()
+    original_lines = list(store.lines)
+
+    def fail_write(*_args, **_kwargs):
+        raise OSError("simulated disk failure")
+
+    monkeypatch.setattr(MODULE, "atomic_write", fail_write)
+    with pytest.raises(OSError, match="simulated disk failure"):
+        store.add_line(line(**{"明细编号": "RCV-LINE-002", "收货单号": "RCV-2026-002"}))
+    assert store.lines == original_lines
+    assert store.path.read_bytes() == original_bytes
+
+
+def test_search_matches_supplier_receipt_and_sku(tmp_path):
+    store = store_with_line(tmp_path)
+    assert len(store.search_lines("供应商甲")) == 1
+    assert len(store.search_lines("RCV-2026")) == 1
+    assert len(store.search_lines("SKU-001")) == 1
+    assert store.search_lines("not-found") == []
+
+
+def test_self_test_runs_without_gui_or_network():
+    MODULE.self_test()

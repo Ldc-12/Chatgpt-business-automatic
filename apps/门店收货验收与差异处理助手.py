@@ -4,7 +4,7 @@ import sys
 import tkinter as tk
 from datetime import date
 from pathlib import Path
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, simpledialog, ttk
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
@@ -54,6 +54,7 @@ class App(tk.Tk):
             ("导出全部 CSV", self.export_csv),
             ("导出差异报告", self.export_difference_csv),
             ("导出供应商汇总", self.export_supplier_summary_csv),
+            ("导出期间供应商汇总", self.export_supplier_summary_period_csv),
             ("备份", self.backup),
             ("恢复", self.restore),
         ]
@@ -213,6 +214,42 @@ class App(tk.Tk):
             rows = self.store.supplier_summary_rows()
             self.store.export_supplier_summary_csv(path)
             messagebox.showinfo("导出完成", f"已导出 {len(rows)} 家供应商的汇总")
+        except Exception as exc:
+            messagebox.showerror("导出失败", str(exc))
+
+    def export_supplier_summary_period_csv(self):
+        default_start = date.today().replace(day=1).isoformat()
+        default_end = date.today().isoformat()
+        start_date = simpledialog.askstring(
+            "供应商汇总开始日期",
+            "请输入到货日期起始日（YYYY-MM-DD；留空表示不限）：",
+            initialvalue=default_start,
+            parent=self,
+        )
+        if start_date is None:
+            return
+        end_date = simpledialog.askstring(
+            "供应商汇总结束日期",
+            "请输入到货日期截止日（YYYY-MM-DD；留空表示不限）：",
+            initialvalue=default_end,
+            parent=self,
+        )
+        if end_date is None:
+            return
+        try:
+            rows = self.store.supplier_summary_rows(start_date, end_date)
+            path = filedialog.asksaveasfilename(
+                defaultextension=".csv",
+                filetypes=[("CSV 文件", "*.csv")],
+            )
+            if not path:
+                return
+            self.store.export_supplier_summary_csv(path, start_date, end_date)
+            messagebox.showinfo(
+                "导出完成",
+                f"统计期间：{start_date.strip() or '不限'} 至 {end_date.strip() or '不限'}\n"
+                f"已导出 {len(rows)} 家供应商的汇总",
+            )
         except Exception as exc:
             messagebox.showerror("导出失败", str(exc))
 

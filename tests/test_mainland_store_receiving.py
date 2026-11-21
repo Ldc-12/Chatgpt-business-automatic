@@ -377,7 +377,7 @@ def test_supplier_summary_export_is_utf8_bom_and_formula_safe(tmp_path):
     store.export_supplier_summary_csv(output)
 
     raw = output.read_bytes()
-    assert raw.startswith(b"\\xef\\xbb\\xbf")
+    assert raw.startswith(b"\xef\xbb\xbf")
     content = raw.decode("utf-8-sig")
     assert "'=Vendor" in content
     assert "待处理差异金额" in content

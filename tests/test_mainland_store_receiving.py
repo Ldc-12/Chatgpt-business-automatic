@@ -357,6 +357,8 @@ def test_supplier_summary_groups_receipts_and_separates_pending_from_resolved_am
     assert len(rows) == 1
     assert rows[0] == {
         "供应商": "供应商甲",
+        "统计开始日期": "不限",
+        "统计结束日期": "不限",
         "收货单数": 2,
         "收货明细数": 3,
         "差异明细数": 2,
@@ -381,3 +383,64 @@ def test_supplier_summary_export_is_utf8_bom_and_formula_safe(tmp_path):
     content = raw.decode("utf-8-sig")
     assert "'=Vendor" in content
     assert "待处理差异金额" in content
+
+
+
+def test_supplier_summary_filters_inclusive_arrival_date_range_and_records_period(tmp_path):
+    today = date.today()
+    start = today - timedelta(days=10)
+    end = today - timedelta(days=5)
+    store = MODULE.ReceivingStore(tmp_path / "period.json")
+    store.add_line(line(**{
+        "明细编号": "RCV-LINE-101",
+        "收货单号": "RCV-2026-101",
+        "到货日期": start.isoformat(),
+    }))
+    store.add_line(line(**{
+        "明细编号": "RCV-LINE-102",
+        "收货单号": "RCV-2026-102",
+        "到货日期": end.isoformat(),
+    }))
+    store.add_line(line(**{
+        "明细编号": "RCV-LINE-103",
+        "收货单号": "RCV-2026-103",
+        "供应商": "供应商乙",
+        "到货日期": today.isoformat(),
+    }))
+
+    rows = store.supplier_summary_rows(start.isoformat(), end.isoformat())
+    assert len(rows) == 1
+    assert rows[0]["供应商"] == "供应商甲"
+    assert rows[0]["收货单数"] == 2
+    assert rows[0]["收货明细数"] == 2
+    assert rows[0]["统计开始日期"] == start.isoformat()
+    assert rows[0]["统计结束日期"] == end.isoformat()
+
+    assert {row["供应商"] for row in store.supplier_summary_rows(start_date=end.isoformat())} == {
+        "供应商甲", "供应商乙"
+    }
+    assert [row["供应商"] for row in store.supplier_summary_rows(end_date=end.isoformat())] == [
+        "供应商甲"
+    ]
+
+
+def test_supplier_summary_rejects_invalid_or_reversed_period(tmp_path):
+    store = store_with_line(tmp_path)
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        store.supplier_summary_rows("not-a-date", None)
+    with pytest.raises(ValueError, match="不能晚于"):
+        store.supplier_summary_rows(date.today().isoformat(), (date.today() - timedelta(days=1)).isoformat())
+
+
+def test_supplier_summary_period_export_includes_filter_metadata(tmp_path):
+    store = store_with_line(tmp_path)
+    start = date.today().isoformat()
+    end = start
+    output = tmp_path / "supplier-summary-period.csv"
+    store.export_supplier_summary_csv(output, start, end)
+
+    with output.open("r", encoding="utf-8-sig", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert len(rows) == 1
+    assert rows[0]["统计开始日期"] == start
+    assert rows[0]["统计结束日期"] == end

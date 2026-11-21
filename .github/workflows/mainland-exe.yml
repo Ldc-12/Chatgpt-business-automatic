@@ -264,7 +264,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt pyinstaller
       - name: Automated regression tests
-        run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py tests/test_mainland_series_packages.py tests/test_mainland_package_inspection.py tests/test_mainland_package_chunks.py
+        run: python -m pytest -q ${{ matrix.test }} tests/test_mainland_license.py tests/test_mainland_packaging.py tests/test_mainland_series_packages.py tests/test_mainland_package_inspection.py tests/test_mainland_package_chunks.py tests/test_mainland_package_chunk_groups.py
       - name: Source self-test
         run: python "${{ matrix.source }}" --self-test
       - name: Build EXE with ReportLab support
@@ -440,11 +440,21 @@ jobs:
             release/Phase1-Mainland-Windows-Tools.zip.bytes
             release/Phase1-Mainland-Windows-Tools.manifest.txt
             release/Phase1-Mainland-Windows-Tools.inspection.json
+            release/package-chunks/chunk-groups.json
+      - name: Group bounded package chunks for independent downloads
+        run: python tools/group_mainland_package_chunks.py --input-dir release --output-dir release/package-chunks --groups 2
       - uses: actions/upload-artifact@v4
         with:
-          name: mainland-phase1-package-parts
+          name: mainland-phase1-package-parts-01
           overwrite: true
-          path: release/Phase1-Mainland-Windows-Tools.zip.part-*
+          path: release/package-chunks/group-01/*
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-parts-02
+          overwrite: true
+          path: release/package-chunks/group-02/*
           if-no-files-found: error
           compression-level: 0
 

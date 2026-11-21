@@ -13,7 +13,7 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
-def make_package(path, *, exe_count=35, manual_count=35, include_series=True):
+def make_package(path, *, exe_count=36, manual_count=36, include_series=True):
     with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_STORED) as archive:
         for index in range(exe_count):
             archive.writestr(f"package/Tool{index:02d}.exe", b"MZ" + bytes([index]))
@@ -39,11 +39,11 @@ def test_inspector_reports_counts_crc_hash_bundle_labels_and_timestamps(tmp_path
     make_package(package)
     report = MODULE.inspect_package(package)
     assert report["crc"] == "passed"
-    assert report["exe_count"] == 35
-    assert report["manual_count"] == 35
-    assert report["entry_count"] == 74
-    assert len(report["executables"]) == 35
-    assert len(report["manuals"]) == 35
+    assert report["exe_count"] == 36
+    assert report["manual_count"] == 36
+    assert report["entry_count"] == 76
+    assert len(report["executables"]) == 36
+    assert len(report["manuals"]) == 36
     assert len(report["sha256"]) == 64
     assert report["bundle_descriptions"] == [
         f"系列 {letter}｜建议售价 29.9 元" for letter in "ABCDEF"
@@ -55,8 +55,8 @@ def test_inspector_reports_counts_crc_hash_bundle_labels_and_timestamps(tmp_path
 @pytest.mark.parametrize(
     ("exe_count", "manual_count", "message"),
     [
-        (34, 35, "EXE 数量不符"),
-        (35, 34, "产品说明书数量不符"),
+        (35, 36, "EXE 数量不符"),
+        (36, 35, "产品说明书数量不符"),
     ],
 )
 def test_inspector_rejects_missing_exes_or_manuals(tmp_path, exe_count, manual_count, message):

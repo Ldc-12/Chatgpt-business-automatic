@@ -190,7 +190,7 @@ def test_construction_settlement_product_is_in_build_matrix_launcher_and_custome
     assert "MainlandConstructionSettlementAssistant.exe" in launcher
     assert "assert len(TOOLS) == 35" in launcher
     assert "36 款 Windows EXE（35 款业务工具及工具箱启动器）" in workflow
-    assert "34 款业务工具 + 工具箱启动器" in workflow
+    assert "35 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 36
 
 

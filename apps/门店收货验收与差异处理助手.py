@@ -284,7 +284,7 @@ class App(tk.Tk):
             self.store.export_supplier_sku_summary_csv(path, start_date, end_date)
             messagebox.showinfo(
                 "导出完成",
-                f"统计期间：{start_date.strip() or '不限'} 至 {end_date.strip() or '不限'}\\n"
+                f"统计期间：{start_date.strip() or '不限'} 至 {end_date.strip() or '不限'}\n"
                 f"已导出 {len(rows)} 个供应商-SKU 组合；已按待处理差异金额优先排序",
             )
         except Exception as exc:

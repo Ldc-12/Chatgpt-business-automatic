@@ -698,3 +698,112 @@ def test_supplier_sku_pending_only_export_keeps_schema_and_utf8_bom(tmp_path):
     assert reader.fieldnames == MODULE.SUPPLIER_SKU_SUMMARY_FIELDS
     assert rows
     assert all(int(row["待处理差异"]) > 0 for row in rows)
+
+
+def test_supplier_statement_pdf_filters_supplier_and_inclusive_period_without_mutating_ledger(tmp_path):
+    from pypdf import PdfReader
+    from src.store_receiving_pdf import export_supplier_statement_pdf
+
+    today = date.today()
+    start = today - timedelta(days=10)
+    end = today - timedelta(days=5)
+    store = MODULE.ReceivingStore(tmp_path / "pdf-ledger.json")
+    store.add_line(line(**{
+        "明细编号": "PDF-LINE-001",
+        "收货单号": "PDF-RECEIPT-001",
+        "采购单号": "PDF-PO-001",
+        "供应商": "供应商甲",
+        "到货日期": start.isoformat(),
+    }))
+    store.add_line(line(**{
+        "明细编号": "PDF-LINE-002",
+        "收货单号": "PDF-RECEIPT-002",
+        "采购单号": "PDF-PO-002",
+        "供应商": "供应商甲",
+        "到货日期": end.isoformat(),
+        "实收数量": "10",
+        "破损数量": "0",
+        "拒收数量": "0",
+        "差异原因": "",
+        "差异处理": "",
+        "采购单价": "1.00",
+    }))
+    store.add_line(line(**{
+        "明细编号": "PDF-LINE-003",
+        "收货单号": "PDF-RECEIPT-003",
+        "采购单号": "PDF-PO-003",
+        "供应商": "供应商甲",
+        "到货日期": today.isoformat(),
+    }))
+    store.add_line(line(**{
+        "明细编号": "PDF-LINE-004",
+        "收货单号": "PDF-RECEIPT-004",
+        "采购单号": "PDF-PO-004",
+        "供应商": "供应商乙",
+        "到货日期": start.isoformat(),
+    }))
+    before = json.loads(json.dumps(store.lines, ensure_ascii=False))
+    output = tmp_path / "supplier-statement.pdf"
+
+    summary = export_supplier_statement_pdf(
+        store, output, "供应商甲", start.isoformat(), end.isoformat()
+    )
+
+    assert summary["收货单数"] == 2
+    assert summary["收货明细数"] == 2
+    assert summary["差异明细数"] == 1
+    assert summary["待处理差异"] == 1
+    assert summary["验收金额"] == "80.00"
+    assert summary["差异金额"] == "50.00"
+    assert store.lines == before
+
+    raw = output.read_bytes()
+    assert raw.startswith(b"%PDF-")
+    assert b"STSong-Light" in raw
+    reader = PdfReader(str(output))
+    assert len(reader.pages) == 1
+    assert float(reader.pages[0].mediabox.width) > float(reader.pages[0].mediabox.height)
+    extracted = reader.pages[0].extract_text() or ""
+    assert "PDF-RECEIPT-001" in extracted
+    assert "PDF-RECEIPT-002" in extracted
+    assert "PDF-RECEIPT-003" not in extracted
+    assert "PDF-RECEIPT-004" not in extracted
+
+
+def test_supplier_statement_pdf_repeats_table_header_across_pages(tmp_path):
+    from pypdf import PdfReader
+    from src.store_receiving_pdf import export_supplier_statement_pdf
+
+    store = MODULE.ReceivingStore(tmp_path / "pdf-pages.json")
+    for index in range(85):
+        store.add_line(line(**{
+            "明细编号": f"PDF-PAGE-{index:03d}",
+            "收货单号": f"PDF-PAGE-RECEIPT-{index:03d}",
+            "采购单号": f"PDF-PAGE-PO-{index:03d}",
+            "SKU": f"SKU-{index:03d}",
+            "供应商": "分页测试供应商",
+            "商品名称": f"测试商品 {index}",
+            "实收数量": "10",
+            "破损数量": "0",
+            "拒收数量": "0",
+            "差异原因": "",
+            "差异处理": "",
+        }))
+    output = tmp_path / "supplier-statement-many-pages.pdf"
+
+    export_supplier_statement_pdf(store, output, "分页测试供应商", "", "")
+
+    reader = PdfReader(str(output))
+    assert len(reader.pages) >= 2
+    second_page_text = reader.pages[1].extract_text() or ""
+    assert "PDF-PAGE-RECEIPT-" in second_page_text
+
+
+def test_supplier_statement_pdf_rejects_unknown_supplier_without_creating_file(tmp_path):
+    from src.store_receiving_pdf import export_supplier_statement_pdf
+
+    store = store_with_line(tmp_path)
+    output = tmp_path / "missing-supplier.pdf"
+    with pytest.raises(ValueError, match="没有收货记录"):
+        export_supplier_statement_pdf(store, output, "不存在的供应商", "", "")
+    assert not output.exists()

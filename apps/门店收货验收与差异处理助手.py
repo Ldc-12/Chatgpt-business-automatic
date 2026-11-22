@@ -9,6 +9,7 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
 from src.store_receiving import ReceivingStore, LINE_FIELDS, RESOLUTION_STATES, self_test as core_self_test
+from src.store_receiving_pdf import export_supplier_statement_pdf
 
 PRODUCT = "门店收货验收与差异处理助手"
 
@@ -56,6 +57,7 @@ class App(tk.Tk):
             ("导出供应商汇总", self.export_supplier_summary_csv),
             ("导出期间供应商汇总", self.export_supplier_summary_period_csv),
             ("导出供应商 SKU 差异分析", self.export_supplier_sku_summary_csv),
+            ("导出供应商 PDF 对账单", self.export_supplier_statement_pdf),
             ("备份", self.backup),
             ("恢复", self.restore),
         ]
@@ -311,6 +313,75 @@ class App(tk.Tk):
             )
         except Exception as exc:
             messagebox.showerror("导出失败", str(exc))
+
+
+    def export_supplier_statement_pdf(self):
+        suppliers = sorted({row["供应商"] for row in self.store.lines}, key=str.casefold)
+        if not suppliers:
+            messagebox.showinfo("暂无数据", "请先录入收货明细，再导出供应商对账单。")
+            return
+        supplier = simpledialog.askstring(
+            "供应商 PDF 对账单",
+            "请输入供应商名称（不区分大小写）：\n" + "、".join(suppliers[:20]),
+            initialvalue=suppliers[0],
+            parent=self,
+        )
+        if supplier is None:
+            return
+        default_start = date.today().replace(day=1).isoformat()
+        default_end = date.today().isoformat()
+        start_date = simpledialog.askstring(
+            "对账单开始日期",
+            "请输入到货日期起始日（YYYY-MM-DD；留空表示不限）：",
+            initialvalue=default_start,
+            parent=self,
+        )
+        if start_date is None:
+            return
+        end_date = simpledialog.askstring(
+            "对账单结束日期",
+            "请输入到货日期截止日（YYYY-MM-DD；留空表示不限）：",
+            initialvalue=default_end,
+            parent=self,
+        )
+        if end_date is None:
+            return
+        try:
+            matches = self.store.supplier_summary_rows(start_date, end_date)
+            if not any(row["供应商"].casefold() == supplier.strip().casefold() for row in matches):
+                raise ValueError("该供应商在所选统计期间没有收货记录")
+            safe_name = "".join(
+                ch if ch.isalnum() or ch in "-_ " else "_"
+                for ch in supplier.strip()
+            ).strip(" ._")[:40] or "供应商"
+            filename = (
+                f"供应商对账单_{safe_name}_"
+                f"{start_date.strip() or '不限'}_{end_date.strip() or '不限'}.pdf"
+            )
+            path = filedialog.asksaveasfilename(
+                defaultextension=".pdf",
+                initialfile=filename,
+                filetypes=[("PDF 文件", "*.pdf")],
+            )
+            if not path:
+                return
+            summary = export_supplier_statement_pdf(
+                self.store,
+                path,
+                supplier,
+                start_date,
+                end_date,
+            )
+            messagebox.showinfo(
+                "PDF 导出完成",
+                f"供应商：{summary['供应商']}\n"
+                f"收货明细：{summary['收货明细数']} 条\n"
+                f"验收金额：¥{summary['验收金额']}\n"
+                f"差异金额：¥{summary['差异金额']}\n"
+                f"待处理差异：{summary['待处理差异']} 条",
+            )
+        except Exception as exc:
+            messagebox.showerror("PDF 导出失败", str(exc))
 
     def backup(self):
         path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON 备份", "*.json")])

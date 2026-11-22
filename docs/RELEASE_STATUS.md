@@ -1,6 +1,61 @@
-# Latest checkpoint — 2026-11-22 (PR #109 merged; main release re-verification pending)
+# Latest checkpoint — 2026-11-22 (PR #112 merged; main customer package re-verified)
 
-## Repository and pull requests
+## Latest product-code checkpoint — PR #112
+
+- Product-code HEAD on main at the time of run #501: `b2b50203cf6451434309151d0c315d97197f035a`, squash merge of [PR #112 Add pending-only supplier SKU discrepancy export](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/112).
+- PR #112 branch: `feat/store-receiving-pending-sku-filter-20261122`; candidate head `9accbdfd75f0a438fb0f5b8f35abea058ab1bdd2`; merged 2026-11-22 11:42:04 UTC.
+- Added an optional pending-only filter to supplier/SKU discrepancy analysis. Filtering is by pending discrepancy line count, not amount, so a zero-priced shortage remains visible. The Tkinter export dialog asks whether to export only pending groups or all groups and suggests an explicit filename.
+- Existing CSV columns/date metadata, JSON format, backup/restore, product ID, license path and production keys are unchanged. The Chinese manual explains the filter and zero-price behavior. No external API, VPN, ChatGPT or external AI is required.
+
+### PR #112 candidate validation
+
+- Mainland Windows EXE PR run [#500](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018055825), run ID `45018055825`, completed **success**, 37/37 jobs.
+- Store receiving job `137194588976`: 142 passed, source self-test passed, PyInstaller 6.22.3 succeeded, frozen EXE self-test exited 0.
+- Standalone candidate artifact [14752591703](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018055825/artifacts/14752591703): 29,606,453 bytes; downloaded and checked. Outer and inner ZIP CRC passed; it contains the EXE, README and updated Chinese manual.
+- Candidate customer artifact [14752512392](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018055825/artifacts/14752512392), manifest [14751729308](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018055825/artifacts/14751729308), part groups [14752616910](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018055825/artifacts/14752616910) and [14751903961](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018055825/artifacts/14751903961). The two groups were downloaded and reassembled; 28/28 part size/SHA256 checks passed, inner ZIP CRC passed, and its SHA256 matched the manifest. This is candidate evidence; the following main-push package is authoritative.
+
+### Latest main-push Mainland Windows EXE — run #501
+
+- [Mainland Windows EXE run #501](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018605092), run ID `45018605092`, head `b2b50203cf6451434309151d0c315d97197f035a`, completed **success**, 37/37 jobs; no failed jobs.
+- Store receiving job `137196282236`: 142 passed in 1.57s, `SELF_TEST_OK`, PyInstaller 6.22.3, `FROZEN_EXE_SELF_TEST_OK` exit 0.
+- Store replenishment job `137196282024`: 126 passed in 0.93s; PyInstaller 6.22.3 and frozen EXE self-test succeeded.
+- Main-push store receiving standalone artifact [14752104156](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018605092/artifacts/14752104156): 29,607,793 bytes; downloaded and checked. Outer ZIP CRC passed; inner delivery ZIP is 14,797,427 bytes with SHA256 `038aa3457fbceab03fc0dc551056133831efb47e094e37239b3aa8ae29ee44f1`, CRC passed, and contains the EXE, README and updated Chinese manual.
+
+### Latest main customer package — run #501
+
+- Customer artifact [14753086404](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018605092/artifacts/14753086404): outer artifact ZIP 573,267,728 bytes; outer artifact digest `7d2a94595c24d048c04e610a1d667e309ebbb66fcb83905de33e7f4022dee29a`.
+- The direct artifact download exceeds the connector's 536,870,912-byte single-file limit. The workflow itself re-downloaded the uploaded customer artifact and logged `MAINLAND_PACKAGE_INSPECTION_OK`. The manifest and both bounded part-group artifacts were separately downloaded and checked.
+- Manifest [14753300636](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018605092/artifacts/14753300636): 4,286 bytes. Part groups [14753290617](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018605092/artifacts/14753290617) (293,603,738 bytes) and [14753211068](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018605092/artifacts/14753211068) (279,505,723 bytes).
+- All 28 parts passed individual byte-count and SHA256 checks. Reassembled inner `Phase1-Mainland-Windows-Tools.zip`: 573,104,545 bytes; SHA256 `3128ceae7bef64bd24498155e8c48aa648c5038651954ea32c44aa8550ba53a3`; manifest match and ZIP CRC passed.
+- Inner ZIP: 78 entries / 76 files / 36 EXEs / 36 product manuals. This is 35 business tools plus the efficiency-toolbox launcher. All product files have timestamp `2026-11-22 11:45:12 UTC` (19:45:12 China time). The updated supplier/SKU pending-only filter is present in the store receiving manual.
+- Bundle catalog: A office efficiency 5 tools / suggested ¥29.9; B store operations 13 / ¥29.9; C finance and transactions 10 / ¥29.9; D contracts/construction/property 4 / ¥29.9; E customer/personal 3 / ¥19.9; F all 35 business tools plus launcher / ¥39.9. Prices remain unvalidated suggestions, not actual Xianyu sales.
+- The customer ZIP includes the bundle descriptions and category catalog. The separate series-packages artifact [14753081368](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018605092/artifacts/14753081368) is 558,603,302 bytes and exceeds the same direct-download limit; its individual ZIPs were not independently downloaded in this run. Do not claim separate series-package CRC verification.
+
+### Latest Autonomous Business Engine — run #524
+
+- [ABE run #524](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018605132), head `b2b50203cf6451434309151d0c315d97197f035a`, build/deploy 2/2 success.
+- Build job `137196281315`: 795 passed in 3.30s; generated 12 product pages and 12 Xianyu listings.
+- Opportunity data retrieval used `fallback: TimeoutError` with `The read operation timed out`; deployment succeeded using fallback data, so workflow success does not mean the live opportunity source responded.
+- Pages artifact [14752767313](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45018605132/artifacts/14752767313): 47,248 bytes; downloaded, outer ZIP CRC passed, TAR has 198 entries including 17 `product.json` and 12 `listing.txt`. Deploy job `137196485703` reported Pages success.
+
+### Historical failure-log review
+
+- Mainland run #481, job `136707279108`, failed `test_corrupt_backup_does_not_replace_current_data`: the old replenishment `_payload` returned references to the live item/sales lists. The test's deliberate backup tampering therefore mutated in-memory state before restore. Current main deep-copies through canonical JSON serialization in `_payload`; the main run #501 replenishment matrix now passes 126 tests and frozen EXE self-test. This historical failure is fixed in current main.
+- Mainland run #474, job `136071514066`, failed two packaging assertions that still expected 32 business tools plus launcher after new products raised the count. This was stale test expectations, not individual product failures. Current main package inspection expects and verifies 36 EXEs and 36 manuals; run #501 is 37/37 success.
+- Earlier chunk-limit failures #460/#462 were addressed by the 48-part cap and tests reading the workflow configuration; current run #501 generated 28 parts in two groups successfully.
+
+### Authorization and release decision — still blocked
+
+- Embedded `src/license.py` public-key DER SHA256: `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`.
+- `config/mainland_license_public_key.pem` DER SHA256: `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`. They still differ.
+- No seller private key was read, requested, uploaded, guessed, created, replaced or rotated. No production public key was changed.
+- Real Windows GUI/data-flow acceptance and genuine seller-key license issue, activation, exit/restart and re-verification are incomplete. **The package remains 待最终验收; it is not approved as a fully accepted commercial Xianyu release.**
+- Required seller-side operation: on the trusted Windows PC that already holds the seller private key, run `python tools/export_license_public_key.py --private-key "C:\实际私钥路径\seller-private.pem"` and provide only `PUBLIC_KEY_PEM` or the SHA256 fingerprint. Never upload `seller-private.pem`.
+
+---
+
+
+## Historical checkpoint — PR #109
 - Product-code HEAD after PR #109: `045eb614fb6643520006fd34257ee9586e8a2281`, squash merge of [PR #109 Add supplier SKU discrepancy analysis to store receiving](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/109).
 - Release-ledger-only [PR #110](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/110) merged at `69bef49fa08eac601608841e7030b4360030bed0`; it records PR #109 candidate evidence and does not change product source.
 - Product-code changes: supplier/SKU-level discrepancy analysis in the existing offline receiving assistant. The report groups by case-insensitive supplier + SKU, counts distinct receipts (not lines) for discrepancy receipt rate, flags inconsistent product names, supports inclusive arrival-date filters, and exports formula-safe UTF-8-BOM CSV sorted by pending discrepancy amount. Existing local JSON, CSV import, backup/restore, SHA256 integrity, product ID, launcher and license path are unchanged.

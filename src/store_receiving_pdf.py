@@ -245,3 +245,36 @@ def export_supplier_statement_pdf(store, path, supplier, start_date=None, end_da
     doc.build(story, onFirstPage=draw_page_number, onLaterPages=draw_page_number)
     atomic_write(Path(path), buffer.getvalue())
     return dict(summary)
+
+
+def self_test():
+    """Exercise CJK PDF generation in both source and frozen Windows builds."""
+    from tempfile import TemporaryDirectory
+    from datetime import date
+    from .store_receiving import ReceivingStore
+
+    with TemporaryDirectory() as directory:
+        store = ReceivingStore(Path(directory) / "self-test-ledger.json")
+        store.add_line({
+            "收货单号": "PDF-SELF-TEST-001",
+            "采购单号": "PDF-SELF-TEST-PO-001",
+            "供应商": "PDF自检供应商",
+            "到货日期": date.today().isoformat(),
+            "SKU": "PDF-SELF-TEST-SKU",
+            "商品名称": "PDF自检商品",
+            "订购数量": "1",
+            "实收数量": "1",
+            "破损数量": "0",
+            "拒收数量": "0",
+            "采购单价": "1.00",
+            "差异原因": "",
+            "差异处理": "",
+        })
+        output = Path(directory) / "self-test-statement.pdf"
+        summary = export_supplier_statement_pdf(store, output, "PDF自检供应商", "", "")
+        data = output.read_bytes()
+        if summary["收货明细数"] != 1 or not data.startswith(b"%PDF-"):
+            raise AssertionError("供应商 PDF 自检未生成有效文件")
+        if FONT_NAME.encode("ascii") not in data:
+            raise AssertionError("供应商 PDF 未包含预期的中文 CID 字体标识")
+        return True

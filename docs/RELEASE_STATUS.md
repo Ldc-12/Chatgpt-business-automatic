@@ -2,7 +2,7 @@
 
 ## Latest product-code checkpoint — PR #112
 
-- Product-code/main HEAD: `b2b50203cf6451434309151d0c315d97197f035a`, squash merge of [PR #112 Add pending-only supplier SKU discrepancy export](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/112).
+- Product-code HEAD on main at the time of run #501: `b2b50203cf6451434309151d0c315d97197f035a`, squash merge of [PR #112 Add pending-only supplier SKU discrepancy export](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/112).
 - PR #112 branch: `feat/store-receiving-pending-sku-filter-20261122`; candidate head `9accbdfd75f0a438fb0f5b8f35abea058ab1bdd2`; merged 2026-11-22 11:42:04 UTC.
 - Added an optional pending-only filter to supplier/SKU discrepancy analysis. Filtering is by pending discrepancy line count, not amount, so a zero-priced shortage remains visible. The Tkinter export dialog asks whether to export only pending groups or all groups and suggests an explicit filename.
 - Existing CSV columns/date metadata, JSON format, backup/restore, product ID, license path and production keys are unchanged. The Chinese manual explains the filter and zero-price behavior. No external API, VPN, ChatGPT or external AI is required.
@@ -50,7 +50,7 @@
 - `config/mainland_license_public_key.pem` DER SHA256: `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`. They still differ.
 - No seller private key was read, requested, uploaded, guessed, created, replaced or rotated. No production public key was changed.
 - Real Windows GUI/data-flow acceptance and genuine seller-key license issue, activation, exit/restart and re-verification are incomplete. **The package remains 待最终验收; it is not approved as a fully accepted commercial Xianyu release.**
-- Required seller-side operation: on the trusted Windows PC that already holds the seller private key, run `python tools/export_license_public_key.py --private-key "C:\\实际私钥路径\\seller-private.pem"` and provide only `PUBLIC_KEY_PEM` or the SHA256 fingerprint. Never upload `seller-private.pem`.
+- Required seller-side operation: on the trusted Windows PC that already holds the seller private key, run `python tools/export_license_public_key.py --private-key "C:\实际私钥路径\seller-private.pem"` and provide only `PUBLIC_KEY_PEM` or the SHA256 fingerprint. Never upload `seller-private.pem`.
 
 ---
 

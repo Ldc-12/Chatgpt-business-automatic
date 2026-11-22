@@ -478,10 +478,21 @@ def test_supplier_sku_summary_groups_by_supplier_and_casefolded_sku_and_ranks_pe
     store = store_with_line(tmp_path)
     store.add_line(line(**{
         "明细编号": "RCV-LINE-002",
+        "SKU": "sku-001",
+        "商品名称": "商品新名称",
+        "订购数量": "10",
+        "实收数量": "9",
+        "破损数量": "0",
+        "拒收数量": "0",
+        "差异原因": "少货",
+        "差异处理": "",
+    }))
+    store.add_line(line(**{
+        "明细编号": "RCV-LINE-003",
         "收货单号": "RCV-2026-002",
         "采购单号": "PO-2026-002",
         "SKU": "sku-001",
-        "商品名称": "商品新名称",
+        "商品名称": "测试商品",
         "订购数量": "10",
         "实收数量": "10",
         "破损数量": "0",
@@ -491,7 +502,7 @@ def test_supplier_sku_summary_groups_by_supplier_and_casefolded_sku_and_ranks_pe
         "到货日期": (date.today() - timedelta(days=5)).isoformat(),
     }))
     store.add_line(line(**{
-        "明细编号": "RCV-LINE-003",
+        "明细编号": "RCV-LINE-004",
         "收货单号": "RCV-2026-003",
         "采购单号": "PO-2026-003",
         "SKU": "SKU-001",
@@ -504,7 +515,7 @@ def test_supplier_sku_summary_groups_by_supplier_and_casefolded_sku_and_ranks_pe
         "到货日期": (date.today() - timedelta(days=3)).isoformat(),
     }))
     store.add_line(line(**{
-        "明细编号": "RCV-LINE-004",
+        "明细编号": "RCV-LINE-005",
         "收货单号": "RCV-2026-004",
         "采购单号": "PO-2026-004",
         "供应商": "供应商乙",
@@ -525,22 +536,20 @@ def test_supplier_sku_summary_groups_by_supplier_and_casefolded_sku_and_ranks_pe
     assert first["收货单数"] == 3
     assert first["差异收货单数"] == 2
     assert first["差异收货单占比"] == "66.67%"
-    assert first["收货明细数"] == 3
-    assert first["差异明细数"] == 2
-    assert first["待处理差异"] == 1
-    assert first["短缺数量"] == "3"
+    assert first["收货明细数"] == 4
+    assert first["差异明细数"] == 3
+    assert first["待处理差异"] == 2
+    assert first["短缺数量"] == "4"
     assert first["超收数量"] == "2"
     assert first["破损数量"] == "1"
     assert first["拒收数量"] == "2"
-    assert first["验收金额"] == "240.00"
-    assert first["差异金额"] == "80.00"
-    assert first["待处理差异金额"] == "50.00"
+    assert first["验收金额"] == "330.00"
+    assert first["差异金额"] == "90.00"
+    assert first["待处理差异金额"] == "60.00"
     second = next(row for row in rows if row["供应商"] == "供应商乙")
     assert second["收货单数"] == 1
     assert second["差异收货单数"] == 0
     assert second["差异收货单占比"] == "0.00%"
-
-
 def test_supplier_sku_summary_filters_inclusive_dates_and_rejects_invalid_period(tmp_path):
     today = date.today()
     start = today - timedelta(days=10)

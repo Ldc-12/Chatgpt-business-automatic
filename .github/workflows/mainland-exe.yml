@@ -268,10 +268,10 @@ jobs:
       - name: Source self-test
         run: python "${{ matrix.source }}" --self-test
       - name: Build EXE with ReportLab support
-        if: matrix.key == 'quotation'
+        if: matrix.key == 'quotation' || matrix.key == 'store-receiving'
         run: pyinstaller --onefile --windowed --paths . --hidden-import src.license --collect-submodules reportlab --name "${{ matrix.exe }}" "${{ matrix.source }}"
       - name: Build standard EXE
-        if: matrix.key != 'quotation'
+        if: matrix.key != 'quotation' && matrix.key != 'store-receiving'
         run: pyinstaller --onefile --windowed --paths . --hidden-import src.license --name "${{ matrix.exe }}" "${{ matrix.source }}"
       - name: Frozen EXE self-test (must exit successfully)
         shell: powershell

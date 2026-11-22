@@ -27,6 +27,23 @@ def _paragraph(value, style):
     return Paragraph(text or " ", style)
 
 
+def _summary_cells(summary):
+    """Return the metrics displayed in the supplier statement summary."""
+    return [
+        ("收货单数", summary["收货单数"]),
+        ("收货明细数", summary["收货明细数"]),
+        ("差异明细数", summary["差异明细数"]),
+        ("待处理差异", summary["待处理差异"]),
+        ("短缺数量", summary["短缺数量"]),
+        ("超收数量", summary["超收数量"]),
+        ("破损数量", summary["破损数量"]),
+        ("拒收数量", summary["拒收数量"]),
+        ("验收金额", f"¥{summary['验收金额']}"),
+        ("差异金额", f"¥{summary['差异金额']}"),
+        ("待处理差异金额", f"¥{summary['待处理差异金额']}"),
+    ]
+
+
 def export_supplier_statement_pdf(store, path, supplier, start_date=None, end_date=None):
     """Export one supplier's inclusive-period receiving statement as an atomic PDF.
 
@@ -156,15 +173,7 @@ def export_supplier_statement_pdf(store, path, supplier, start_date=None, end_da
         Paragraph("汇总信息", section_style),
     ]
 
-    summary_cells = [
-        ("收货单数", summary["收货单数"]),
-        ("收货明细数", summary["收货明细数"]),
-        ("差异明细数", summary["差异明细数"]),
-        ("待处理差异", summary["待处理差异"]),
-        ("验收金额", f"¥{summary['验收金额']}"),
-        ("差异金额", f"¥{summary['差异金额']}"),
-        ("待处理差异金额", f"¥{summary['待处理差异金额']}"),
-    ]
+    summary_cells = _summary_cells(summary)
     summary_data = []
     for index in range(0, len(summary_cells), 3):
         row = [
@@ -186,7 +195,17 @@ def export_supplier_statement_pdf(store, path, supplier, start_date=None, end_da
         ("TOPPADDING", (0, 0), (-1, -1), 4),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]))
-    story.extend([summary_table, Spacer(1, 7), Paragraph("收货明细", section_style)])
+    story.extend([
+        summary_table,
+        Spacer(1, 4),
+        _paragraph(
+            "统计口径：按到货日期筛选，首尾日期均包含；验收金额=验收合格数量×采购单价；"
+            "差异金额=(短缺+超收+破损+拒收)×采购单价；待处理差异金额仅统计状态为“待处理”的差异。",
+            meta_style,
+        ),
+        Spacer(1, 7),
+        Paragraph("收货明细", section_style),
+    ])
 
     headers = [
         "到货日期", "收货单号", "采购单号", "SKU", "商品名称", "订购",

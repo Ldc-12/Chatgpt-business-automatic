@@ -807,3 +807,9 @@ def test_supplier_statement_pdf_rejects_unknown_supplier_without_creating_file(t
     with pytest.raises(ValueError, match="没有收货记录"):
         export_supplier_statement_pdf(store, output, "不存在的供应商", "", "")
     assert not output.exists()
+
+
+def test_supplier_statement_pdf_self_test_runs_without_gui_or_network():
+    from src.store_receiving_pdf import self_test
+
+    assert self_test() is True

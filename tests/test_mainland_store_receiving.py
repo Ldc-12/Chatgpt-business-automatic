@@ -813,3 +813,23 @@ def test_supplier_statement_pdf_self_test_runs_without_gui_or_network():
     from src.store_receiving_pdf import self_test
 
     assert self_test() is True
+
+def test_supplier_statement_pdf_summary_includes_all_difference_quantities(tmp_path):
+    from src.store_receiving_pdf import _summary_cells, export_supplier_statement_pdf
+
+    store = store_with_line(tmp_path)
+    summary = store.supplier_summary_rows()[0]
+    cells = dict(_summary_cells(summary))
+
+    assert cells["短缺数量"] == "0"
+    assert cells["超收数量"] == "2"
+    assert cells["破损数量"] == "1"
+    assert cells["拒收数量"] == "2"
+    assert cells["验收金额"] == "¥70.00"
+    assert cells["差异金额"] == "¥50.00"
+    assert cells["待处理差异金额"] == "¥50.00"
+
+    output = tmp_path / "supplier-statement-quantity-summary.pdf"
+    export_supplier_statement_pdf(store, output, "供应商甲", "", "")
+    assert output.read_bytes().startswith(b"%PDF-")
+

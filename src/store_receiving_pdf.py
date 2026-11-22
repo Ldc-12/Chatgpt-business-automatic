@@ -169,7 +169,7 @@ def export_supplier_statement_pdf(store, path, supplier, start_date=None, end_da
     summary_data = []
     for index in range(0, len(summary_cells), 3):
         row = [
-            _paragraph(f"<b>{label}</b>：{value}", summary_style)
+            _paragraph(f"{label}：{value}", summary_style)
             for label, value in summary_cells[index:index + 3]
         ]
         while len(row) < 3:
@@ -243,6 +243,6 @@ def export_supplier_statement_pdf(store, path, supplier, start_date=None, end_da
         )
         canvas.restoreState()
 
-    doc.build(buffer=buffer, onFirstPage=draw_page_number, onLaterPages=draw_page_number)
+    doc.build(story, onFirstPage=draw_page_number, onLaterPages=draw_page_number)
     atomic_write(Path(path), buffer.getvalue())
     return dict(summary)

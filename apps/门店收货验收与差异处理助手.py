@@ -55,6 +55,7 @@ class App(tk.Tk):
             ("导出差异报告", self.export_difference_csv),
             ("导出供应商汇总", self.export_supplier_summary_csv),
             ("导出期间供应商汇总", self.export_supplier_summary_period_csv),
+            ("导出供应商 SKU 差异分析", self.export_supplier_sku_summary_csv),
             ("备份", self.backup),
             ("恢复", self.restore),
         ]
@@ -249,6 +250,42 @@ class App(tk.Tk):
                 "导出完成",
                 f"统计期间：{start_date.strip() or '不限'} 至 {end_date.strip() or '不限'}\n"
                 f"已导出 {len(rows)} 家供应商的汇总",
+            )
+        except Exception as exc:
+            messagebox.showerror("导出失败", str(exc))
+
+    def export_supplier_sku_summary_csv(self):
+        default_start = date.today().replace(day=1).isoformat()
+        default_end = date.today().isoformat()
+        start_date = simpledialog.askstring(
+            "供应商 SKU 分析开始日期",
+            "请输入到货日期起始日（YYYY-MM-DD；留空表示不限）：",
+            initialvalue=default_start,
+            parent=self,
+        )
+        if start_date is None:
+            return
+        end_date = simpledialog.askstring(
+            "供应商 SKU 分析结束日期",
+            "请输入到货日期截止日（YYYY-MM-DD；留空表示不限）：",
+            initialvalue=default_end,
+            parent=self,
+        )
+        if end_date is None:
+            return
+        try:
+            rows = self.store.supplier_sku_summary_rows(start_date, end_date)
+            path = filedialog.asksaveasfilename(
+                defaultextension=".csv",
+                filetypes=[("CSV 文件", "*.csv")],
+            )
+            if not path:
+                return
+            self.store.export_supplier_sku_summary_csv(path, start_date, end_date)
+            messagebox.showinfo(
+                "导出完成",
+                f"统计期间：{start_date.strip() or '不限'} 至 {end_date.strip() or '不限'}\n"
+                f"已导出 {len(rows)} 个供应商-SKU 组合；已按待处理差异金额优先排序",
             )
         except Exception as exc:
             messagebox.showerror("导出失败", str(exc))

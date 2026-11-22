@@ -1,7 +1,8 @@
 # Latest checkpoint — 2026-11-22 (PR #109 merged; main release re-verification pending)
 
 ## Repository and pull requests
-- Current main HEAD: `045eb614fb6643520006fd34257ee9586e8a2281`, squash merge of [PR #109 Add supplier SKU discrepancy analysis to store receiving](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/109).
+- Product-code HEAD after PR #109: `045eb614fb6643520006fd34257ee9586e8a2281`, squash merge of [PR #109 Add supplier SKU discrepancy analysis to store receiving](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/109).
+- Release-ledger-only [PR #110](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/110) merged at `69bef49fa08eac601608841e7030b4360030bed0`; it records PR #109 candidate evidence and does not change product source.
 - Product-code changes: supplier/SKU-level discrepancy analysis in the existing offline receiving assistant. The report groups by case-insensitive supplier + SKU, counts distinct receipts (not lines) for discrepancy receipt rate, flags inconsistent product names, supports inclusive arrival-date filters, and exports formula-safe UTF-8-BOM CSV sorted by pending discrepancy amount. Existing local JSON, CSV import, backup/restore, SHA256 integrity, product ID, launcher and license path are unchanged.
 - PR #109 candidate head: `033e9bb8230d11595725aa0809adc4824e1ed611`; merged at `045eb614fb6643520006fd34257ee9586e8a2281`. No open PRs after merge.
 - No new external dependency, network call, marketplace API, VPN, ChatGPT, external AI, or cloud requirement.

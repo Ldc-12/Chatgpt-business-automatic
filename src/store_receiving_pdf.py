@@ -143,7 +143,6 @@ def export_supplier_statement_pdf(store, path, supplier, start_date=None, end_da
         bottomMargin=15 * mm,
         title=f"{summary['供应商']}收货对账单",
         author="门店收货验收与差异处理助手",
-        pageCompression=1,
     )
 
     story = [

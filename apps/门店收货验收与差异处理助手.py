@@ -276,7 +276,7 @@ class App(tk.Tk):
         try:
             pending_only = messagebox.askyesno(
                 "筛选待处理差异",
-                "是否只导出仍处于“待处理”状态的供应商-SKU组合？\\n"
+                "是否只导出仍处于“待处理”状态的供应商-SKU组合？\n"
                 "选择“否”将导出全部组合。",
                 parent=self,
             )
@@ -305,8 +305,8 @@ class App(tk.Tk):
             scope = "仅待处理" if pending_only else "全部"
             messagebox.showinfo(
                 "导出完成",
-                f"统计期间：{start_date.strip() or '不限'} 至 {end_date.strip() or '不限'}\\n"
-                f"筛选范围：{scope}\\n已导出 {len(rows)} 个供应商-SKU 组合；"
+                f"统计期间：{start_date.strip() or '不限'} 至 {end_date.strip() or '不限'}\n"
+                f"筛选范围：{scope}\n已导出 {len(rows)} 个供应商-SKU 组合；"
                 "已按待处理差异金额优先排序",
             )
         except Exception as exc:

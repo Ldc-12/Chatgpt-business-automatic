@@ -461,7 +461,7 @@ class ReceivingStore:
             self.supplier_summary_rows(start_date=start_date, end_date=end_date),
         )
 
-    def supplier_sku_summary_rows(self, start_date=None, end_date=None):
+    def supplier_sku_summary_rows(self, start_date=None, end_date=None, *, pending_only=False):
         """Summarize recurring discrepancies by supplier and case-insensitive SKU.
 
         Receipt-level rate counts distinct receipts, not individual lines. The
@@ -551,6 +551,10 @@ class ReceivingStore:
                 "差异金额": decimal_text(group["差异金额"], places=2),
                 "待处理差异金额": decimal_text(group["待处理差异金额"], places=2),
             })
+        if pending_only:
+            # Filter by pending line count, not monetary exposure: zero-priced
+            # shortages still require follow-up and must remain visible.
+            result = [row for row in result if row["待处理差异"] > 0]
         return sorted(
             result,
             key=lambda row: (
@@ -562,12 +566,16 @@ class ReceivingStore:
             ),
         )
 
-    def export_supplier_sku_summary_csv(self, path, start_date=None, end_date=None):
+    def export_supplier_sku_summary_csv(self, path, start_date=None, end_date=None, *, pending_only=False):
         """Export supplier/SKU recurrence analysis with explicit period metadata."""
         self._write_csv(
             path,
             SUPPLIER_SKU_SUMMARY_FIELDS,
-            self.supplier_sku_summary_rows(start_date=start_date, end_date=end_date),
+            self.supplier_sku_summary_rows(
+                start_date=start_date,
+                end_date=end_date,
+                pending_only=pending_only,
+            ),
         )
 
     def backup(self, path):

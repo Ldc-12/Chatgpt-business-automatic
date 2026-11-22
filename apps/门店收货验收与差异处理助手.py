@@ -274,18 +274,40 @@ class App(tk.Tk):
         if end_date is None:
             return
         try:
-            rows = self.store.supplier_sku_summary_rows(start_date, end_date)
+            pending_only = messagebox.askyesno(
+                "筛选待处理差异",
+                "是否只导出仍处于“待处理”状态的供应商-SKU组合？\\n"
+                "选择“否”将导出全部组合。",
+                parent=self,
+            )
+            rows = self.store.supplier_sku_summary_rows(
+                start_date,
+                end_date,
+                pending_only=pending_only,
+            )
+            suggested_name = (
+                "供应商SKU差异分析_仅待处理.csv"
+                if pending_only else "供应商SKU差异分析_全部.csv"
+            )
             path = filedialog.asksaveasfilename(
                 defaultextension=".csv",
+                initialfile=suggested_name,
                 filetypes=[("CSV 文件", "*.csv")],
             )
             if not path:
                 return
-            self.store.export_supplier_sku_summary_csv(path, start_date, end_date)
+            self.store.export_supplier_sku_summary_csv(
+                path,
+                start_date,
+                end_date,
+                pending_only=pending_only,
+            )
+            scope = "仅待处理" if pending_only else "全部"
             messagebox.showinfo(
                 "导出完成",
-                f"统计期间：{start_date.strip() or '不限'} 至 {end_date.strip() or '不限'}\n"
-                f"已导出 {len(rows)} 个供应商-SKU 组合；已按待处理差异金额优先排序",
+                f"统计期间：{start_date.strip() or '不限'} 至 {end_date.strip() or '不限'}\\n"
+                f"筛选范围：{scope}\\n已导出 {len(rows)} 个供应商-SKU 组合；"
+                "已按待处理差异金额优先排序",
             )
         except Exception as exc:
             messagebox.showerror("导出失败", str(exc))

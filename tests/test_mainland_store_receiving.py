@@ -614,3 +614,87 @@ def test_supplier_sku_summary_empty_period_exports_header_only(tmp_path):
         reader = csv.DictReader(handle)
         assert reader.fieldnames == MODULE.SUPPLIER_SKU_SUMMARY_FIELDS
         assert list(reader) == []
+
+
+def test_supplier_sku_summary_pending_only_excludes_resolved_and_normal_but_keeps_zero_value_pending(tmp_path):
+    store = store_with_line(tmp_path)
+    store.add_line(line(**{
+        "明细编号": "PENDING-FILTER-002",
+        "收货单号": "PENDING-FILTER-002",
+        "采购单号": "PO-PENDING-FILTER-002",
+        "供应商": "供应商乙",
+        "SKU": "SKU-002",
+        "商品名称": "正常商品",
+        "订购数量": "10",
+        "实收数量": "10",
+        "破损数量": "0",
+        "拒收数量": "0",
+        "采购单价": "10.00",
+        "差异原因": "",
+        "差异处理": "",
+    }))
+    store.add_line(line(**{
+        "明细编号": "PENDING-FILTER-003",
+        "收货单号": "PENDING-FILTER-003",
+        "采购单号": "PO-PENDING-FILTER-003",
+        "供应商": "供应商丙",
+        "SKU": "SKU-003",
+        "商品名称": "已处理商品",
+        "订购数量": "10",
+        "实收数量": "9",
+        "破损数量": "0",
+        "拒收数量": "0",
+        "采购单价": "10.00",
+        "差异原因": "少货",
+        "差异处理": "已补发",
+    }))
+    store.add_line(line(**{
+        "明细编号": "PENDING-FILTER-004",
+        "收货单号": "PENDING-FILTER-004",
+        "采购单号": "PO-PENDING-FILTER-004",
+        "供应商": "供应商丁",
+        "SKU": "SKU-004",
+        "商品名称": "零价待处理商品",
+        "订购数量": "10",
+        "实收数量": "9",
+        "破损数量": "0",
+        "拒收数量": "0",
+        "采购单价": "0.00",
+        "差异原因": "少货",
+        "差异处理": "",
+    }))
+
+    all_rows = store.supplier_sku_summary_rows()
+    pending_rows = store.supplier_sku_summary_rows(pending_only=True)
+    assert len(all_rows) == 4
+    assert {row["供应商"] for row in pending_rows} == {"供应商甲", "供应商丁"}
+    zero_value = next(row for row in pending_rows if row["供应商"] == "供应商丁")
+    assert zero_value["待处理差异"] == 1
+    assert zero_value["待处理差异金额"] == "0.00"
+
+
+def test_supplier_sku_pending_only_export_keeps_schema_and_utf8_bom(tmp_path):
+    store = store_with_line(tmp_path)
+    store.add_line(line(**{
+        "明细编号": "PENDING-EXPORT-002",
+        "收货单号": "PENDING-EXPORT-002",
+        "采购单号": "PO-PENDING-EXPORT-002",
+        "供应商": "供应商乙",
+        "SKU": "SKU-002",
+        "商品名称": "正常商品",
+        "订购数量": "10",
+        "实收数量": "10",
+        "破损数量": "0",
+        "拒收数量": "0",
+        "差异原因": "",
+        "差异处理": "",
+    }))
+    output = tmp_path / "supplier-sku-pending.csv"
+    store.export_supplier_sku_summary_csv(output, "", "", pending_only=True)
+    assert output.read_bytes().startswith(b"\xef\xbb\xbf")
+    with output.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        rows = list(reader)
+    assert reader.fieldnames == MODULE.SUPPLIER_SKU_SUMMARY_FIELDS
+    assert rows
+    assert all(int(row["待处理差异"]) > 0 for row in rows)

@@ -2,10 +2,10 @@
 
 ## Repository state
 
-- Current main HEAD: `8da4b506afc7ecdaeb8e309c507f972f6e5c8990`, squash merge of PR #115.
-- Product-code HEAD: `8da4b506afc7ecdaeb8e309c507f972f6e5c8990`.
-- Open PRs after PR #115 merge: 0.
-- Release-ledger update is being recorded in a separate documentation PR; it does not change product code.
+- Current main HEAD: `0770086ee3b13cad9355c93b4f9016e4af2e40e6`, documentation-only squash merge of PR #116.
+- Product-code HEAD: `8da4b506afc7ecdaeb8e309c507f972f6e5c8990`, squash merge of PR #115.
+- Open PRs after PR #116 merge: 0.
+- PR [#116 Record PR #115 and verified main run #509 release package](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/116) merged at `0770086ee3b13cad9355c93b4f9016e4af2e40e6`; it changes only this release ledger.
 
 ## Product-code changes
 
@@ -39,7 +39,13 @@
 - Bundle catalog: A office efficiency 5 tools / suggested ¥29.9; B store operations 13 / ¥29.9; C finance and transactions 10 / ¥29.9; D contracts/construction/property 4 / ¥29.9; E customer/personal 3 / ¥19.9; F all 35 business tools plus launcher / ¥39.9. These remain unvalidated suggested prices, not actual Xianyu sales.
 - The full customer ZIP contains `套餐说明.txt` and `分类套餐目录.md`; both were read and checked. Separate series-packages artifact [14754865397](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45023143664/artifacts/14754865397) is 571,558,440 bytes and exceeds the same direct-download limit; its individual category ZIPs were not independently downloaded or CRC-checked in this run.
 
-## Latest Autonomous Business Engine — run #527
+## Latest Autonomous Business Engine — run #528
+
+- [ABE run #528](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45024021076), head `0770086ee3b13cad9355c93b4f9016e4af2e40e6`, build/deploy 2/2 success.
+- Build job `137212958646`: 800 passed in 5.20s; generated 12 product pages and 12 Xianyu listings. Opportunity data retrieval returned `fallback: HTTPError`; deployment completed using fallback data, so workflow success does not mean the live opportunity source responded.
+- Pages artifact [14755560385](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45024021076/artifacts/14755560385), 46,403 bytes, downloaded and checked. Outer ZIP CRC passed; inner TAR has 198 entries, including 17 `product.json` and 12 `listing.txt`. Deploy succeeded.
+
+## Previous Autonomous Business Engine — run #527
 
 - [ABE run #527](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45023143668), head `8da4b506afc7ecdaeb8e309c507f972f6e5c8990`, build/deploy 2/2 success.
 - Build job `137210237173`: 800 passed in 5.29s; generated 12 product pages and 12 Xianyu listings; opportunity-data status `error: null`.

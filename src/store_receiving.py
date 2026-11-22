@@ -41,6 +41,12 @@ SUPPLIER_SUMMARY_FIELDS = [
 SUPPLIER_SUMMARY_PERIOD_FIELDS = [
     "供应商", "统计开始日期", "统计结束日期", *SUPPLIER_SUMMARY_FIELDS[1:],
 ]
+SUPPLIER_SKU_SUMMARY_FIELDS = [
+    "供应商", "SKU", "商品名称", "商品名称不一致", "统计开始日期", "统计结束日期",
+    "收货单数", "差异收货单数", "差异收货单占比", "收货明细数", "差异明细数",
+    "待处理差异", "短缺数量", "超收数量", "破损数量", "拒收数量",
+    "验收金额", "差异金额", "待处理差异金额",
+]
 RESOLUTION_STATES = ("待处理", "已补发", "已折让", "已退款", "已关闭", "无需处理")
 
 
@@ -455,6 +461,115 @@ class ReceivingStore:
             self.supplier_summary_rows(start_date=start_date, end_date=end_date),
         )
 
+    def supplier_sku_summary_rows(self, start_date=None, end_date=None):
+        """Summarize recurring discrepancies by supplier and case-insensitive SKU.
+
+        Receipt-level rate counts distinct receipts, not individual lines. The
+        optional arrival-date boundaries are inclusive and are written to each
+        exported row so the report can be audited later.
+        """
+        start_text = parse_date(start_date, "统计开始日期") if str(start_date or "").strip() else ""
+        end_text = parse_date(end_date, "统计结束日期") if str(end_date or "").strip() else ""
+        start_day = date.fromisoformat(start_text) if start_text else None
+        end_day = date.fromisoformat(end_text) if end_text else None
+        if start_day and end_day and start_day > end_day:
+            raise ValueError("统计开始日期不能晚于统计结束日期")
+
+        groups = {}
+        quantity_fields = ("短缺数量", "超收数量", "破损数量", "拒收数量")
+        for row in self.report_rows():
+            arrival_day = date.fromisoformat(row["到货日期"])
+            if start_day and arrival_day < start_day:
+                continue
+            if end_day and arrival_day > end_day:
+                continue
+
+            key = (row["供应商"].casefold(), row["SKU"].casefold())
+            group = groups.get(key)
+            if group is None:
+                group = {
+                    "供应商": row["供应商"],
+                    "SKU": row["SKU"],
+                    "商品名称": row["商品名称"],
+                    "_商品名称": set(),
+                    "_收货单号": set(),
+                    "_差异收货单号": set(),
+                    "收货明细数": 0,
+                    "差异明细数": 0,
+                    "待处理差异": 0,
+                    "短缺数量": Decimal("0"),
+                    "超收数量": Decimal("0"),
+                    "破损数量": Decimal("0"),
+                    "拒收数量": Decimal("0"),
+                    "验收金额": Decimal("0"),
+                    "差异金额": Decimal("0"),
+                    "待处理差异金额": Decimal("0"),
+                }
+                groups[key] = group
+
+            group["_商品名称"].add(row["商品名称"].casefold())
+            receipt_key = row["收货单号"].casefold()
+            group["_收货单号"].add(receipt_key)
+            group["收货明细数"] += 1
+            for field in quantity_fields:
+                group[field] += Decimal(row[field])
+            group["验收金额"] += Decimal(row["验收金额"])
+
+            if row["差异状态"] == "有差异":
+                group["_差异收货单号"].add(receipt_key)
+                group["差异明细数"] += 1
+                group["差异金额"] += Decimal(row["差异金额"])
+                if row["差异处理"] == "待处理":
+                    group["待处理差异"] += 1
+                    group["待处理差异金额"] += Decimal(row["差异金额"])
+
+        result = []
+        for group in groups.values():
+            receipt_count = len(group["_收货单号"])
+            difference_receipt_count = len(group["_差异收货单号"])
+            rate = (
+                Decimal(difference_receipt_count) * Decimal("100") / Decimal(receipt_count)
+            ).quantize(CENT, rounding=ROUND_HALF_UP)
+            result.append({
+                "供应商": group["供应商"],
+                "SKU": group["SKU"],
+                "商品名称": group["商品名称"],
+                "商品名称不一致": "是" if len(group["_商品名称"]) > 1 else "否",
+                "统计开始日期": start_text or "不限",
+                "统计结束日期": end_text or "不限",
+                "收货单数": receipt_count,
+                "差异收货单数": difference_receipt_count,
+                "差异收货单占比": f"{rate}%",
+                "收货明细数": group["收货明细数"],
+                "差异明细数": group["差异明细数"],
+                "待处理差异": group["待处理差异"],
+                "短缺数量": decimal_text(group["短缺数量"]),
+                "超收数量": decimal_text(group["超收数量"]),
+                "破损数量": decimal_text(group["破损数量"]),
+                "拒收数量": decimal_text(group["拒收数量"]),
+                "验收金额": decimal_text(group["验收金额"], places=2),
+                "差异金额": decimal_text(group["差异金额"], places=2),
+                "待处理差异金额": decimal_text(group["待处理差异金额"], places=2),
+            })
+        return sorted(
+            result,
+            key=lambda row: (
+                -Decimal(row["待处理差异金额"]),
+                -Decimal(row["差异金额"]),
+                -row["差异收货单数"],
+                row["供应商"].casefold(),
+                row["SKU"].casefold(),
+            ),
+        )
+
+    def export_supplier_sku_summary_csv(self, path, start_date=None, end_date=None):
+        """Export supplier/SKU recurrence analysis with explicit period metadata."""
+        self._write_csv(
+            path,
+            SUPPLIER_SKU_SUMMARY_FIELDS,
+            self.supplier_sku_summary_rows(start_date=start_date, end_date=end_date),
+        )
+
     def backup(self, path):
         data = canonical(self._payload(self.lines)) + b"\n"
         if len(data) > MAX_BACKUP_BYTES:
@@ -486,6 +601,9 @@ def self_test():
         assert report["短缺数量"] == "1"
         assert report["验收金额"] == "22.50"
         assert store.summary()["待处理差异"] == 1
+        sku_rows = store.supplier_sku_summary_rows()
+        assert len(sku_rows) == 1
+        assert sku_rows[0]["差异收货单占比"] == "100.00%"
 
 
 if __name__ == "__main__":

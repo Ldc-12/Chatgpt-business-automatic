@@ -9,7 +9,7 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
 from src.store_receiving import ReceivingStore, LINE_FIELDS, RESOLUTION_STATES, self_test as core_self_test
-from src.store_receiving_pdf import export_supplier_statement_pdf
+from src.store_receiving_pdf import export_supplier_statement_pdf, self_test as pdf_self_test
 
 PRODUCT = "门店收货验收与差异处理助手"
 
@@ -410,6 +410,7 @@ class App(tk.Tk):
 if __name__ == "__main__":
     if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
         core_self_test()
+        pdf_self_test()
         print("SELF_TEST_OK", flush=True)
         os._exit(0)
     App().mainloop()

@@ -472,3 +472,136 @@ def test_supplier_summary_period_export_includes_filter_metadata(tmp_path):
     assert len(rows) == 1
     assert rows[0]["统计开始日期"] == start
     assert rows[0]["统计结束日期"] == end
+
+
+def test_supplier_sku_summary_groups_by_supplier_and_casefolded_sku_and_ranks_pending_exposure(tmp_path):
+    store = store_with_line(tmp_path)
+    store.add_line(line(**{
+        "明细编号": "RCV-LINE-002",
+        "收货单号": "RCV-2026-002",
+        "采购单号": "PO-2026-002",
+        "SKU": "sku-001",
+        "商品名称": "商品新名称",
+        "订购数量": "10",
+        "实收数量": "10",
+        "破损数量": "0",
+        "拒收数量": "0",
+        "差异原因": "",
+        "差异处理": "",
+        "到货日期": (date.today() - timedelta(days=5)).isoformat(),
+    }))
+    store.add_line(line(**{
+        "明细编号": "RCV-LINE-003",
+        "收货单号": "RCV-2026-003",
+        "采购单号": "PO-2026-003",
+        "SKU": "SKU-001",
+        "商品名称": "测试商品",
+        "实收数量": "7",
+        "破损数量": "0",
+        "拒收数量": "0",
+        "差异原因": "少货",
+        "差异处理": "已补发",
+        "到货日期": (date.today() - timedelta(days=3)).isoformat(),
+    }))
+    store.add_line(line(**{
+        "明细编号": "RCV-LINE-004",
+        "收货单号": "RCV-2026-004",
+        "采购单号": "PO-2026-004",
+        "供应商": "供应商乙",
+        "SKU": "SKU-001",
+        "商品名称": "测试商品",
+        "实收数量": "10",
+        "破损数量": "0",
+        "拒收数量": "0",
+        "差异原因": "",
+        "差异处理": "",
+    }))
+
+    rows = store.supplier_sku_summary_rows()
+    assert rows[0]["供应商"] == "供应商甲"
+    first = rows[0]
+    assert first["SKU"] == "SKU-001"
+    assert first["商品名称不一致"] == "是"
+    assert first["收货单数"] == 3
+    assert first["差异收货单数"] == 2
+    assert first["差异收货单占比"] == "66.67%"
+    assert first["收货明细数"] == 3
+    assert first["差异明细数"] == 2
+    assert first["待处理差异"] == 1
+    assert first["短缺数量"] == "3"
+    assert first["超收数量"] == "2"
+    assert first["破损数量"] == "1"
+    assert first["拒收数量"] == "2"
+    assert first["验收金额"] == "240.00"
+    assert first["差异金额"] == "80.00"
+    assert first["待处理差异金额"] == "50.00"
+    second = next(row for row in rows if row["供应商"] == "供应商乙")
+    assert second["收货单数"] == 1
+    assert second["差异收货单数"] == 0
+    assert second["差异收货单占比"] == "0.00%"
+
+
+def test_supplier_sku_summary_filters_inclusive_dates_and_rejects_invalid_period(tmp_path):
+    today = date.today()
+    start = today - timedelta(days=10)
+    end = today - timedelta(days=5)
+    store = MODULE.ReceivingStore(tmp_path / "sku-period.json")
+    store.add_line(line(**{
+        "明细编号": "SKU-PERIOD-001",
+        "收货单号": "SKU-RECEIPT-001",
+        "到货日期": start.isoformat(),
+    }))
+    store.add_line(line(**{
+        "明细编号": "SKU-PERIOD-002",
+        "收货单号": "SKU-RECEIPT-002",
+        "到货日期": end.isoformat(),
+        "实收数量": "10",
+        "破损数量": "0",
+        "拒收数量": "0",
+        "差异原因": "",
+        "差异处理": "",
+    }))
+    store.add_line(line(**{
+        "明细编号": "SKU-PERIOD-003",
+        "收货单号": "SKU-RECEIPT-003",
+        "到货日期": (end + timedelta(days=1)).isoformat(),
+    }))
+
+    rows = store.supplier_sku_summary_rows(start.isoformat(), end.isoformat())
+    assert len(rows) == 1
+    assert rows[0]["收货单数"] == 2
+    assert rows[0]["差异收货单数"] == 1
+    assert rows[0]["差异收货单占比"] == "50.00%"
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        store.supplier_sku_summary_rows("bad-date", "")
+    with pytest.raises(ValueError, match="不能晚于"):
+        store.supplier_sku_summary_rows(end.isoformat(), start.isoformat())
+
+
+def test_supplier_sku_summary_export_is_utf8_bom_formula_safe_and_schema_stable(tmp_path):
+    store = store_with_line(tmp_path, **{"供应商": "=Vendor"})
+    output = tmp_path / "supplier-sku-summary.csv"
+    store.export_supplier_sku_summary_csv(output, "", "")
+
+    raw = output.read_bytes()
+    assert raw.startswith(b"\xef\xbb\xbf")
+    with output.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        rows = list(reader)
+    assert reader.fieldnames == MODULE.SUPPLIER_SKU_SUMMARY_FIELDS
+    assert rows[0]["供应商"] == "'=Vendor"
+    assert rows[0]["统计开始日期"] == "不限"
+    assert rows[0]["统计结束日期"] == "不限"
+    assert rows[0]["差异收货单占比"] == "100.00%"
+
+
+def test_supplier_sku_summary_empty_period_exports_header_only(tmp_path):
+    store = store_with_line(tmp_path)
+    start = date.today() - timedelta(days=30)
+    end = date.today() - timedelta(days=20)
+    output = tmp_path / "supplier-sku-empty.csv"
+    store.export_supplier_sku_summary_csv(output, start.isoformat(), end.isoformat())
+    with output.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == MODULE.SUPPLIER_SKU_SUMMARY_FIELDS
+        assert list(reader) == []

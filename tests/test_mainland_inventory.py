@@ -389,6 +389,7 @@ def test_valuation_csv_export_protects_formula_text_and_keeps_money_rounded(tmp_
     assert record["商品名称"] == "'+SUM(A1:A2)"
     assert record["分类"] == "'@分类"
     assert record["单位"] == "'-件"
+    assert record["进货单价"] == "0.335"
     assert record["库存成本估值"] == "1.01"
     assert record["库存状态"] == "库存正常"
 

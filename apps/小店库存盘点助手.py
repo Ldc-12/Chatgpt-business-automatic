@@ -26,6 +26,9 @@ VALUATION_EXPORT_FIELDS = [
     "商品编码", "商品名称", "分类", "单位", "库存数量",
     "进货单价", "库存成本估值", "预警下限", "库存状态",
 ]
+VALUATION_CATEGORY_EXPORT_FIELDS = [
+    "分类", "商品种类", "库存总数量", "库存成本估值", "零库存商品数", "预警商品数",
+]
 
 
 def number(value, field="数值"):
@@ -386,6 +389,27 @@ def export_valuation_csv(path, rows):
     _atomic_write(path, write, encoding="utf-8-sig")
     return len(report["items"])
 
+def export_valuation_category_csv(path, rows):
+    """Export category-level valuation totals without changing the inventory ledger."""
+    report = build_valuation_report(rows)
+
+    def write(handle):
+        writer = csv.DictWriter(handle, fieldnames=VALUATION_CATEGORY_EXPORT_FIELDS)
+        writer.writeheader()
+        for item in report["categories"]:
+            writer.writerow({
+                "分类": _spreadsheet_safe(item["分类"]),
+                "商品种类": item["商品种类"],
+                "库存总数量": format(item["库存总数量"], "f"),
+                "库存成本估值": format(item["库存成本估值"], ".2f"),
+                "零库存商品数": item["零库存商品数"],
+                "预警商品数": item["预警商品数"],
+            })
+
+    _atomic_write(path, write, encoding="utf-8-sig")
+    return len(report["categories"])
+
+
 def default_data_path():
     base = os.getenv("LOCALAPPDATA") or str(Path.home())
     return Path(base) / "MainlandBusinessTools" / "inventory.json"
@@ -551,8 +575,28 @@ class App:
             except (ValueError, OSError) as exc:
                 messagebox.showerror("导出失败", str(exc), parent=win)
 
-        tk.Button(win, text="导出商品估值明细 CSV", command=export_details).pack(
-            anchor="e", padx=10, pady=10
+        def export_categories():
+            target = filedialog.asksaveasfilename(
+                parent=win,
+                defaultextension=".csv",
+                initialfile="库存分类估值汇总.csv",
+                filetypes=[("CSV 文件", "*.csv")],
+            )
+            if not target:
+                return
+            try:
+                count = export_valuation_category_csv(target, self.store.rows)
+                messagebox.showinfo("导出完成", f"已导出 {count} 个分类的估值汇总。", parent=win)
+            except (ValueError, OSError) as exc:
+                messagebox.showerror("导出失败", str(exc), parent=win)
+
+        button_bar = tk.Frame(win)
+        button_bar.pack(anchor="e", padx=10, pady=10)
+        tk.Button(button_bar, text="导出分类汇总 CSV", command=export_categories).pack(
+            side="left", padx=4
+        )
+        tk.Button(button_bar, text="导出商品估值明细 CSV", command=export_details).pack(
+            side="left", padx=4
         )
 
     def restore(self):
@@ -585,6 +629,10 @@ def self_test():
     report = build_valuation_report([sample])
     assert report["summary"]["库存成本估值"] == Decimal("17.50")
     assert report["categories"][0]["商品种类"] == 1
+    with tempfile.TemporaryDirectory() as directory:
+        category_export = Path(directory) / "category-valuation.csv"
+        assert export_valuation_category_csv(category_export, [sample]) == 1
+        assert category_export.read_bytes().startswith(b"\xef\xbb\xbf")
     assert PRODUCT == "小店库存盘点助手"
     print("SELF_TEST_OK")
 

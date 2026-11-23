@@ -426,3 +426,59 @@ def test_valuation_report_rejects_currency_overflow_with_clear_error():
         assert "超出可计算范围" in str(exc)
     else:
         raise AssertionError("currency overflow should be rejected")
+
+
+
+def test_category_valuation_csv_export_groups_sorts_and_protects_formula_text(tmp_path):
+    first = row("A001", "纸巾")
+    first.update({"分类": "=日用品", "库存数量": "2", "预警下限": "1", "进货单价": "4.20"})
+    second = row("A002", "洗衣液")
+    second.update({"分类": "清洁用品", "库存数量": "0", "预警下限": "0", "进货单价": "9"})
+
+    target = tmp_path / "category-valuation.csv"
+    assert module.export_valuation_category_csv(target, [first, second]) == 2
+    assert target.read_bytes().startswith(b"\xef\xbb\xbf")
+
+    with target.open(encoding="utf-8-sig", newline="") as handle:
+        records = list(csv.DictReader(handle))
+
+    assert list(records[0]) == module.VALUATION_CATEGORY_EXPORT_FIELDS
+    assert records[0] == {
+        "分类": "'=日用品",
+        "商品种类": "1",
+        "库存总数量": "2.0",
+        "库存成本估值": "8.40",
+        "零库存商品数": "0",
+        "预警商品数": "0",
+    }
+    assert records[1]["分类"] == "清洁用品"
+    assert records[1]["库存成本估值"] == "0.00"
+    assert records[1]["零库存商品数"] == "1"
+    assert records[1]["预警商品数"] == "1"
+
+
+def test_category_valuation_csv_export_replace_failure_preserves_previous_file(tmp_path, monkeypatch):
+    target = tmp_path / "category-valuation.csv"
+    target.write_text("previous category report", encoding="utf-8")
+
+    def fail_replace(*args, **kwargs):
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr(module.os, "replace", fail_replace)
+    try:
+        module.export_valuation_category_csv(target, [row()])
+    except OSError:
+        pass
+    else:
+        raise AssertionError("failed category export should propagate")
+
+    assert target.read_text(encoding="utf-8") == "previous category report"
+    assert list(tmp_path.glob(".category-valuation.csv.*.tmp")) == []
+
+
+def test_category_valuation_csv_export_empty_inventory_writes_header_only(tmp_path):
+    target = tmp_path / "empty-categories.csv"
+
+    assert module.export_valuation_category_csv(target, []) == 0
+    with target.open(encoding="utf-8-sig", newline="") as handle:
+        assert list(csv.DictReader(handle)) == []

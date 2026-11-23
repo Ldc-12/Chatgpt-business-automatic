@@ -412,3 +412,16 @@ def test_valuation_csv_export_replace_failure_preserves_previous_file(tmp_path, 
 
     assert target.read_text(encoding="utf-8") == "previous report"
     assert list(tmp_path.glob(".valuation.csv.*.tmp")) == []
+
+
+
+def test_valuation_report_rejects_currency_overflow_with_clear_error():
+    huge = row()
+    huge.update({"库存数量": "1e308", "进货单价": "1e308"})
+
+    try:
+        module.build_valuation_report([huge])
+    except ValueError as exc:
+        assert "超出可计算范围" in str(exc)
+    else:
+        raise AssertionError("currency overflow should be rejected")

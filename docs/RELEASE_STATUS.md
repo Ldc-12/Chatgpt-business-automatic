@@ -1,3 +1,67 @@
+# Latest checkpoint — 2026-11-23 (PR #120 merged; main run #516 and ABE #534 verified)
+
+## Repository state
+
+- Current main HEAD: `1cae517ec3eef541b739e743e707ec83ecb340be`, squash merge of PR #120.
+- PR [#120 Add category summary CSV export to inventory valuation](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/120) merged after the candidate Windows matrix and customer-package job passed. PR head: `a64829e0d4b3327be6979ad7a8adecb533311479`; merge commit: `1cae517ec3eef541b739e743e707ec83ecb340be`.
+- No open PRs immediately after PR #120 merge. This documentation update is on branch `docs/release-status-mainland-run516-20261123`.
+- Product remains local/offline for Mainland Windows; no VPN, ChatGPT, external AI, marketplace API, or cloud service is required.
+
+## Product change — small-shop inventory valuation
+
+- Added a separate category-level CSV export beside the existing SKU-level valuation detail export in `apps/小店库存盘点助手.py`.
+- Category CSV columns: category, SKU count, total inventory quantity, estimated inventory cost, zero-stock SKU count, and low-stock SKU count. Categories sort by estimated inventory cost descending.
+- The export uses UTF-8 BOM, spreadsheet-formula protection for category text, and atomic replacement. A failed export preserves the previous file.
+- Added regression tests for category aggregation/order, formula-injection protection, empty inventory header-only output, and atomic replacement failure. Frozen EXE self-test now exercises category CSV generation.
+- Updated `docs/manuals/10-小店库存盘点助手-用户说明书.md`.
+- No changes to product ID, license path, seller keys, inventory JSON schema, normal inventory CSV import/export schema, backup format, or existing SKU-level valuation export.
+
+## PR #120 candidate validation
+
+- [Mainland Windows EXE PR run #515](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45163300157), run ID `45163300157`, completed success, 37/37 jobs.
+- Inventory job `137653894151`: 131 passed in 1.75s; source self-test succeeded; standard EXE build succeeded; frozen EXE self-test exited 0.
+- Standalone candidate artifact [14814670386](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45163300157/artifacts/14814670386), 29,532,961 bytes, downloaded and checked. Outer ZIP CRC passed; inner delivery ZIP 14,759,420 bytes, SHA256 `8d5dfcc2f5e7f4d6ed1d2659228538193cb06becb349c22a27b14c2d4db66167`, CRC passed. It contains the inventory EXE, README, and updated Chinese manual with the category export instructions.
+- PR candidate customer package job also succeeded, but release authority is the post-merge main run below.
+
+## Latest main-push Mainland Windows EXE — run #516
+
+- [Mainland Windows EXE run #516](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45164045703), run ID `45164045703`, head `1cae517ec3eef541b739e743e707ec83ecb340be`, completed success, 37/37 jobs, no failed jobs.
+- Inventory job `137656332588`: 131 passed in 1.94s; source self-test succeeded; PyInstaller build succeeded; frozen EXE self-test exited 0.
+- Main-push standalone inventory artifact [14813986330](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45164045703/artifacts/14813986330), 29,534,281 bytes, downloaded and checked. Outer ZIP CRC passed; inner delivery ZIP 14,760,208 bytes, SHA256 `911ef61021ff623ef116c124ec23c009d8a6fbdcff7ac37a77bfef2a2aa3c512`, CRC passed. EXE size 15,044,441 bytes, SHA256 `74f8d4060041d11c5c524c943b7307aae70d73505f8863bae2adb8268748a56c`. The included Chinese manual contains the new category-summary CSV instructions.
+
+## Latest main customer package — run #516
+
+- Customer artifact [14814726235](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45164045703/artifacts/14814726235): outer artifact ZIP 586,243,594 bytes; GitHub artifact digest `sha256:c9da67382618d4086898e608c72b38652ed341d3ec2459727ca40fc3f16e0d80`.
+- The outer ZIP exceeds the single-file connector download limit. The main package job re-downloaded the uploaded artifact and logged `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`, confirming byte-for-byte equality with the inspected package. The manifest and both bounded part-group artifacts were downloaded separately and independently verified.
+- Manifest [14814221357](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45164045703/artifacts/14814221357): 4,292 bytes. Part group 01 [14814236376](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45164045703/artifacts/14814236376): 293,603,738 bytes. Part group 02 [14814116375](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45164045703/artifacts/14814116375): 292,477,545 bytes.
+- All 28 parts passed individual byte-count and SHA256 checks. Reassembled inner `Phase1-Mainland-Windows-Tools.zip`: 586,076,367 bytes; SHA256 `1016b3bc52f83ed8da6716fdd1ad8f22e6528304171b94893dc21ca0f6dc6fbd`; manifest size/hash match and ZIP CRC passed.
+- Inner ZIP: 78 entries / 76 files / 36 EXEs / 36 product manuals. This is 35 business tools plus the efficiency-toolbox launcher. The manual index README is an additional Markdown file and is not included in the 36 product-manual count. All package files have timestamp `2026-11-23 11:21:54 UTC` (19:21:54 China time).
+- The updated inventory manual in the customer ZIP includes the new category-summary CSV export.
+- Bundle catalog: A office efficiency 5 tools / suggested ¥29.9; B store operations 13 / ¥29.9; C finance and transactions 10 / ¥29.9; D contracts/construction/property 4 / ¥29.9; E customer/personal 3 / ¥19.9; F all 35 business tools plus launcher / ¥39.9. Prices remain unvalidated suggestions, not actual Xianyu sales.
+- The ZIP includes `套餐说明.txt` and `分类套餐目录.md`; both were read and checked. Separate series-packages artifact [14814766676](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45164045703/artifacts/14814766676) is 571,579,647 bytes and was not independently downloaded/CRC-checked in this run. Do not claim separate series-package verification.
+
+## Latest Autonomous Business Engine — run #534
+
+- [ABE run #534](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45164046263), head `1cae517ec3eef541b739e743e707ec83ecb340be`, build/deploy 2/2 success.
+- Build job `137656333967`: 809 passed in 5.41s; generated 12 product pages and 12 Xianyu listings.
+- Opportunity data retrieval returned `fallback: URLError` with `<urlopen error timed out>`; deployment completed using fallback data. Workflow success does not mean the live opportunity source responded.
+- Pages artifact [14813806741](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45164046263/artifacts/14813806741): 46,394 bytes; downloaded and checked. Outer ZIP CRC passed; TAR has 198 entries, including 17 `product.json` and 12 `listing.txt`. Deploy succeeded.
+
+## Historical failure-log review
+
+- Mainland run #481, job `136707279108`, failed `test_corrupt_backup_does_not_replace_current_data`: deliberate backup tampering changed the in-memory object because an earlier payload shared live list references. Current main contains the canonical JSON copy fix; main run #513 replenishment job `137461398226` subsequently passed 131 tests, source self-test and frozen EXE self-test.
+- Mainland run #474, representative job `136071514066`, failed two packaging assertions because tests still expected 32 business tools plus launcher after the product count increased. These were stale package-count assertions, not independent product failures. Current main run #516 is 37/37 success and the current customer package inspection verifies 36 EXEs and 36 product manuals.
+
+## Authorization and final acceptance — still blocked
+
+- Embedded `src/license.py` Ed25519 public-key DER SHA256: `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`.
+- `config/mainland_license_public_key.pem` DER SHA256: `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`. They still differ.
+- No seller private key was read, requested, uploaded, guessed, created, replaced or rotated. No production public key was changed.
+- Code-side license-path, product-ID, signature verification and rejection tests continue. Real Windows GUI/data-flow acceptance and genuine seller-key license issue, activation, exit/restart and re-verification are incomplete. **The package remains 待最终验收; it is not approved as a fully accepted commercial Xianyu release.**
+- Required seller-side operation: on the trusted Windows PC that already holds the seller private key, run `python tools/export_license_public_key.py --private-key "C:\\实际私钥路径\\seller-private.pem"` and provide only `PUBLIC_KEY_PEM` or the SHA256 fingerprint. Never upload `seller-private.pem`.
+
+---
+
 # 2026-11-23 PR #118 合并、main run #513 客户包验收与 ABE run #531
 
 ### 当前 main 与产品变更

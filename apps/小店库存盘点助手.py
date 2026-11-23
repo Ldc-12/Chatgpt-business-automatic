@@ -6,7 +6,7 @@ import os
 import sys
 import tempfile
 from datetime import datetime
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -302,7 +302,10 @@ def build_valuation_report(rows):
         quantity = Decimal(str(row["库存数量"]))
         unit_price = Decimal(str(row["进货单价"]))
         threshold = Decimal(str(row["预警下限"]))
-        value = (quantity * unit_price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        try:
+            value = (quantity * unit_price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        except InvalidOperation as exc:
+            raise ValueError(f"商品 {row['商品编码']} 的库存估值超出可计算范围") from exc
         category = row["分类"].strip() or "未分类"
         is_zero = quantity == 0
         is_alert = quantity <= threshold

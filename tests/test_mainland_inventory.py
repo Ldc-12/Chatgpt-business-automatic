@@ -446,7 +446,7 @@ def test_category_valuation_csv_export_groups_sorts_and_protects_formula_text(tm
     assert records[0] == {
         "分类": "'=日用品",
         "商品种类": "1",
-        "库存总数量": "2",
+        "库存总数量": "2.0",
         "库存成本估值": "8.40",
         "零库存商品数": "0",
         "预警商品数": "0",

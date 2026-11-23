@@ -2,9 +2,9 @@
 
 ## Repository state
 
-- Current main HEAD: `1cae517ec3eef541b739e743e707ec83ecb340be`, squash merge of PR #120.
+- Product-code HEAD for the run #516 release: `1cae517ec3eef541b739e743e707ec83ecb340be`, squash merge of PR #120. Subsequent main commits in this checkpoint only update `docs/RELEASE_STATUS.md`; no product source changed after run #516.
 - PR [#120 Add category summary CSV export to inventory valuation](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/120) merged after the candidate Windows matrix and customer-package job passed. PR head: `a64829e0d4b3327be6979ad7a8adecb533311479`; merge commit: `1cae517ec3eef541b739e743e707ec83ecb340be`.
-- No open PRs immediately after PR #120 merge. This documentation update is on branch `docs/release-status-mainland-run516-20261123`.
+- PR #121, a documentation-only release-ledger update, merged at `a5a0ee7f41cb55f3a5bcc24a3dd647e823dd6c8c`. No product source changed in PR #121.
 - Product remains local/offline for Mainland Windows; no VPN, ChatGPT, external AI, marketplace API, or cloud service is required.
 
 ## Product change — small-shop inventory valuation

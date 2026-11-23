@@ -1,3 +1,40 @@
+# 2026-11-23 PR #118 合并、main run #513 客户包验收与 ABE run #531
+
+### 当前 main 与产品变更
+- 当前产品代码 main HEAD：`dce6fcd9ec711c4910e84b29b8ae552adc04595f`。
+- PR [#118 Add inventory valuation analysis to small-shop inventory assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/118) 已 squash 合并；PR head `b20e9b45b01f6a92858235f8e6470a649b351f97`，合并提交即当前 main HEAD。当前 open PR：0。
+- 小店库存盘点助手新增只读库存估值分析：按分类汇总商品种类、库存数量、库存成本估值、零库存及预警数量；估值按当前库存数量 × 已记录进货单价逐 SKU 四舍五入到分，不声称是移动加权平均或先进先出会计计价。
+- 新增逐 SKU 估值 CSV 导出，保留录入进货单价精度，金额列按分输出；文本字段公式注入防护、UTF-8 BOM、原子替换。增加超出 Decimal 货币计算精度的拒绝路径；不改变原 JSON/CSV 数据结构、备份格式、产品 ID 或授权路径。
+- 中文说明书已补充估值口径、限制和导出说明。产品仍为本地离线运行，无 VPN、ChatGPT、外部 AI、网络 API 或云端数据依赖。
+
+### PR #118 Windows 候选构建（已通过，候选包不代替 main）
+- [Mainland Windows EXE run #512](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45103438426)，PR head `b20e9b45b01f6a92858235f8e6470a649b351f97`，37/37 jobs success。
+- 库存工具 job #137459283463：`128 passed in 2.40s`；源码自检成功；PyInstaller 6.22.3；冻结 EXE 自检 `FROZEN_EXE_SELF_TEST_OK`，进程退出码 0。
+- 候选客户包 artifact ID `14786346975`，586,239,707 bytes；候选内层 ZIP SHA256 `78463f0243ac2aa2996f6038941f3cfec9a59571008422ddd0faf20dd0435de1`。该候选仅作 PR 验证记录，正式交付以合并后的 main run #513 为准。
+
+### 合并后 main Mainland Windows EXE run #513（当前 main 客户包来源）
+- [Mainland Windows EXE run #513](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45104126871)，head SHA `dce6fcd9ec711c4910e84b29b8ae552adc04595f`，37/37 jobs success（36 个 Windows 产品构建 job + 1 个客户交付包 job），无失败 job。
+- 库存工具 job #137461398182：`128 passed in 2.18s`；源码自检成功；PyInstaller 6.22.3；冻结 EXE 自检 `FROZEN_EXE_SELF_TEST_OK`，进程退出码 0。独立 Windows artifact ID `14787165936`，29,529,014 bytes；下载后外层 ZIP SHA256 `69b61897c306656e063e84f14451b27684ff1bf57df974bdb23e1b96c5e158d2`，CRC 通过；内层单品 ZIP 含 EXE、README 和中文说明书，内层 CRC 通过，说明书已包含“库存估值分析”章节。
+- 客户包 job #137462185304：36 个产品构建产物下载成功；五个分类套餐生成、客户包生成、预上传检查、上传、上传后重下载、复检、分片与分组全部 success；无需触发下载重试。
+- 最新 main 客户包 artifact `mainland-phase1-customer-package` ID `14787096749`，586,230,439 bytes；外层 Actions artifact ZIP SHA256 `5f25ed6ff6de8512efbdadb57512b7d4e0503982c3d0be7662625206cab1a998`。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：586,063,461 bytes；SHA256 `c386f5ec76bceff76a149aa9b91a72dd49a40bf07e1b81f4684f15e75fe1a06c`；CRC passed；78 entries（76 files、2 directories），36 个 EXE（35 款业务软件 + 工具箱启动器）、36 份逐款中文说明书，另有说明书索引等目录文件。所有内层文件时间戳统一为 2026-11-23 03:11:10 UTC（北京时间 11:11:10）。
+- Manifest artifact ID `14787210746`，4,292 bytes；声明内层 ZIP 586,063,461 bytes、SHA256 `c386f5ec76bceff76a149aa9b91a72dd49a40bf07e1b81f4684f15e75fe1a06c`、CRC passed、78 entries、36 EXE、36 manuals，与本轮下载的 manifest 和实际重组 ZIP 一致。
+- 分片 artifact ID `14787091064`（293,603,738 bytes）及 `14786512484`（292,464,639 bytes）；已下载两个分片组并重组 28 个内层分片，得到 586,063,461 bytes；SHA256 与 manifest 完全一致，ZIP CRC 通过。
+- 分类套餐 artifact ID `14786971799`，571,566,234 bytes。客户包内的 A–F 目录/说明明确为：A 办公效率 5 款 / ¥29.9；B 门店经营 13 款 / ¥29.9；C 财务与交易 10 款 / ¥29.9；D 合同工程物业 4 款 / ¥29.9；E 客户与个人事务 3 款 / ¥19.9；F 全系列 35 款业务软件 + 工具箱启动器 / ¥39.9（待成交验证）。套餐目录与包内产品清单一致；价格均为建议价，不是成交数据。
+- 本轮通过两个分片组重组并独立检查内层 ZIP；未把 PR 候选包当成 main 发行包。外层客户包本身由 Actions 在上传后重下载并以 artifact digest 复核；模型侧实际下载的是 manifest、两个分片组和单品 artifact。
+
+### 最新 Autonomous Business Engine run #531
+- [ABE run #531](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45104126834)，head SHA 与 main 一致，build/deploy 2/2 success。
+- build job #137461396935：`806 passed in 5.36s`；业务引擎、产品工厂和闲鱼工厂步骤成功。可选市场机会数据源返回 HTTP 502，日志记录 `fallback: HTTPError`，引擎使用内置 fallback 数据继续生成；该 fallback 不影响本地 Windows 产品运行。
+- Pages artifact ID `14786567813`，46,404 bytes；已下载检查，外层 ZIP CRC 通过，内部 TAR 198 entries，其中 12 个 `listing.txt`、12 个产品 ZIP、17 个 `product.json`。
+
+### 授权与最终销售验收（仍未解除）
+- 当前 main 的 `src/license.py` 内嵌 Ed25519 公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。两者仍不一致，本轮未改动密钥。
+- 未读取、上传、猜测、生成、替换或轮换任何卖家/生产私钥或公钥。
+- **本轮 main 包仍标记“待最终验收”，不可宣称已正式可上架。**CI 冻结 EXE 自检不等同于可信真实 Windows 电脑上的 GUI 全流程；真实卖家公钥匹配、真实签发/激活、退出重启后再次验证和逐款数据流程仍未完成。必须先由卖家在可信 Windows 电脑上本地导出公钥 PEM 或 SHA256 指纹供比对；绝不发送私钥。
+- 当前发布 blocker：卖家公钥指纹不匹配；真实 Windows GUI/use flow 未验收；真实授权签发、激活和重启复验未完成。
+
+
 # Latest checkpoint — 2026-11-22 (PR #115 merged; main run #509 customer package verified)
 
 ## Repository state

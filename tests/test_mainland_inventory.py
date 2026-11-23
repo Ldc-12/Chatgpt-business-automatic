@@ -325,3 +325,104 @@ def test_valid_backup_restores_corrupt_inventory_and_reenables_writes(tmp_path):
     assert store.rows == source.rows
     store.add(row("A002", "恢复后新增商品"))
     assert len(module.InventoryStore(data_path).rows) == 2
+
+
+
+def test_valuation_report_groups_categories_and_counts_stock_states():
+    first = row("A001", "纸巾")
+    first.update({"分类": "日用品", "库存数量": "2.5", "预警下限": "3", "进货单价": "4.20"})
+    second = row("A002", "洗衣液")
+    second.update({"分类": "日用品", "库存数量": "0", "预警下限": "0", "进货单价": "9"})
+    third = row("A003", "咖啡")
+    third.update({"分类": "", "库存数量": "3", "预警下限": "1", "进货单价": "0.335"})
+
+    report = module.build_valuation_report([first, second, third])
+
+    assert report["summary"] == {
+        "商品种类": 3,
+        "库存总数量": module.Decimal("5.5"),
+        "库存成本估值": module.Decimal("11.51"),
+        "零库存商品数": 1,
+        "预警商品数": 2,
+    }
+    assert [item["分类"] for item in report["categories"]] == ["日用品", "未分类"]
+    assert report["categories"][0]["库存成本估值"] == module.Decimal("10.50")
+    assert report["categories"][0]["零库存商品数"] == 1
+    assert report["categories"][0]["预警商品数"] == 2
+    assert report["items"][0]["商品编码"] == "A001"
+    assert report["items"][1]["库存成本估值"] == module.Decimal("1.01")
+    assert report["items"][2]["库存状态"] == "零库存"
+
+
+def test_valuation_report_empty_inventory_returns_zero_totals():
+    report = module.build_valuation_report([])
+
+    assert report["summary"]["商品种类"] == 0
+    assert report["summary"]["库存总数量"] == module.Decimal("0")
+    assert report["summary"]["库存成本估值"] == module.Decimal("0.00")
+    assert report["categories"] == []
+    assert report["items"] == []
+
+
+def test_valuation_report_does_not_mutate_inventory_rows():
+    source = row(name="原始商品")
+    original = dict(source)
+
+    module.build_valuation_report([source])
+
+    assert source == original
+
+
+def test_valuation_csv_export_protects_formula_text_and_keeps_money_rounded(tmp_path):
+    store = module.InventoryStore(tmp_path / "inventory.json")
+    unsafe = row(code="=1+1", name="+SUM(A1:A2)")
+    unsafe.update({"分类": "@分类", "单位": "-件", "库存数量": "3", "进货单价": "0.335"})
+    store.add(unsafe)
+    target = tmp_path / "valuation.csv"
+
+    assert module.export_valuation_csv(target, store.rows) == 1
+    assert target.read_bytes().startswith(b"\xef\xbb\xbf")
+    with target.open(encoding="utf-8-sig", newline="") as handle:
+        record = next(csv.DictReader(handle))
+
+    assert record["商品编码"] == "'=1+1"
+    assert record["商品名称"] == "'+SUM(A1:A2)"
+    assert record["分类"] == "'@分类"
+    assert record["单位"] == "'-件"
+    assert record["进货单价"] == "0.335"
+    assert record["库存成本估值"] == "1.01"
+    assert record["库存状态"] == "库存正常"
+
+
+def test_valuation_csv_export_replace_failure_preserves_previous_file(tmp_path, monkeypatch):
+    store = module.InventoryStore(tmp_path / "inventory.json")
+    store.add(row())
+    target = tmp_path / "valuation.csv"
+    target.write_text("previous report", encoding="utf-8")
+
+    def fail_replace(*args, **kwargs):
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr(module.os, "replace", fail_replace)
+    try:
+        module.export_valuation_csv(target, store.rows)
+    except OSError:
+        pass
+    else:
+        raise AssertionError("failed valuation export should propagate")
+
+    assert target.read_text(encoding="utf-8") == "previous report"
+    assert list(tmp_path.glob(".valuation.csv.*.tmp")) == []
+
+
+
+def test_valuation_report_rejects_currency_overflow_with_clear_error():
+    huge = row()
+    huge.update({"库存数量": "1e308", "进货单价": "1e308"})
+
+    try:
+        module.build_valuation_report([huge])
+    except ValueError as exc:
+        assert "超出可计算范围" in str(exc)
+    else:
+        raise AssertionError("currency overflow should be rejected")

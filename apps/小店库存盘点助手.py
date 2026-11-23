@@ -377,7 +377,7 @@ def export_valuation_csv(path, rows):
                 "分类": _spreadsheet_safe(item["分类"]),
                 "单位": _spreadsheet_safe(item["单位"]),
                 "库存数量": format(item["库存数量"], "f"),
-                "进货单价": format(item["进货单价"], ".2f"),
+                "进货单价": format(item["进货单价"], "f"),
                 "库存成本估值": format(item["库存成本估值"], ".2f"),
                 "预警下限": format(item["预警下限"], "f"),
                 "库存状态": _spreadsheet_safe(item["库存状态"]),

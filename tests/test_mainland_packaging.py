@@ -52,6 +52,7 @@ APP_ENTRYPOINTS = [
     "闲鱼退货退款跟进助手.py",
     "装修材料用量与预算核算助手.py",
     "门店收货验收与差异处理助手.py",
+    "经营证照与年报提醒助手.py",
 ]
 
 
@@ -115,7 +116,7 @@ def test_expense_reimbursement_product_is_in_build_matrix_and_customer_package()
     assert 'product: "费用报销管理助手"' in workflow
     assert "tests/test_mainland_expense_reimbursement.py" in workflow
     assert "MainlandExpenseReimbursement" in workflow
-    assert "36 款 Windows EXE（35 款业务工具及工具箱启动器）" in workflow
+    assert "37 款 Windows EXE（36 款业务工具及工具箱启动器）" in workflow
     assert "费用报销管理助手.json" in workflow
 
 
@@ -138,11 +139,11 @@ def test_repair_work_order_product_is_in_build_matrix_and_customer_package():
     assert 'product: "售后维修工单管理助手"' in workflow
     assert "tests/test_mainland_repair_work_orders.py" in workflow
     assert "MainlandRepairWorkOrderManager" in workflow
-    assert "36 款 Windows EXE（35 款业务工具及工具箱启动器）" in workflow
+    assert "37 款 Windows EXE（36 款业务工具及工具箱启动器）" in workflow
     assert "售后维修工单管理助手.json" in workflow
     launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
     assert "MainlandRepairWorkOrderManager.exe" in launcher
-    assert "assert len(TOOLS) == 35" in launcher
+    assert "assert len(TOOLS) == 36" in launcher
 
 
 def test_mainland_windows_build_concurrency_is_scoped_per_ref():
@@ -157,11 +158,11 @@ def test_store_schedule_product_is_in_build_matrix_and_customer_package():
     assert 'product: "门店排班考勤助手"' in workflow
     assert "tests/test_mainland_store_schedule.py" in workflow
     assert "MainlandStoreScheduleAssistant" in workflow
-    assert "36 款 Windows EXE（35 款业务工具及工具箱启动器）" in workflow
+    assert "37 款 Windows EXE（36 款业务工具及工具箱启动器）" in workflow
     assert "门店排班考勤助手.json" in workflow
     launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
     assert "MainlandStoreScheduleAssistant.exe" in launcher
-    assert "assert len(TOOLS) == 35" in launcher
+    assert "assert len(TOOLS) == 36" in launcher
 
 
 def test_contract_ledger_product_is_in_build_matrix_and_customer_package():
@@ -174,7 +175,7 @@ def test_contract_ledger_product_is_in_build_matrix_and_customer_package():
     assert "MainlandContractLedgerAssistant" in workflow
     assert "合同台账与到期提醒助手.json" in workflow
     assert "MainlandContractLedgerAssistant.exe" in launcher
-    assert len(APP_ENTRYPOINTS) == 36
+    assert len(APP_ENTRYPOINTS) == 37
 
 
 
@@ -188,10 +189,10 @@ def test_construction_settlement_product_is_in_build_matrix_launcher_and_custome
     assert "MainlandConstructionSettlementAssistant" in workflow
     assert "装修工程签证与进度款管理助手.json" in workflow
     assert "MainlandConstructionSettlementAssistant.exe" in launcher
-    assert "assert len(TOOLS) == 35" in launcher
-    assert "36 款 Windows EXE（35 款业务工具及工具箱启动器）" in workflow
-    assert "35 款业务工具 + 工具箱启动器" in workflow
-    assert len(APP_ENTRYPOINTS) == 36
+    assert "assert len(TOOLS) == 36" in launcher
+    assert "37 款 Windows EXE（36 款业务工具及工具箱启动器）" in workflow
+    assert "36 款业务工具 + 工具箱启动器" in workflow
+    assert len(APP_ENTRYPOINTS) == 37
 
 
 def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package():
@@ -208,10 +209,26 @@ def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package()
     assert "物业租金与押金管理助手" in package_description
     assert "MainlandRentalLedgerAssistant.exe" in launcher
     assert "物业租金与押金管理助手" in license_tests
-    assert "36 款 Windows EXE（35 款业务工具及工具箱启动器）" in workflow
-    assert "全部 35 款业务工具 + 工具箱启动器" in workflow
-    assert len(APP_ENTRYPOINTS) == 36
+    assert "37 款 Windows EXE（36 款业务工具及工具箱启动器）" in workflow
+    assert "全部 36 款业务工具 + 工具箱启动器" in workflow
+    assert len(APP_ENTRYPOINTS) == 37
 
+
+
+
+def test_business_compliance_product_is_in_build_matrix_launcher_license_and_manual():
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
+    license_tests = (root / "tests" / "test_mainland_license.py").read_text(encoding="utf-8")
+    assert "key: business-compliance" in workflow
+    assert 'product: "经营证照与年报提醒助手"' in workflow
+    assert "tests/test_mainland_business_compliance.py" in workflow
+    assert "MainlandBusinessComplianceReminder" in workflow
+    assert "经营证照与年报提醒助手.json" in workflow
+    assert "MainlandBusinessComplianceReminder.exe" in launcher
+    assert "经营证照与年报提醒助手" in license_tests
+    assert (root / "docs" / "manuals" / "36-经营证照与年报提醒助手-用户说明书.md").is_file()
 
 def test_every_standalone_delivery_zip_has_its_matching_chinese_manual():
     root = Path(__file__).resolve().parents[1]
@@ -221,8 +238,8 @@ def test_every_standalone_delivery_zip_has_its_matching_chinese_manual():
         for line in workflow.splitlines()
         if line.strip().startswith("manual: ")
     ]
-    assert len(manual_names) == 36
-    assert len(set(manual_names)) == 36
+    assert len(manual_names) == 37
+    assert len(set(manual_names)) == 37
     for name in manual_names:
         assert (root / "docs" / "manuals" / name).is_file(), name
     assert "z.write('docs/manuals/${{ matrix.manual }}','说明书/${{ matrix.manual }}')" in workflow
@@ -310,7 +327,7 @@ def test_food_safety_inspection_product_is_in_build_matrix_launcher_license_and_
     assert "MainlandFoodSafetyInspectionAssistant.exe" in launcher
     assert "门店食品安全巡检与整改闭环助手" in license_tests
     assert '"food-safety-inspection"' in series_builder
-    assert len(APP_ENTRYPOINTS) == 36
+    assert len(APP_ENTRYPOINTS) == 37
 
 
 def test_customer_zip_inspection_runs_before_artifact_upload_and_is_retained():
@@ -319,8 +336,8 @@ def test_customer_zip_inspection_runs_before_artifact_upload_and_is_retained():
     customer_upload = workflow.index("name: mainland-phase1-customer-package")
     assert inspection_step < customer_upload
     assert "tools/inspect_mainland_package.py" in workflow
-    assert "--expected-exes 36" in workflow
-    assert "--expected-manuals 36" in workflow
+    assert "--expected-exes 37" in workflow
+    assert "--expected-manuals 37" in workflow
     report = "release/Phase1-Mainland-Windows-Tools.inspection.json"
     assert workflow.count(report) >= 2
     assert "tests/test_mainland_package_inspection.py" in workflow
@@ -353,7 +370,7 @@ def test_equipment_maintenance_product_is_in_build_matrix_launcher_license_and_s
     assert "MainlandEquipmentMaintenanceAssistant.exe" in launcher
     assert "设备维保巡检与保养计划助手" in license_tests
     assert '"equipment-maintenance"' in series_builder
-    assert len(APP_ENTRYPOINTS) == 36
+    assert len(APP_ENTRYPOINTS) == 37
 
 
 
@@ -376,8 +393,8 @@ def test_vehicle_ledger_product_is_in_build_matrix_launcher_license_and_package(
     assert "23-车辆维保与费用台账助手-用户说明书.md" in workflow
     assert "MainlandVehicleMaintenanceLedger.exe" in launcher
     assert "车辆维保与费用台账助手" in license_tests
-    assert "--expected-exes 36" in workflow
-    assert "--expected-manuals 36" in workflow
+    assert "--expected-exes 37" in workflow
+    assert "--expected-manuals 37" in workflow
 
 
 def test_store_cash_close_product_is_in_build_matrix_launcher_license_and_series():
@@ -393,7 +410,7 @@ def test_store_cash_close_product_is_in_build_matrix_launcher_license_and_series
     assert "MainlandStoreCashClose.exe" in launcher
     assert "门店日结与收银差异核对助手" in license_tests
     assert '"store-cash-close"' in series_builder
-    assert len(APP_ENTRYPOINTS) == 36
+    assert len(APP_ENTRYPOINTS) == 37
 
 
 def test_supplier_ap_product_is_in_build_matrix_launcher_license_and_finance_series():
@@ -410,7 +427,7 @@ def test_supplier_ap_product_is_in_build_matrix_launcher_license_and_finance_ser
     assert "MainlandSupplierAPAging.exe" in launcher
     assert "供应商对账与应付账龄管理助手" in license_tests
     assert '"supplier-ap"' in series_builder
-    assert len(APP_ENTRYPOINTS) == 36
+    assert len(APP_ENTRYPOINTS) == 37
 
 
 def test_supplier_ap_readme_discloses_aging_and_reconciliation_limits():
@@ -442,7 +459,7 @@ def test_renovation_material_takeoff_product_is_in_build_matrix_launcher_license
     assert "MainlandRenovationMaterialsAssistant.exe" in launcher
     assert "装修材料用量与预算核算助手" in license_tests
     assert '"renovation-materials"' in series_builder
-    assert len(APP_ENTRYPOINTS) == 36
+    assert len(APP_ENTRYPOINTS) == 37
 
 
 def test_xianyu_profit_product_is_in_build_matrix_launcher_license_and_finance_series():
@@ -457,7 +474,7 @@ def test_xianyu_profit_product_is_in_build_matrix_launcher_license_and_finance_s
     assert "MainlandXianyuProfitAssistant.exe" in launcher
     assert "闲鱼订单利润与售后成本核算助手" in license_tests
     assert '"xianyu-profit"' in series_builder
-    assert len(APP_ENTRYPOINTS) == 36
+    assert len(APP_ENTRYPOINTS) == 37
 
 
 def test_manual_index_lists_all_individual_manuals_before_delivery_rules():
@@ -490,8 +507,8 @@ def test_xianyu_listing_product_is_in_build_matrix_launcher_license_and_customer
     assert "MainlandXianyuListingManager.exe" in launcher
     assert "闲鱼商品发布管理助手" in license_tests
     assert '"xianyu-listing"' in series_builder
-    assert "--expected-exes 36" in workflow
-    assert "--expected-manuals 36" in workflow
+    assert "--expected-exes 37" in workflow
+    assert "--expected-manuals 37" in workflow
 
 
 def test_xianyu_listing_readme_discloses_offline_refresh_and_private_floor():
@@ -514,8 +531,8 @@ def test_xianyu_shipping_product_is_in_build_matrix_launcher_license_and_custome
     assert "MainlandXianyuShippingAssistant.exe" in launcher
     assert "闲鱼发货与物流管理助手" in license_tests
     assert '"xianyu-shipping"' in series_builder
-    assert "--expected-exes 36" in workflow
-    assert "--expected-manuals 36" in workflow
+    assert "--expected-exes 37" in workflow
+    assert "--expected-manuals 37" in workflow
 
 
 def test_xianyu_shipping_readme_discloses_manual_tracking_and_no_network():
@@ -563,7 +580,7 @@ def test_store_membership_product_is_in_build_matrix_launcher_license_and_store_
     assert "MainlandStoreMembershipLedger.exe" in launcher
     assert "门店会员储值与积分台账助手" in license_tests
     assert '"store-membership"' in series_builder
-    assert len(APP_ENTRYPOINTS) == 36
+    assert len(APP_ENTRYPOINTS) == 37
 
 
 def test_store_coupon_product_is_in_build_matrix_launcher_license_and_store_series():

@@ -78,11 +78,28 @@ def reminder_state(item: dict, today: date | None = None) -> tuple[str, int]:
     return "正常", days_left
 
 
+def _is_formula_like_text(value: str) -> bool:
+    """Detect formula prefixes even when a reversible apostrophe escape is present."""
+    probe = value.lstrip(" \t\r\n")
+    while probe.startswith("'"):
+        probe = probe[1:]
+    probe = probe.lstrip(" \t\r\n")
+    return bool(probe) and probe[0] in ("=", "+", "-", "@")
+
+
 def spreadsheet_safe_cell(value) -> str:
+    """Prefix formula-like CSV text, escaping literal apostrophe-prefixed text reversibly."""
     text = str(value if value is not None else "")
-    probe = text.lstrip(" \t\r\n")
-    if probe.startswith(("=", "+", "-", "@")):
+    if _is_formula_like_text(text):
         return "'" + text
+    return text
+
+
+def restore_spreadsheet_safe_cell(value) -> str:
+    """Remove exactly one export-safety prefix when importing our own CSV output."""
+    text = str(value if value is not None else "")
+    if text.startswith("'") and _is_formula_like_text(text[1:]):
+        return text[1:]
     return text
 
 
@@ -186,7 +203,11 @@ class ComplianceStore:
                 if not any(str(value or "").strip() for value in row.values()):
                     continue
                 try:
-                    incoming.append(normalize_item(row))
+                    restored = {
+                        field: restore_spreadsheet_safe_cell(row.get(field, ""))
+                        for field in FIELDS
+                    }
+                    incoming.append(normalize_item(restored))
                 except ValueError as exc:
                     raise ValueError(f"第 {line} 行：{exc}") from exc
         self.check_unique(incoming)
@@ -431,6 +452,8 @@ def self_test():
         "提醒提前天数": "30", "状态": "待办理",
     })
     assert reminder_state(sample, date(2026, 12, 1)) == ("即将到期", 30)
+    assert restore_spreadsheet_safe_cell(spreadsheet_safe_cell("=1+1")) == "=1+1"
+    assert restore_spreadsheet_safe_cell(spreadsheet_safe_cell("'=literal")) == "'=literal"
     assert PRODUCT == "经营证照与年报提醒助手"
     print("SELF_TEST_OK", flush=True)
 

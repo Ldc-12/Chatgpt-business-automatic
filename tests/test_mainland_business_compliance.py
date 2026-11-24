@@ -71,7 +71,8 @@ def test_csv_roundtrip_and_formula_injection_protection(tmp_path):
     assert "'@SUM(" in content
     imported = module.ComplianceStore(tmp_path / "imported.json")
     assert imported.import_csv(path) == 1
-    assert imported.rows[0]["事项名称"].startswith("'=")
+    assert imported.rows[0]["事项名称"] == "=HYPERLINK(\"https://example.invalid\",\"点击\")"
+    assert imported.rows[0]["备注"] == "@SUM(A1:A2)"
 
 
 def test_csv_import_is_atomic_on_invalid_or_duplicate_rows(tmp_path):
@@ -134,3 +135,19 @@ def test_filter_and_summary():
 
 def test_self_test():
     module.self_test()
+
+
+
+def test_csv_roundtrip_preserves_literal_apostrophe_before_formula_text(tmp_path):
+    literal = "'=这是用户原本输入的文本"
+    store = module.ComplianceStore(tmp_path / "items.json")
+    store.add(row(**{"事项名称": literal}))
+    exported = tmp_path / "export.csv"
+    store.export_csv(exported)
+
+    content = exported.read_text(encoding="utf-8-sig")
+    assert "''=这是用户原本输入的文本" in content
+
+    imported = module.ComplianceStore(tmp_path / "imported.json")
+    assert imported.import_csv(exported) == 1
+    assert imported.rows[0]["事项名称"] == literal

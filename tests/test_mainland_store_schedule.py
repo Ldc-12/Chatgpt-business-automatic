@@ -291,3 +291,20 @@ def test_atomic_write_failure_preserves_previous_file_and_cleans_temp(tmp_path, 
         module.atomic_write(target, "replacement")
     assert target.read_text(encoding="utf-8") == "previous"
     assert list(tmp_path.glob("report.csv.*.tmp")) == []
+
+
+
+def test_monthly_labor_report_rejects_duplicate_shifts_and_employee_name_conflicts():
+    first = module.normalize_shift(row())
+    duplicate = module.normalize_shift(row(**{"班次": "晚班", "上班时间": "18:00", "下班时间": "23:00", "休息分钟": "0"}))
+    with pytest.raises(ValueError, match="每天只能"):
+        module.build_monthly_labor_report([first, duplicate], "2026-11")
+
+    renamed = module.normalize_shift(row(day="2026-11-07", **{"员工姓名": "李四"}))
+    with pytest.raises(ValueError, match="多个姓名"):
+        module.build_monthly_labor_report([first, renamed], "2026-11")
+
+
+def test_monthly_labor_report_rejects_positive_hours_that_round_to_zero():
+    with pytest.raises(ValueError, match="至少为 0.01"):
+        module.build_monthly_labor_report([], "2026-11", "0.001")

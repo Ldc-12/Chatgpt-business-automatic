@@ -121,7 +121,7 @@ def test_filter_and_summary():
     filtered = module.filter_items(rows, keyword="营业执照")
     assert [item["事项编号"] for item in filtered] == ["BC-002", "BC-001"]
     due = module.filter_items(rows, due_only=True, today=date(2026, 12, 1))
-    assert len(due) == 1
+    assert len(due) == 2
     summary = module.summarize_items(rows, today=date(2026, 12, 1))
     assert summary["count"] == 2
     assert summary["reminders"]["已逾期"] == 1

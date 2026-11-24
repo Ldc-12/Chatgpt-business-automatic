@@ -116,6 +116,11 @@ def test_backup_restore_sha256_and_tamper_rejection(tmp_path):
     assert json.loads(store.path.read_text(encoding="utf-8")) == before
 
 
+def test_default_data_path_uses_windows_localappdata(monkeypatch, tmp_path):
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    assert module.default_data_path() == tmp_path / "MainlandBusinessTools" / "business_compliance.json"
+
+
 def test_filter_and_summary():
     rows = [module.normalize_item(row()), module.normalize_item(row("BC-002", "2026-11-20"))]
     filtered = module.filter_items(rows, keyword="营业执照")

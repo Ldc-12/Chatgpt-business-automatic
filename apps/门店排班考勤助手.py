@@ -116,12 +116,27 @@ def check_schedule(rows):
             previous_end = end_at
 
 
+def _is_formula_like_text(value):
+    probe = value.lstrip(" \t\r\n")
+    while probe.startswith("'"):
+        probe = probe[1:]
+    probe = probe.lstrip(" \t\r\n")
+    return bool(probe) and probe[0] in ("=", "+", "-", "@")
+
+
 def spreadsheet_safe_cell(value):
-    """Prefix spreadsheet formula-like text without altering ordinary values."""
+    """Protect formula-like CSV cells and reversibly escape literal apostrophe text."""
     text = str(value if value is not None else "")
-    probe = text.lstrip(" \t\r\n")
-    if probe.startswith(("=", "+", "-", "@")):
+    if _is_formula_like_text(text):
         return "'" + text
+    return text
+
+
+def restore_spreadsheet_safe_cell(value):
+    """Remove one export-safety prefix when importing this application's CSV."""
+    text = str(value if value is not None else "")
+    if text.startswith("'") and _is_formula_like_text(text[1:]):
+        return text[1:]
     return text
 
 
@@ -211,7 +226,11 @@ class ScheduleStore:
                 if not any(str(value or "").strip() for value in row.values()):
                     continue
                 try:
-                    incoming.append(normalize_shift(row))
+                    restored = {
+                        field: restore_spreadsheet_safe_cell(row.get(field, ""))
+                        for field in FIELDS
+                    }
+                    incoming.append(normalize_shift(restored))
                 except ValueError as exc:
                     raise ValueError(f"第 {line} 行：{exc}") from exc
         previous = self.rows
@@ -575,6 +594,8 @@ def self_test():
     assert report[0]["总工时"] == "10.00"
     assert report[0]["标准工时估算"] == "8.00"
     assert report[0]["超出标准工时估算"] == "2.00"
+    assert restore_spreadsheet_safe_cell(spreadsheet_safe_cell("=1+1")) == "=1+1"
+    assert restore_spreadsheet_safe_cell(spreadsheet_safe_cell("'=literal")) == "'=literal"
     assert PRODUCT == "门店排班考勤助手"
     print("SELF_TEST_OK", flush=True)
 

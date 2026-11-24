@@ -34,6 +34,10 @@ def make_package(path, *, exe_count=37, manual_count=37, include_series=True):
         )
 
 
+def test_inspector_default_counts_match_current_release():
+    assert MODULE.inspect_package.__kwdefaults__ == {"expected_exes": 37, "expected_manuals": 37}
+
+
 def test_inspector_reports_counts_crc_hash_bundle_labels_and_timestamps(tmp_path):
     package = tmp_path / "customer.zip"
     make_package(package)

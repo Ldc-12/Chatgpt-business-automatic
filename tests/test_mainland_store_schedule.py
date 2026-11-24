@@ -1,5 +1,7 @@
 import csv
 import importlib.util
+import json
+import pytest
 from decimal import Decimal
 from pathlib import Path
 
@@ -209,3 +211,100 @@ def test_failed_disk_write_rolls_back_memory(tmp_path, monkeypatch):
     else:
         raise AssertionError("disk write failure did not propagate")
     assert store.rows == []
+
+
+
+def test_monthly_labor_report_aggregates_daily_hours_and_status_counts():
+    rows = [
+        module.normalize_shift(row(day="2026-11-06", **{
+            "上班时间": "09:00", "下班时间": "20:00", "休息分钟": "60",
+        })),
+        module.normalize_shift(row(day="2026-11-07", **{
+            "上班时间": "09:00", "下班时间": "16:00", "休息分钟": "0",
+        })),
+        module.normalize_shift(row("E002", "2026-11-07", **{"考勤状态": "请假"})),
+        module.normalize_shift(row("E002", "2026-11-08", **{"考勤状态": "缺勤"})),
+        module.normalize_shift(row(day="2026-12-01")),
+    ]
+    report = module.build_monthly_labor_report(rows, "2026-11", "8")
+    assert report == [
+        {
+            "月份": "2026-11", "员工编号": "E001", "员工姓名": "张三",
+            "出勤天数": "2", "休息天数": "0", "请假天数": "0", "缺勤天数": "0",
+            "总工时": "17.00", "日标准工时": "8.00",
+            "标准工时估算": "15.00", "超出标准工时估算": "2.00",
+        },
+        {
+            "月份": "2026-11", "员工编号": "E002", "员工姓名": "张三",
+            "出勤天数": "0", "休息天数": "0", "请假天数": "1", "缺勤天数": "1",
+            "总工时": "0.00", "日标准工时": "8.00",
+            "标准工时估算": "0.00", "超出标准工时估算": "0.00",
+        },
+    ]
+
+
+@pytest.mark.parametrize("month", ["2026/11", "2026-13", "2026-1"])
+def test_monthly_labor_report_rejects_invalid_month(month):
+    with pytest.raises(ValueError, match="YYYY-MM"):
+        module.build_monthly_labor_report([], month)
+
+
+@pytest.mark.parametrize("hours", ["0", "-1", "16.01", "NaN", "abc"])
+def test_monthly_labor_report_rejects_invalid_daily_standard(hours):
+    with pytest.raises(ValueError):
+        module.build_monthly_labor_report([], "2026-11", hours)
+
+
+def test_monthly_report_csv_is_utf8_bom_and_formula_safe(tmp_path):
+    source = module.normalize_shift(row(**{"员工姓名": "=HYPERLINK(\"https://example.invalid\",\"员工\")"}))
+    report = module.build_monthly_labor_report([source], "2026-11")
+    target = tmp_path / "monthly.csv"
+    assert module.export_monthly_labor_report_csv(target, report) == 1
+    content = target.read_text(encoding="utf-8-sig")
+    assert content.startswith("月份,")
+    assert "'=HYPERLINK(" in content
+
+
+def test_monthly_report_empty_export_contains_headers(tmp_path):
+    target = tmp_path / "empty.csv"
+    assert module.export_monthly_labor_report_csv(target, []) == 0
+    with target.open(encoding="utf-8-sig", newline="") as handle:
+        assert next(csv.reader(handle)) == module.MONTHLY_REPORT_FIELDS
+
+
+def test_existing_schedule_csv_export_protects_formula_cells(tmp_path):
+    store = module.ScheduleStore(tmp_path / "schedule.json")
+    store.add(row(**{"员工姓名": "  =1+1"}))
+    target = tmp_path / "schedule.csv"
+    store.export_csv(target)
+    content = target.read_text(encoding="utf-8-sig")
+    assert "'=1+1" in content
+
+
+def test_atomic_write_failure_preserves_previous_file_and_cleans_temp(tmp_path, monkeypatch):
+    target = tmp_path / "report.csv"
+    target.write_text("previous", encoding="utf-8")
+    def fail(*args, **kwargs):
+        raise OSError("simulated replace failure")
+    monkeypatch.setattr(module.os, "replace", fail)
+    with pytest.raises(OSError, match="simulated"):
+        module.atomic_write(target, "replacement")
+    assert target.read_text(encoding="utf-8") == "previous"
+    assert list(tmp_path.glob("report.csv.*.tmp")) == []
+
+
+
+def test_monthly_labor_report_rejects_duplicate_shifts_and_employee_name_conflicts():
+    first = module.normalize_shift(row())
+    duplicate = module.normalize_shift(row(**{"班次": "晚班", "上班时间": "18:00", "下班时间": "23:00", "休息分钟": "0"}))
+    with pytest.raises(ValueError, match="每天只能"):
+        module.build_monthly_labor_report([first, duplicate], "2026-11")
+
+    renamed = module.normalize_shift(row(day="2026-11-07", **{"员工姓名": "李四"}))
+    with pytest.raises(ValueError, match="多个姓名"):
+        module.build_monthly_labor_report([first, renamed], "2026-11")
+
+
+def test_monthly_labor_report_rejects_positive_hours_that_round_to_zero():
+    with pytest.raises(ValueError, match="至少为 0.01"):
+        module.build_monthly_labor_report([], "2026-11", "0.001")

@@ -8,7 +8,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 
-from src.contract_review import spreadsheet_safe_cell
+from src.contract_review import restore_spreadsheet_safe_cell, spreadsheet_safe_cell
 
 MILESTONE_FIELDS = ["节点编号", "合同编号", "节点名称", "节点类型", "计划日期", "金额", "状态", "完成日期", "备注"]
 MILESTONE_TYPES = ["付款", "收款", "交付", "验收", "保证金", "续约", "其他"]
@@ -222,7 +222,10 @@ class WorkflowStore:
                 raise ValueError("CSV 缺少必要字段：" + "、".join(MILESTONE_FIELDS))
             for line, raw in enumerate(reader, 2):
                 try:
-                    item = normalize_milestone(raw)
+                    item = normalize_milestone({
+                        field: restore_spreadsheet_safe_cell(raw.get(field, ""))
+                        for field in MILESTONE_FIELDS
+                    })
                     if item["合同编号"] not in contract_ids:
                         raise ValueError(f"找不到合同 {item['合同编号']}")
                     incoming.append(item)

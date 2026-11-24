@@ -305,16 +305,20 @@ def parse_standard_daily_hours(value):
         raise ValueError("每日标准工时必须是数字") from exc
     if not hours.is_finite() or hours <= 0 or hours > Decimal("16"):
         raise ValueError("每日标准工时必须大于 0 且不超过 16 小时")
-    return hours.quantize(Decimal("0.01"))
+    hours = hours.quantize(Decimal("0.01"))
+    if hours <= 0:
+        raise ValueError("每日标准工时至少为 0.01 小时")
+    return hours
 
 
 def build_monthly_labor_report(rows, month, standard_daily_hours="8"):
     """Build a payroll-preparation timesheet; overtime is a configurable estimate, not a legal conclusion."""
     month = parse_month(month)
     daily_standard = parse_standard_daily_hours(standard_daily_hours)
+    normalized_rows = [normalize_shift(raw) for raw in rows]
+    check_schedule(normalized_rows)
     grouped = {}
-    for raw in rows:
-        item = normalize_shift(raw)
+    for item in normalized_rows:
         if not item["日期"].startswith(month):
             continue
         employee_id = item["员工编号"]

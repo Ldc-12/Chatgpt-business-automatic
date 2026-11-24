@@ -64,6 +64,45 @@ def test_workflow_uploads_bounded_chunk_groups_and_keeps_full_package_manifest()
     workflow = (ROOT / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
     assert "tools/group_mainland_package_chunks.py" in workflow
     assert "mainland-phase1-package-parts-01" in workflow
-    assert "mainland-phase1-package-parts-02" in workflow
-    assert "release/package-chunks/group-01/*" in workflow
-    assert "release/package-chunks/group-02/*" in workflow
+    assert "--groups 8" in workflow
+    for index in range(1, 9):
+        suffix = f"{index:02d}"
+        assert f"mainland-phase1-package-parts-{suffix}" in workflow
+        assert f"release/package-chunks/group-{suffix}/*" in workflow
+
+
+
+def test_group_chunks_creates_eight_download_groups_under_size_limit(tmp_path):
+    source = tmp_path / "parts"
+    source.mkdir()
+    for index in range(29):
+        (source / f"{MODULE.PART_PREFIX}{index:02d}").write_bytes(bytes([index]) * 1024)
+
+    output = tmp_path / "grouped"
+    result = MODULE.group_chunks(source, output, groups=8, max_group_bytes=4 * 1024)
+
+    assert result["part_count"] == 29
+    assert result["group_count"] == 8
+    assert result["max_group_bytes"] == 4 * 1024
+    assert [len(group["parts"]) for group in result["groups"]] == [4, 4, 4, 4, 4, 4, 4, 1]
+    assert all(group["bytes"] <= result["max_group_bytes"] for group in result["groups"])
+
+
+def test_group_chunks_rejects_group_that_exceeds_download_limit(tmp_path):
+    source = tmp_path / "parts"
+    source.mkdir()
+    sizes = [3, 3, 1, 1]
+    for index, size in enumerate(sizes):
+        (source / f"{MODULE.PART_PREFIX}{index:02d}").write_bytes(bytes([index]) * size)
+
+    with pytest.raises(ValueError, match="超过最大字节限制"):
+        MODULE.group_chunks(source, tmp_path / "grouped", groups=2, max_group_bytes=5)
+
+
+def test_group_chunks_rejects_non_positive_group_size_limit(tmp_path):
+    source = tmp_path / "parts"
+    source.mkdir()
+    for index in range(2):
+        (source / f"{MODULE.PART_PREFIX}{index:02d}").write_bytes(b"x")
+    with pytest.raises(ValueError, match="必须大于 0"):
+        MODULE.group_chunks(source, tmp_path / "grouped", groups=2, max_group_bytes=0)

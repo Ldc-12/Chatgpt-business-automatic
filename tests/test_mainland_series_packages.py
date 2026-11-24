@@ -20,11 +20,11 @@ def _make_inputs(tmp_path):
     return release, manuals, output
 
 
-def test_series_catalog_covers_all_35_products_once():
+def test_series_catalog_covers_all_36_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 35
-    assert len(assigned) == 35
+    assert len(MODULE.PRODUCTS) == 36
+    assert len(assigned) == 36
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "35 款业务软件 + 工具箱启动器" in catalog
+    assert "36 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -163,13 +163,22 @@ def test_finance_series_contains_xianyu_listing_lifecycle_manager():
     assert MODULE.PRODUCTS["xianyu-listing"][2] == "29-闲鱼商品发布管理助手-用户说明书.md"
 
 
+
+
+def test_store_series_contains_business_compliance_reminder():
+    store_series = next(item for item in MODULE.SERIES if item["code"] == "B")
+    assert "business-compliance" in store_series["products"]
+    assert MODULE.PRODUCTS["business-compliance"][1] == "MainlandBusinessComplianceReminder.exe"
+    assert MODULE.PRODUCTS["business-compliance"][2] == "36-经营证照与年报提醒助手-用户说明书.md"
+    assert len(store_series["products"]) == 14
+
 def test_static_series_catalog_lists_each_business_product_once():
     catalog_path = Path(__file__).resolve().parents[1] / "docs" / "MAINLAND_SERIES_PACKAGES.md"
     catalog = catalog_path.read_text(encoding="utf-8")
     for name, _, _ in MODULE.PRODUCTS.values():
         assert catalog.count(f"- {name}\n") == 1, name
     assert "| C | 财务与交易系列 | 10 |" in catalog
-    assert "| F | 全系列综合套餐 | 35 款业务软件 + 工具箱启动器 |" in catalog
+    assert "| F | 全系列综合套餐 | 36 款业务软件 + 工具箱启动器 |" in catalog
 
 
 
@@ -184,7 +193,7 @@ def test_finance_series_contains_xianyu_return_refund_followup_assistant():
 def test_store_series_contains_member_stored_value_and_points_ledger():
     store_series = next(item for item in MODULE.SERIES if item["code"] == "B")
     assert "store-membership" in store_series["products"]
-    assert len(store_series["products"]) == 13
+    assert len(store_series["products"]) == 14
     assert MODULE.PRODUCTS["store-membership"][1] == "MainlandStoreMembershipLedger.exe"
     assert MODULE.PRODUCTS["store-membership"][2] == "32-门店会员储值与积分台账助手-用户说明书.md"
 
@@ -194,7 +203,7 @@ def test_store_series_contains_coupon_campaign_redemption_assistant():
     assert "store-coupons" in store_series["products"]
     assert MODULE.PRODUCTS["store-coupons"][1] == "MainlandStoreCouponRedemption.exe"
     assert MODULE.PRODUCTS["store-coupons"][2] == "33-门店优惠券与活动核销助手-用户说明书.md"
-    assert len(store_series["products"]) == 13
+    assert len(store_series["products"]) == 14
 
 
 def test_store_series_contains_replenishment_planner():
@@ -202,7 +211,7 @@ def test_store_series_contains_replenishment_planner():
     assert "store-replenishment" in store_series["products"]
     assert MODULE.PRODUCTS["store-replenishment"][1] == "MainlandStoreReplenishmentPlanner.exe"
     assert MODULE.PRODUCTS["store-replenishment"][2] == "34-门店采购补货计划助手-用户说明书.md"
-    assert len(store_series["products"]) == 13
+    assert len(store_series["products"]) == 14
 
 
 def test_store_series_contains_receiving_discrepancy_assistant():
@@ -210,4 +219,4 @@ def test_store_series_contains_receiving_discrepancy_assistant():
     assert "store-receiving" in store_series["products"]
     assert MODULE.PRODUCTS["store-receiving"][1] == "MainlandStoreReceivingDiscrepancy.exe"
     assert MODULE.PRODUCTS["store-receiving"][2] == "35-门店收货验收与差异处理助手-用户说明书.md"
-    assert len(store_series["products"]) == 13
+    assert len(store_series["products"]) == 14

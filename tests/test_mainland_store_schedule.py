@@ -308,3 +308,36 @@ def test_monthly_labor_report_rejects_duplicate_shifts_and_employee_name_conflic
 def test_monthly_labor_report_rejects_positive_hours_that_round_to_zero():
     with pytest.raises(ValueError, match="至少为 0.01"):
         module.build_monthly_labor_report([], "2026-11", "0.001")
+
+
+
+def test_csv_roundtrip_restores_formula_safe_text(tmp_path):
+    formula_name = '=HYPERLINK("https://example.invalid","员工")'
+    formula_note = "@SUM(A1:A2)"
+    store = module.ScheduleStore(tmp_path / "schedule.json")
+    store.add(row(**{"员工姓名": formula_name, "备注": formula_note}))
+    exported = tmp_path / "formula-safe.csv"
+    store.export_csv(exported)
+
+    content = exported.read_text(encoding="utf-8-sig")
+    assert "'=HYPERLINK(" in content
+    assert "'@SUM(" in content
+
+    imported = module.ScheduleStore(tmp_path / "imported.json")
+    assert imported.import_csv(exported) == 1
+    assert imported.rows == store.rows
+
+
+def test_csv_roundtrip_preserves_literal_apostrophe_before_formula_text(tmp_path):
+    literal = "'=员工手工输入的普通文本"
+    store = module.ScheduleStore(tmp_path / "schedule.json")
+    store.add(row(**{"员工姓名": literal}))
+    exported = tmp_path / "literal-apostrophe.csv"
+    store.export_csv(exported)
+
+    content = exported.read_text(encoding="utf-8-sig")
+    assert "''=员工手工输入的普通文本" in content
+
+    imported = module.ScheduleStore(tmp_path / "imported.json")
+    assert imported.import_csv(exported) == 1
+    assert imported.rows[0]["员工姓名"] == literal

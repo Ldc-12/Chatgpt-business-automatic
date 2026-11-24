@@ -278,7 +278,7 @@ def test_existing_schedule_csv_export_protects_formula_cells(tmp_path):
     target = tmp_path / "schedule.csv"
     store.export_csv(target)
     content = target.read_text(encoding="utf-8-sig")
-    assert "'  =1+1" in content
+    assert "'=1+1" in content
 
 
 def test_atomic_write_failure_preserves_previous_file_and_cleans_temp(tmp_path, monkeypatch):

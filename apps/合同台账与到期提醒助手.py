@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
 from src.contract_workflow import (WorkflowStore, MILESTONE_FIELDS, MILESTONE_TYPES, MILESTONE_STATUSES, AUDIT_FIELDS, WORKFLOW_FORMAT, WORKFLOW_VERSION, risk_findings, finance_summary)
 from src.contract_document_parser import write_draft_csv
-from src.contract_review import ReviewStore, spreadsheet_safe_cell
+from src.contract_review import ReviewStore, restore_spreadsheet_safe_cell, spreadsheet_safe_cell
 
 PRODUCT = "合同台账与到期提醒助手"
 FIELDS = ["合同编号", "合同名称", "甲方/客户", "乙方/供应商", "签订日期", "生效日期", "到期日期",
@@ -182,7 +182,10 @@ class ContractStore:
                 raise ValueError("CSV 缺少必要字段：" + "、".join(FIELDS))
             for line, row in enumerate(reader, 2):
                 try:
-                    incoming.append(normalize(row))
+                    incoming.append(normalize({
+                        field: restore_spreadsheet_safe_cell(row.get(field, ""))
+                        for field in FIELDS
+                    }))
                 except ValueError as exc:
                     raise ValueError(f"第 {line} 行：{exc}") from exc
         self.check_unique(incoming)

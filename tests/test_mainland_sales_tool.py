@@ -97,6 +97,21 @@ def test_sales_csv_export_is_formula_safe_atomic_and_roundtrips(tmp_path):
     assert m.read_csv_rows(target) == [row]
 
 
+def test_sales_csv_roundtrip_preserves_literal_apostrophes_before_formula_text(tmp_path):
+    customer_text = "'=员工手工输入的普通文本"
+    note_text = "''@客户备注中的普通文本"
+    row = sample_customer(客户=customer_text, 备注=note_text)
+    target = tmp_path / "literal-apostrophes.csv"
+
+    m.export_csv(target, [row])
+
+    with target.open(encoding="utf-8-sig", newline="") as handle:
+        exported = next(csv.DictReader(handle))
+    assert exported["客户"] == "'" + customer_text
+    assert exported["备注"] == "'" + note_text
+    assert m.read_csv_rows(target) == [row]
+
+
 def test_sales_csv_export_preserves_existing_file_when_replace_fails(tmp_path, monkeypatch):
     target = tmp_path / "sales.csv"
     target.write_bytes(b"previous-valid-csv")

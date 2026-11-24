@@ -135,20 +135,30 @@ def test_duplicate_import_is_rejected_without_duplicate_history(tmp_path):
     assert len(store.records) == 1
 
 
-def test_review_csv_export_escapes_spreadsheet_formulas(tmp_path):
+def test_review_csv_export_escapes_and_roundtrips_formula_and_literal_apostrophe_text(tmp_path):
     _, row = parsed_row(tmp_path)
-    row["复核人"] = '=HYPERLINK("https://evil.invalid","click")'
-    row["复核备注"] = "  @SUM(1,1)"
+    row["复核人"] = "审核员"
+    row["复核备注"] = "初始备注"
     csv_path = tmp_path / "review.csv"
     write_csv(csv_path, [row])
     store = ReviewStore(tmp_path / "reviews.json")
     store.import_csv(csv_path)
+
+    store.records[0]["复核人"] = '=HYPERLINK("https://evil.invalid","click")'
+    store.records[0]["复核备注"] = "'@SUM(1,1)"
+    store.save()
+
     exported = tmp_path / "export.csv"
     store.export_csv(exported)
     with exported.open("r", encoding="utf-8-sig", newline="") as handle:
         exported_row = next(csv.DictReader(handle))
     assert exported_row["复核人"].startswith("'=")
-    assert exported_row["复核备注"].startswith("'@")
+    assert exported_row["复核备注"].startswith("''@")
+
+    roundtrip = ReviewStore(tmp_path / "roundtrip.json")
+    assert roundtrip.import_csv(exported) == 1
+    assert roundtrip.records[0]["复核人"] == store.records[0]["复核人"]
+    assert roundtrip.records[0]["复核备注"] == store.records[0]["复核备注"]
 
 
 def test_review_store_restore_payload_is_atomic_on_write_failure(tmp_path, monkeypatch):

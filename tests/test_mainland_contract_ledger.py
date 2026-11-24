@@ -75,9 +75,10 @@ def test_contract_csv_export_is_atomic_and_preserves_existing_file_on_replace_fa
     assert list(target.parent.glob("contracts.csv*.tmp")) == []
 
 
-def test_contract_csv_export_keeps_utf8_bom_and_formula_safety(tmp_path):
+def test_contract_csv_export_keeps_utf8_bom_and_roundtrips_formula_and_literal_apostrophe_text(tmp_path):
     store = module.ContractStore(tmp_path / "contracts.json")
     item = row()
+    item["合同名称"] = "'=手工合同名称"
     item["备注"] = "=1+1"
     store.add(item)
     target = tmp_path / "exports" / "contracts.csv"
@@ -89,6 +90,40 @@ def test_contract_csv_export_keeps_utf8_bom_and_formula_safety(tmp_path):
     with target.open("r", encoding="utf-8-sig", newline="") as handle:
         exported = next(csv.DictReader(handle))
     assert exported["备注"] == "'=1+1"
+    assert exported["合同名称"] == "''=手工合同名称"
+
+    roundtrip = module.ContractStore(tmp_path / "roundtrip.json")
+    assert roundtrip.import_csv(target) == 1
+    assert roundtrip.rows[0]["备注"] == "=1+1"
+    assert roundtrip.rows[0]["合同名称"] == "'=手工合同名称"
+
+
+def test_contract_workflow_csv_export_roundtrips_formula_and_literal_apostrophe_text(tmp_path):
+    workflow = module.WorkflowStore(tmp_path / "workflow.json")
+    workflow.milestones = [{
+        "节点编号": "M001",
+        "合同编号": "C001",
+        "节点名称": "=付款节点",
+        "节点类型": "付款",
+        "计划日期": "2026-12-01",
+        "金额": "100.00",
+        "状态": "待处理",
+        "完成日期": "",
+        "备注": "'@原始备注",
+    }]
+    target = tmp_path / "milestones.csv"
+
+    workflow.export_csv(target)
+
+    with target.open("r", encoding="utf-8-sig", newline="") as handle:
+        exported = next(csv.DictReader(handle))
+    assert exported["节点名称"] == "'=付款节点"
+    assert exported["备注"] == "''@原始备注"
+
+    roundtrip = module.WorkflowStore(tmp_path / "workflow-roundtrip.json")
+    assert roundtrip.import_csv(target, {"C001"}) == 1
+    assert roundtrip.milestones[0]["节点名称"] == "=付款节点"
+    assert roundtrip.milestones[0]["备注"] == "'@原始备注"
 
 
 def test_bad_csv_row_does_not_mutate_store(tmp_path):

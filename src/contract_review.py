@@ -123,10 +123,25 @@ def normalize_record(raw):
     }
 
 
+def _is_formula_like_text(value):
+    probe = value.lstrip(" \t\r\n")
+    while probe.startswith("'"):
+        probe = probe[1:]
+    probe = probe.lstrip(" \t\r\n")
+    return bool(probe) and probe[0] in ("=", "+", "-", "@")
+
+
 def spreadsheet_safe_cell(value):
     text = "" if value is None else str(value)
-    if text.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
+    if _is_formula_like_text(text):
         return "'" + text
+    return text
+
+
+def restore_spreadsheet_safe_cell(value):
+    text = "" if value is None else str(value)
+    if text.startswith("'") and _is_formula_like_text(text[1:]):
+        return text[1:]
     return text
 
 
@@ -227,7 +242,10 @@ class ReviewStore:
                 raise ValueError("CSV 缺少复核字段：" + "、".join(REVIEW_CSV_FIELDS))
             for line, raw in enumerate(reader, 2):
                 try:
-                    item = dict(raw)
+                    item = {
+                        key: restore_spreadsheet_safe_cell(value)
+                        for key, value in raw.items()
+                    }
                     item["复核编号"] = uuid.uuid4().hex.upper()
                     item["复核时间"] = datetime.now().astimezone().isoformat(timespec="seconds")
                     incoming.append(normalize_record(item))

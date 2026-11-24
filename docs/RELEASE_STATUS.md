@@ -38,6 +38,13 @@
 - Bundle catalog verified from `套餐说明.txt` and `分类套餐目录.md`: A office efficiency 5 tools / suggested ¥29.9; B store operations 14 / ¥29.9; C finance and transactions 10 / ¥29.9; D contracts/construction/property 4 / ¥29.9; E customer and personal affairs 3 / ¥19.9; F all 36 business tools + launcher / ¥39.9. Prices are unvalidated suggestions, not actual Xianyu sales.
 - The separate `mainland-phase1-series-packages` artifact [14918252367](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45390360467/artifacts/14918252367) is 586,366,077 bytes and was not independently downloaded/CRC-checked in this run. Do not claim separate series-package verification.
 
+## Latest ABE push after the release-ledger update — run #547
+
+- [ABE run #547](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45391752102) was triggered by the documentation-only PR #130 merge commit `a45bc567fc1936bf8b3dcb73511bf3ea8d19b42f`; it did not change product source or the run #536 customer package.
+- Build job `138436982133`: 849 passed in 4.73s; 12 product pages and 12 Xianyu listings generated; the log's opportunity-source result reported `error: null`.
+- Deploy job `138437186371`: success. Pages artifact [14919700900](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45391752102/artifacts/14919700900), 46,391 bytes; downloaded and checked, outer ZIP CRC passed; TAR has 198 entries, including 17 `product.json` and 12 `listing.txt`.
+- This is a documentation-triggered ABE refresh. Run #546 remains the ABE run on the product-code commit `08473fc0926bda4a17fd5efa6fd221303cdd75ce`.
+
 ## Latest Autonomous Business Engine — run #546
 
 - [ABE run #546](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45390360631), head `08473fc0926bda4a17fd5efa6fd221303cdd75ce`, build/deploy 2/2 success.

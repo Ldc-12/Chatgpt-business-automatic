@@ -22,16 +22,24 @@ MAX_CSV_BYTES = 25 * 1024 * 1024
 MAX_CSV_ROWS = 50000
 
 
+def _is_formula_like_text(value):
+    probe = value.lstrip(" " + chr(9) + chr(13) + chr(10))
+    while probe.startswith("'"):
+        probe = probe[1:]
+    probe = probe.lstrip(" " + chr(9) + chr(13) + chr(10))
+    return bool(probe) and probe[0] in ("=", "+", "-", "@")
+
+
 def spreadsheet_safe_cell(value):
     text = "" if value is None else str(value)
-    if text.lstrip(" " + chr(9) + chr(13) + chr(10)).startswith(("=", "+", "-", "@")):
+    if _is_formula_like_text(text):
         return "'" + text
     return text
 
 
 def restore_spreadsheet_safe_cell(value):
     text = "" if value is None else str(value)
-    if text.startswith("'") and text[1:].lstrip(" " + chr(9) + chr(13) + chr(10)).startswith(("=", "+", "-", "@")):
+    if text.startswith("'") and _is_formula_like_text(text[1:]):
         return text[1:]
     return text
 

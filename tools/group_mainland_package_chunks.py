@@ -9,6 +9,7 @@ from pathlib import Path
 
 PART_PREFIX = "Phase1-Mainland-Windows-Tools.zip.part-"
 MAX_PARTS = 48
+MAX_GROUP_BYTES = 80 * 1024 * 1024
 
 
 def _sha256(path: Path) -> str:
@@ -19,11 +20,19 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def group_chunks(input_dir: str | Path, output_dir: str | Path, *, groups: int = 2) -> dict:
+def group_chunks(
+    input_dir: str | Path,
+    output_dir: str | Path,
+    *,
+    groups: int = 8,
+    max_group_bytes: int = MAX_GROUP_BYTES,
+) -> dict:
     source = Path(input_dir)
     destination = Path(output_dir)
     if groups < 2 or groups > 8:
         raise ValueError("分组数量必须在 2 至 8 之间")
+    if max_group_bytes <= 0:
+        raise ValueError("单组最大字节数必须大于 0")
     parts = []
     for path in source.glob(PART_PREFIX + "*"):
         if path.is_symlink() or not path.is_file():
@@ -48,6 +57,12 @@ def group_chunks(input_dir: str | Path, output_dir: str | Path, *, groups: int =
         selected = parts[start:start + per_group]
         if not selected:
             raise ValueError("分组后出现空分片组")
+        selected_bytes = sum(path.stat().st_size for _, path in selected)
+        if selected_bytes > max_group_bytes:
+            raise ValueError(
+                f"分片组超过最大字节限制：group-{group_index + 1:02d} "
+                f"{selected_bytes} > {max_group_bytes}"
+            )
         group_dir = destination / f"group-{group_index + 1:02d}"
         group_dir.mkdir(parents=True, exist_ok=True)
         for stale in group_dir.glob(PART_PREFIX + "*"):
@@ -74,6 +89,7 @@ def group_chunks(input_dir: str | Path, output_dir: str | Path, *, groups: int =
         "source": str(source.resolve()),
         "part_count": len(parts),
         "group_count": groups,
+        "max_group_bytes": max_group_bytes,
         "groups": result_groups,
     }
     (destination / "chunk-groups.json").write_text(
@@ -87,9 +103,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="将客户 ZIP 分片分组为可独立下载的 Actions artifacts")
     parser.add_argument("--input-dir", required=True)
     parser.add_argument("--output-dir", required=True)
-    parser.add_argument("--groups", type=int, default=2)
+    parser.add_argument("--groups", type=int, default=8)
+    parser.add_argument("--max-group-bytes", type=int, default=MAX_GROUP_BYTES)
     args = parser.parse_args()
-    result = group_chunks(args.input_dir, args.output_dir, groups=args.groups)
+    result = group_chunks(
+        args.input_dir, args.output_dir, groups=args.groups,
+        max_group_bytes=args.max_group_bytes,
+    )
     print(
         "MAINLAND_PACKAGE_CHUNK_GROUPING_OK "
         f"groups={result['group_count']} parts={result['part_count']} "

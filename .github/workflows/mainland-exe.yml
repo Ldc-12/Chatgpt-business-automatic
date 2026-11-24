@@ -442,7 +442,7 @@ jobs:
             --output-dir release \
             --max-chunks 48
       - name: Group bounded package chunks for independent downloads
-        run: python tools/group_mainland_package_chunks.py --input-dir release --output-dir release/package-chunks --groups 2
+        run: python tools/group_mainland_package_chunks.py --input-dir release --output-dir release/package-chunks --groups 8 --max-group-bytes 83886080
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-manifest
@@ -465,6 +465,48 @@ jobs:
           name: mainland-phase1-package-parts-02
           overwrite: true
           path: release/package-chunks/group-02/*
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-parts-03
+          overwrite: true
+          path: release/package-chunks/group-03/*
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-parts-04
+          overwrite: true
+          path: release/package-chunks/group-04/*
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-parts-05
+          overwrite: true
+          path: release/package-chunks/group-05/*
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-parts-06
+          overwrite: true
+          path: release/package-chunks/group-06/*
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-parts-07
+          overwrite: true
+          path: release/package-chunks/group-07/*
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainland-phase1-package-parts-08
+          overwrite: true
+          path: release/package-chunks/group-08/*
           if-no-files-found: error
           compression-level: 0
 

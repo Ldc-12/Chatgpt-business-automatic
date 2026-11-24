@@ -2107,3 +2107,34 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 当前 main 的 `src/license.py` 内嵌 Ed25519 公钥 DER SHA256：`B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` DER SHA256：`7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。两者仍不一致。
 - 未读取、上传、猜测、生成、替换或轮换任何生产私钥/公钥。卖家私钥不在仓库；本轮没有改动生产授权密钥。
 - **当前 main 客户包仍为“待最终验收”，不是可正式销售版。**CI 冻结 EXE 自检不等同于可信真实 Windows 电脑上的 GUI、真实卖家密钥签发/激活、退出重启后复验和逐款数据流程验收。最终只需用户在可信 Windows 电脑使用本机原有卖家私钥导出公钥 PEM 或 SHA256 指纹进行比对；绝不上传私钥。
+
+## 2026-11-24 PR #127/#128 合并后 main run #534 最新客户包核验
+
+### 当前主线与本轮代码变更
+- 当前 main HEAD：`81f0332bb8e1645bd3b1d7a57a48d76fa2bfd21c`；当前开放 PR：0。
+- PR [#127 Preserve schedule text in safe CSV round trips](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/127) 已合并，merge commit `04dc55d88e7c22a26091a8ff82e7c72e782314de`。门店排班考勤助手的 CSV 导出/导入现在可逆还原公式安全前缀，并对原本以单引号开头、后接公式符号的普通文本增加转义层，避免员工姓名或备注丢失原始单引号。
+- PR [#128 Preserve literal apostrophes in sales CSV round trips](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/128) 已合并，merge commit `81f0332bb8e1645bd3b1d7a57a48d76fa2bfd21c`。轻量销售客户跟进工具修复同类 CSV 往返问题；新增回归测试覆盖一个和两个前导单引号，更新中文说明书。
+- 两个修复均未改变 JSON 数据格式、备份格式、产品 ID、授权密钥或外部依赖。
+
+### 合并后 Mainland Windows EXE run #534（当前 main 正式客户包来源）
+- [Mainland Windows EXE run #534](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45387149425)，head SHA 与当前 main 一致；38/38 jobs success，0 failed。
+- 轻量销售客户跟进工具 job #138420926983：`123 passed in 1.72s`；源码测试成功；冻结 EXE 自检 `FROZEN_EXE_SELF_TEST_OK`，进程退出码 0。单品 artifact ID `14916592920`，29,525,565 bytes；artifact SHA256 `b8e5db707edfbd4329ee16fa8ccab7a09e9b49da175274a54836110cf58bb9b9`。实际下载后外层 ZIP CRC 通过，内层单品 ZIP CRC 通过，包含 EXE、README 和更新后的中文说明书；EXE 15,039,910 bytes，SHA256 `80ba4e3a259a8103cb4c6ffad76c9e777ca3fc4da451e8c7faa98090f4f3b39e`。
+- 门店排班考勤助手 job #138420926969：`141 passed in 2.69s`；`SELF_TEST_OK`；冻结 EXE 自检 `FROZEN_EXE_SELF_TEST_OK`，退出码 0。单品 artifact ID `14916593119`，29,527,673 bytes。
+- 客户包 job #138422280534：分类套餐构建成功；客户 ZIP 内容检查和 CRC/SHA256 检查成功；上传后重新下载复检成功（`POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`）；分片工具记录 `MAINLAND_PACKAGE_CHUNKING_OK parts=29 bytes=600865152 sha256=9285589fd0e8221aafeec69b8982df422a8032ddca7215a6b8ec2e8b2f1423e4`。
+- 最新 main 客户包 artifact `mainland-phase1-customer-package` ID `14915959586`，601,036,201 bytes；GitHub artifact digest SHA256 `3a245d9d3b2bba845d3e03d371a1bc4d191ed2bb1385c07bd79a1e542e01bc1e`。
+- 内层 `Phase1-Mainland-Windows-Tools.zip`：600,865,152 bytes；SHA256 `9285589fd0e8221aafeec69b8982df422a8032ddca7215a6b8ec2e8b2f1423e4`；CRC passed；80 entries（78 files、2 directories）；37 个 EXE（36 款业务工具 + 工具箱启动器）；37 份逐款中文产品说明书，另有 1 份说明书索引 README、1 份大陆版 README、1 份套餐说明、1 份分类套餐目录和 inspection JSON。内层 ZIP 所有条目时间戳为 2026-11-24 11:49:06 UTC（北京时间 19:49:06）。
+- Manifest artifact ID `14916019303`，4,404 bytes；声明内层 ZIP 600,865,152 bytes、SHA256 `9285589fd0e8221aafeec69b8982df422a8032ddca7215a6b8ec2e8b2f1423e4`、CRC passed、80 entries、37 EXE、37 manuals，与实际分片重组结果一致。
+- 29 个分片分成 8 组上传；组 artifact IDs：01 `14916094096`、02 `14916643267`、03 `14916453536`、04 `14916473623`、05 `14916892585`、06 `14918130141`、07 `14915964421`、08 `14915869879`。本次实际下载 8 组和 Manifest，逐片校验 SHA256/字节数均通过，重组后大小和 SHA256 与 Manifest 完全一致，ZIP CRC 通过。
+- 已从重组后的最新 main 包实际读取 `package/套餐说明.txt`、`package/分类套餐目录.md`、README 和两份本轮更新的说明书。套餐为：A 办公效率 5 款 / 建议 ¥29.9；B 门店经营 14 款 / 建议 ¥29.9；C 财务与交易 10 款 / 建议 ¥29.9；D 合同工程物业 4 款 / 建议 ¥29.9；E 客户与个人事务 3 款 / 建议 ¥19.9；F 全系列 36 款业务软件 + 工具箱启动器 / 建议 ¥39.9。均为待市场验证建议价，不是实际成交价。
+- [最新 main 客户包 artifact](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45387149425/artifacts/14915959586)；[Manifest](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45387149425/artifacts/14916019303)。
+
+### 最新 Autonomous Business Engine run #544
+- [ABE run #544](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45387149273)，build/deploy 2/2 success；build job #138420924503 为 `848 passed in 3.38s`，数据结果 `error: null`，未触发 fallback。
+- Pages artifact ID `14915864193`，46,372 bytes，SHA256 `84d283314343d243de3bb618d03cb4523b22ec68b61dd15450a06085e25812a5`；已实际下载，ZIP CRC 通过；内部 TAR 198 entries，其中 17 个 `product.json`、12 个 `listing.txt`。deploy job #138421108639 success。
+- 同一 main push 的通用 Windows EXE Build run #299 [Actions](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45387149161) success（2/2 jobs）。
+
+### 最近失败记录与当前阻塞
+- 本轮查询 main 最近 100 条 Actions runs，未发现 conclusion=failure 的运行；run #534 38/38 jobs success。没有新的失败 job 需要修复。
+- 授权仍未解除：`src/license.py` 内嵌 Ed25519 公钥 DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。两者仍不一致。
+- 未读取、上传、猜测、生成、替换或轮换任何生产私钥/公钥。仍需用户在可信 Windows 电脑用原有本地私钥导出公钥 PEM 或 SHA256 指纹进行比对；绝不上传私钥。
+- **当前 main 客户包仍标记为“待最终验收”，不是正式可销售版。**尚未在可信真实 Windows 电脑完成生产密钥匹配、真实签发/激活、退出重启后复验，以及逐款 GUI 和数据流程验收。CI 冻结 EXE 自检不等同于真实用户端最终验收。

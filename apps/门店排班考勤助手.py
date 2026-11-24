@@ -4,11 +4,12 @@ import io
 import json
 import os
 import sys
+import tempfile
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, simpledialog
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
@@ -16,6 +17,7 @@ from src.license import require_license
 PRODUCT = "门店排班考勤助手"
 FIELDS = ["员工编号", "员工姓名", "日期", "班次", "上班时间", "下班时间", "休息分钟", "考勤状态", "备注"]
 STATUSES = ["出勤", "休息", "请假", "缺勤"]
+MONTHLY_REPORT_FIELDS = ["月份", "员工编号", "员工姓名", "出勤天数", "休息天数", "请假天数", "缺勤天数", "总工时", "日标准工时", "标准工时估算", "超出标准工时估算"]
 BACKUP_FORMAT = "mainland-store-schedule-backup"
 BACKUP_VERSION = 1
 
@@ -114,12 +116,28 @@ def check_schedule(rows):
             previous_end = end_at
 
 
+def spreadsheet_safe_cell(value):
+    """Prefix spreadsheet formula-like text without altering ordinary values."""
+    text = str(value if value is not None else "")
+    probe = text.lstrip(" \t\r\n")
+    if probe.startswith(("=", "+", "-", "@")):
+        return "'" + text
+    return text
+
+
 def atomic_write(path, content):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_name(path.name + ".tmp")
-    temp.write_text(content, encoding="utf-8", newline="")
-    temp.replace(path)
+    fd, temp_name = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_name, path)
+    finally:
+        if os.path.exists(temp_name):
+            os.unlink(temp_name)
 
 
 class ScheduleStore:
@@ -209,7 +227,8 @@ class ScheduleStore:
         output = io.StringIO(newline="")
         writer = csv.DictWriter(output, fieldnames=FIELDS)
         writer.writeheader()
-        writer.writerows(self.rows if rows is None else rows)
+        for row in self.rows if rows is None else rows:
+            writer.writerow({field: spreadsheet_safe_cell(row.get(field, "")) for field in FIELDS})
         atomic_write(path, "\ufeff" + output.getvalue())
 
     def backup(self, path):
@@ -268,6 +287,89 @@ def summarize_shifts(rows):
     return {"count": len(rows), "counts": counts, "hours": hours}
 
 
+def parse_month(value):
+    month = str(value or "").strip()
+    try:
+        parsed = datetime.strptime(month, "%Y-%m")
+    except ValueError as exc:
+        raise ValueError("月份必须使用 YYYY-MM 格式") from exc
+    if parsed.strftime("%Y-%m") != month:
+        raise ValueError("月份必须使用有效的 YYYY-MM 格式")
+    return month
+
+
+def parse_standard_daily_hours(value):
+    try:
+        hours = Decimal(str(value).strip())
+    except Exception as exc:
+        raise ValueError("每日标准工时必须是数字") from exc
+    if not hours.is_finite() or hours <= 0 or hours > Decimal("16"):
+        raise ValueError("每日标准工时必须大于 0 且不超过 16 小时")
+    return hours.quantize(Decimal("0.01"))
+
+
+def build_monthly_labor_report(rows, month, standard_daily_hours="8"):
+    """Build a payroll-preparation timesheet; overtime is a configurable estimate, not a legal conclusion."""
+    month = parse_month(month)
+    daily_standard = parse_standard_daily_hours(standard_daily_hours)
+    grouped = {}
+    for raw in rows:
+        item = normalize_shift(raw)
+        if not item["日期"].startswith(month):
+            continue
+        employee_id = item["员工编号"]
+        bucket = grouped.setdefault(employee_id, {
+            "name": item["员工姓名"],
+            "出勤天数": 0,
+            "休息天数": 0,
+            "请假天数": 0,
+            "缺勤天数": 0,
+            "total": Decimal("0.00"),
+            "standard": Decimal("0.00"),
+            "overtime": Decimal("0.00"),
+        })
+        if bucket["name"] != item["员工姓名"]:
+            raise ValueError(f"员工编号 {employee_id} 在统计月份对应多个姓名，请先统一员工档案")
+        status_field = {
+            "出勤": "出勤天数",
+            "休息": "休息天数",
+            "请假": "请假天数",
+            "缺勤": "缺勤天数",
+        }[item["考勤状态"]]
+        bucket[status_field] += 1
+        if item["考勤状态"] == "出勤":
+            hours = shift_hours(item)
+            bucket["total"] += hours
+            bucket["standard"] += min(hours, daily_standard)
+            bucket["overtime"] += max(Decimal("0.00"), hours - daily_standard)
+    report = []
+    for employee_id, bucket in sorted(grouped.items()):
+        report.append({
+            "月份": month,
+            "员工编号": employee_id,
+            "员工姓名": bucket["name"],
+            "出勤天数": str(bucket["出勤天数"]),
+            "休息天数": str(bucket["休息天数"]),
+            "请假天数": str(bucket["请假天数"]),
+            "缺勤天数": str(bucket["缺勤天数"]),
+            "总工时": f"{bucket['total']:.2f}",
+            "日标准工时": f"{daily_standard:.2f}",
+            "标准工时估算": f"{bucket['standard']:.2f}",
+            "超出标准工时估算": f"{bucket['overtime']:.2f}",
+        })
+    return report
+
+
+def export_monthly_labor_report_csv(path, rows):
+    output = io.StringIO(newline="")
+    writer = csv.DictWriter(output, fieldnames=MONTHLY_REPORT_FIELDS)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({field: spreadsheet_safe_cell(row.get(field, "")) for field in MONTHLY_REPORT_FIELDS})
+    atomic_write(path, "\ufeff" + output.getvalue())
+    return len(rows)
+
+
 def default_data_path():
     base = os.getenv("LOCALAPPDATA") or str(Path.home())
     return Path(base) / "MainlandBusinessTools" / "store_schedule.json"
@@ -284,6 +386,7 @@ class App:
         for label, command in [
             ("新增排班", self.add), ("编辑", self.edit), ("删除", self.delete),
             ("导入 CSV", self.import_csv), ("导出 CSV", self.export_csv),
+            ("导出月度工时汇总", self.export_monthly_report),
             ("备份", self.backup), ("恢复备份", self.restore),
         ]:
             ttk.Button(toolbar, text=label, command=command).pack(side="left", padx=3)
@@ -402,6 +505,36 @@ class App:
             except (ValueError, OSError) as exc:
                 messagebox.showerror("导出失败", str(exc))
 
+    def export_monthly_report(self):
+        month = simpledialog.askstring(
+            "统计月份", "请输入统计月份（YYYY-MM）",
+            initialvalue=date.today().strftime("%Y-%m"), parent=self.root,
+        )
+        if month is None:
+            return
+        standard = simpledialog.askstring(
+            "每日标准工时", "请输入每日标准工时（小时，默认 8）",
+            initialvalue="8", parent=self.root,
+        )
+        if standard is None:
+            return
+        try:
+            report = build_monthly_labor_report(self.store.rows, month, standard)
+        except ValueError as exc:
+            messagebox.showerror("统计参数无效", str(exc), parent=self.root)
+            return
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            initialfile=f"门店月度工时汇总-{month}.csv",
+            filetypes=[("CSV 文件", "*.csv")],
+        )
+        if path:
+            try:
+                count = export_monthly_labor_report_csv(path, report)
+                messagebox.showinfo("导出完成", f"已导出 {count} 名员工的月度工时汇总。")
+            except OSError as exc:
+                messagebox.showerror("导出失败", str(exc), parent=self.root)
+
     def backup(self):
         path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON 备份", "*.json")])
         if path:
@@ -429,6 +562,15 @@ def self_test():
         "休息分钟": "60", "考勤状态": "出勤",
     })
     assert shift_hours(row) == Decimal("8.00")
+    long_shift = normalize_shift({
+        "员工编号": "E002", "员工姓名": "测试员工二", "日期": "2026-11-06",
+        "班次": "长班", "上班时间": "09:00", "下班时间": "20:00",
+        "休息分钟": "60", "考勤状态": "出勤",
+    })
+    report = build_monthly_labor_report([long_shift], "2026-11", "8")
+    assert report[0]["总工时"] == "10.00"
+    assert report[0]["标准工时估算"] == "8.00"
+    assert report[0]["超出标准工时估算"] == "2.00"
     assert PRODUCT == "门店排班考勤助手"
     print("SELF_TEST_OK", flush=True)
 

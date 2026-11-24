@@ -2,9 +2,9 @@
 
 ## Repository state
 
-- Current `main` HEAD: `7f2b2f9b52663bdf251a043cfa782cf3ca41d5cd` (documentation-only merge of PR #131); current product-code HEAD: `08473fc0926bda4a17fd5efa6fd221303cdd75ce` (PR #129).
+- Product-code HEAD for verified Mainland run #536: `08473fc0926bda4a17fd5efa6fd221303cdd75ce` (PR #129). Subsequent commits on `main` are release-ledger-only updates and do not change the product source used by run #536.
 - PR [#129 Preserve contract ledger CSV round trips](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/129) merged by squash; PR head `2474e9883ae450c07b90086eaa2a2dbfed8d7093`; merge commit `08473fc0926bda4a17fd5efa6fd221303cdd75ce`.
-- PR #130 (release-ledger update) merged at `a45bc567fc1936bf8b3dcb73511bf3ea8d19b42f`; PR #131 (ABE #547 note) merged at `7f2b2f9b52663bdf251a043cfa782cf3ca41d5cd`. Both are documentation-only.
+- PR #130 (release-ledger update) merged at `a45bc567fc1936bf8b3dcb73511bf3ea8d19b42f`; PR #131 (ABE #547 note) merged at `7f2b2f9b52663bdf251a043cfa782cf3ca41d5cd`; PR #132 corrected the main/product-code HEAD distinction. These are documentation-only updates.
 - Open PRs after merge: 0.
 - Product remains local/offline for Mainland Windows. No VPN, ChatGPT, external AI, marketplace API, or cloud service is required.
 

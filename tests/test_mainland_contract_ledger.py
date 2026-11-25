@@ -540,7 +540,10 @@ def test_finance_aging_summary_groups_by_contract_counterparty_direction_and_buc
     assert len(summary) == 3
     pay_one = by_key[("C001", "待付款")]
     assert pay_one["待处理节点数"] == "3"
+    assert pay_one["逾期节点数"] == "2"
     assert pay_one["最早计划日期"] == "2026-11-05"
+    assert pay_one["最早逾期日期"] == "2026-11-05"
+    assert pay_one["最长逾期天数"] == "20"
     assert pay_one["未逾期金额"] == "25.00"
     assert pay_one["逾期1-7天金额"] == "100.00"
     assert pay_one["逾期8-30天金额"] == "50.00"
@@ -548,10 +551,16 @@ def test_finance_aging_summary_groups_by_contract_counterparty_direction_and_buc
     assert pay_one["逾期金额"] == "150.00"
     receipt_one = by_key[("C001", "待收款")]
     assert receipt_one["逾期31-90天金额"] == "40.00"
+    assert receipt_one["逾期节点数"] == "1"
+    assert receipt_one["最早逾期日期"] == "2026-10-25"
+    assert receipt_one["最长逾期天数"] == "31"
     assert receipt_one["未逾期金额"] == "10.00"
     assert receipt_one["待处理金额"] == "50.00"
     pay_two = by_key[("C002", "待付款")]
     assert pay_two["待处理金额"] == "30.00"
+    assert pay_two["逾期节点数"] == "1"
+    assert pay_two["最早逾期日期"] == "2026-11-24"
+    assert pay_two["最长逾期天数"] == "1"
     assert pay_two["往来方"] == "=供应商A"
     assert summary[0]["逾期金额"] == "150.00"
 
@@ -575,6 +584,9 @@ def test_finance_aging_summary_csv_is_formula_safe_atomic_and_writes_header_when
         exported = next(csv.DictReader(handle))
     assert exported["合同名称"].startswith("'=")
     assert exported["往来方"].startswith("'@")
+    assert exported["逾期节点数"] == "1"
+    assert exported["最早逾期日期"] == "2026-11-24"
+    assert exported["最长逾期天数"] == "1"
     assert exported["待处理金额"] == "80.00"
 
     target.write_bytes(b"previous-valid-summary")
@@ -595,3 +607,21 @@ def test_finance_aging_summary_csv_is_formula_safe_atomic_and_writes_header_when
     assert module.export_finance_aging_summary_csv(empty_target, [], [], date(2026, 11, 25)) == 0
     with empty_target.open("r", encoding="utf-8-sig", newline="") as handle:
         assert list(csv.DictReader(handle)) == []
+
+
+def test_finance_aging_summary_future_only_has_no_overdue_metadata(tmp_path):
+    contract = module.normalize(row("C001"))
+    workflow = module.WorkflowStore(tmp_path / "workflow.json")
+    workflow.add("C001", {
+        "节点编号": "FUTURE", "合同编号": "C001", "节点名称": "未来付款",
+        "节点类型": "付款", "计划日期": "2026-11-26", "金额": "12.00",
+        "状态": "待处理", "完成日期": "", "备注": "",
+    })
+    summary = module.finance_aging_summary(
+        [contract], workflow.milestones, date(2026, 11, 25)
+    )
+    assert len(summary) == 1
+    assert summary[0]["逾期节点数"] == "0"
+    assert summary[0]["最早逾期日期"] == ""
+    assert summary[0]["最长逾期天数"] == "0"
+    assert summary[0]["未逾期金额"] == "12.00"

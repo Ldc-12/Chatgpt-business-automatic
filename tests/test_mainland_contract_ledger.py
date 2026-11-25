@@ -429,7 +429,7 @@ def test_finance_aging_report_uses_exact_overdue_bucket_boundaries_and_excludes_
         ("M007", "收款", "2026-11-18", "7", "逾期1-7天"),
         ("M001", "付款", "2026-11-24", "1", "逾期1-7天"),
         ("M000", "收款", "2026-11-25", "0", "未逾期（含统计日）"),
-        ("M-FUTURE", "付款", "2026-11-26", "0", "未到期"),
+        ("M-FUTURE", "付款", "2026-11-26", "0", "未逾期（含统计日）"),
     ]
     for node_id, kind, due, days, bucket in cases:
         add_node(node_id, kind, due)

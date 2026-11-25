@@ -414,6 +414,69 @@ def finance_aging_report(contracts, milestones, today=None):
     return result
 
 
+FINANCE_AGING_SUMMARY_FIELDS = [
+    "合同编号", "合同名称", "往来方", "方向", "待处理节点数", "最早计划日期",
+    "未逾期金额", "逾期1-7天金额", "逾期8-30天金额", "逾期31-90天金额",
+    "逾期91天以上金额", "待处理金额", "逾期金额",
+]
+
+_FINANCE_AGING_BUCKET_COLUMNS = {
+    "未逾期（含统计日）": "未逾期金额",
+    "逾期1-7天": "逾期1-7天金额",
+    "逾期8-30天": "逾期8-30天金额",
+    "逾期31-90天": "逾期31-90天金额",
+    "逾期91天以上": "逾期91天以上金额",
+}
+
+
+def finance_aging_summary(contracts, milestones, today=None):
+    """Aggregate pending cash-flow aging by contract, counterparty and direction."""
+    detail_rows = finance_aging_report(contracts, milestones, today)
+    grouped = {}
+    amount_fields = [field for field in FINANCE_AGING_SUMMARY_FIELDS if field.endswith("金额")]
+    for row in detail_rows:
+        key = (row["合同编号"], row["合同名称"], row["往来方"], row["方向"])
+        if key not in grouped:
+            record = {
+                "合同编号": row["合同编号"],
+                "合同名称": row["合同名称"],
+                "往来方": row["往来方"],
+                "方向": row["方向"],
+                "待处理节点数": 0,
+                "最早计划日期": row["计划日期"],
+            }
+            record.update({field: Decimal("0.00") for field in amount_fields})
+            grouped[key] = record
+
+        record = grouped[key]
+        amount = Decimal(row["金额"])
+        record["待处理节点数"] += 1
+        if row["计划日期"] < record["最早计划日期"]:
+            record["最早计划日期"] = row["计划日期"]
+        bucket_field = _FINANCE_AGING_BUCKET_COLUMNS[row["账龄分组"]]
+        record[bucket_field] += amount
+        record["待处理金额"] += amount
+        if int(row["逾期天数"]) > 0:
+            record["逾期金额"] += amount
+
+    result = []
+    for record in grouped.values():
+        item = {}
+        for field in FINANCE_AGING_SUMMARY_FIELDS:
+            value = record[field]
+            item[field] = f"{value:.2f}" if isinstance(value, Decimal) else str(value)
+        result.append(item)
+
+    result.sort(key=lambda item: (
+        -Decimal(item["逾期金额"]),
+        -Decimal(item["待处理金额"]),
+        item["方向"],
+        item["合同编号"],
+        item["往来方"],
+    ))
+    return result
+
+
 def export_finance_aging_csv(path, contracts, milestones, today=None):
     """Atomically export a spreadsheet-safe UTF-8 BOM cash-flow aging report."""
     rows = finance_aging_report(contracts, milestones, today)
@@ -428,6 +491,30 @@ def export_finance_aging_csv(path, contracts, milestones, today=None):
                 writer.writerow({
                     field: spreadsheet_safe_cell(row.get(field, ""))
                     for field in FINANCE_AGING_FIELDS
+                })
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_name, target)
+    finally:
+        if os.path.exists(temp_name):
+            os.unlink(temp_name)
+    return len(rows)
+
+
+def export_finance_aging_summary_csv(path, contracts, milestones, today=None):
+    """Atomically export counterparty-level aging totals as spreadsheet-safe UTF-8 BOM CSV."""
+    rows = finance_aging_summary(contracts, milestones, today)
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(prefix=target.name, suffix=".tmp", dir=str(target.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8-sig", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=FINANCE_AGING_SUMMARY_FIELDS)
+            writer.writeheader()
+            for row in rows:
+                writer.writerow({
+                    field: spreadsheet_safe_cell(row.get(field, ""))
+                    for field in FINANCE_AGING_SUMMARY_FIELDS
                 })
             handle.flush()
             os.fsync(handle.fileno())

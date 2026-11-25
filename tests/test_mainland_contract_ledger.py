@@ -496,3 +496,102 @@ def test_finance_aging_csv_is_formula_safe_atomic_and_preserves_existing_file_on
         module.export_finance_aging_csv(target, [contract], workflow.milestones, date(2026, 11, 25))
     assert target.read_bytes() == b"previous-valid-report"
     assert list(target.parent.glob("finance-aging.csv*.tmp")) == []
+
+
+def test_finance_aging_summary_groups_by_contract_counterparty_direction_and_bucket(tmp_path):
+    today = date(2026, 11, 25)
+    contract_one = module.normalize(row("C001"))
+    contract_one["乙方/供应商"] = "=供应商A"
+    contract_one["甲方/客户"] = "@客户A"
+    contract_two = module.normalize(row("C002"))
+    contract_two["乙方/供应商"] = "=供应商A"
+    workflow = module.WorkflowStore(tmp_path / "workflow.json")
+
+    def add(contract_id, node_id, kind, due, amount, status="待处理"):
+        workflow.add(contract_id, {
+            "节点编号": node_id,
+            "合同编号": contract_id,
+            "节点名称": node_id,
+            "节点类型": kind,
+            "计划日期": due,
+            "金额": amount,
+            "状态": status,
+            "完成日期": "2026-11-20" if status == "已完成" else "",
+            "备注": "",
+        })
+
+    add("C001", "P-7", "付款", "2026-11-18", "100.00")
+    add("C001", "P-20", "付款", "2026-11-05", "50.00")
+    add("C001", "P-FUTURE", "付款", "2026-11-26", "25.00")
+    add("C001", "R-31", "收款", "2026-10-25", "40.00")
+    add("C001", "R-TODAY", "收款", "2026-11-25", "10.00")
+    add("C002", "P-1", "付款", "2026-11-24", "30.00")
+    add("C001", "P-DONE", "付款", "2026-11-01", "999.00", status="已完成")
+    add("C001", "P-CANCEL", "付款", "2026-11-01", "888.00", status="已取消")
+    add("C001", "DELIVERY", "交付", "2026-11-01", "777.00")
+
+    summary = module.finance_aging_summary(
+        [contract_one, contract_two], workflow.milestones, today
+    )
+    by_key = {
+        (item["合同编号"], item["方向"]): item
+        for item in summary
+    }
+    assert len(summary) == 3
+    pay_one = by_key[("C001", "待付款")]
+    assert pay_one["待处理节点数"] == "3"
+    assert pay_one["最早计划日期"] == "2026-11-05"
+    assert pay_one["未逾期金额"] == "25.00"
+    assert pay_one["逾期1-7天金额"] == "100.00"
+    assert pay_one["逾期8-30天金额"] == "50.00"
+    assert pay_one["待处理金额"] == "175.00"
+    assert pay_one["逾期金额"] == "150.00"
+    receipt_one = by_key[("C001", "待收款")]
+    assert receipt_one["逾期31-90天金额"] == "40.00"
+    assert receipt_one["未逾期金额"] == "10.00"
+    assert receipt_one["待处理金额"] == "50.00"
+    pay_two = by_key[("C002", "待付款")]
+    assert pay_two["待处理金额"] == "30.00"
+    assert pay_two["往来方"] == "=供应商A"
+    assert summary[0]["逾期金额"] == "150.00"
+
+
+def test_finance_aging_summary_csv_is_formula_safe_atomic_and_writes_header_when_empty(tmp_path, monkeypatch):
+    contract = module.normalize(row("C001"))
+    contract["合同名称"] = "=HYPERLINK(\"https://evil.invalid\",\"合同\")"
+    contract["乙方/供应商"] = "@供应商A"
+    workflow = module.WorkflowStore(tmp_path / "workflow.json")
+    workflow.add("C001", {
+        "节点编号": "P001", "合同编号": "C001", "节点名称": "首付款",
+        "节点类型": "付款", "计划日期": "2026-11-24", "金额": "80.00",
+        "状态": "待处理", "完成日期": "", "备注": "",
+    })
+    target = tmp_path / "exports" / "counterparty-aging.csv"
+    assert module.export_finance_aging_summary_csv(
+        target, [contract], workflow.milestones, date(2026, 11, 25)
+    ) == 1
+    assert target.read_bytes().startswith(bytes((0xEF, 0xBB, 0xBF)))
+    with target.open("r", encoding="utf-8-sig", newline="") as handle:
+        exported = next(csv.DictReader(handle))
+    assert exported["合同名称"].startswith("'=")
+    assert exported["往来方"].startswith("'@")
+    assert exported["待处理金额"] == "80.00"
+
+    target.write_bytes(b"previous-valid-summary")
+
+    def fail_replace(source, destination):
+        raise OSError("simulated summary CSV replace failure")
+
+    monkeypatch.setattr(module.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="simulated summary CSV replace failure"):
+        module.export_finance_aging_summary_csv(
+            target, [contract], workflow.milestones, date(2026, 11, 25)
+        )
+    assert target.read_bytes() == b"previous-valid-summary"
+    assert list(target.parent.glob("counterparty-aging.csv*.tmp")) == []
+    monkeypatch.undo()
+
+    empty_target = tmp_path / "exports" / "empty-summary.csv"
+    assert module.export_finance_aging_summary_csv(empty_target, [], [], date(2026, 11, 25)) == 0
+    with empty_target.open("r", encoding="utf-8-sig", newline="") as handle:
+        assert list(csv.DictReader(handle)) == []

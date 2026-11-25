@@ -13,7 +13,7 @@ from tkinter import ttk, filedialog, messagebox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
-from src.contract_workflow import (WorkflowStore, MILESTONE_FIELDS, MILESTONE_TYPES, MILESTONE_STATUSES, AUDIT_FIELDS, WORKFLOW_FORMAT, WORKFLOW_VERSION, risk_findings, finance_summary, FINANCE_AGING_FIELDS, finance_aging_report, export_finance_aging_csv)
+from src.contract_workflow import (WorkflowStore, MILESTONE_FIELDS, MILESTONE_TYPES, MILESTONE_STATUSES, AUDIT_FIELDS, WORKFLOW_FORMAT, WORKFLOW_VERSION, risk_findings, finance_summary, FINANCE_AGING_FIELDS, finance_aging_report, export_finance_aging_csv, FINANCE_AGING_SUMMARY_FIELDS, finance_aging_summary, export_finance_aging_summary_csv)
 from src.contract_document_parser import write_draft_csv
 from src.contract_review import ReviewStore, restore_spreadsheet_safe_cell, spreadsheet_safe_cell
 
@@ -782,7 +782,74 @@ class App:
             except (OSError, ValueError) as exc:
                 messagebox.showerror("导出失败", str(exc), parent=win)
 
-        ttk.Button(win, text="导出资金账龄 CSV", command=export_report).pack(anchor="e", padx=10, pady=(0, 10))
+        def show_summary():
+            summary_rows = finance_aging_summary(self.store.rows, self.workflow.milestones, as_of)
+            summary_win = tk.Toplevel(win)
+            summary_win.title("合同资金往来方账龄汇总")
+            summary_win.geometry("1320x520")
+            summary_columns = FINANCE_AGING_SUMMARY_FIELDS
+            summary_widths = [95, 150, 135, 85, 95, 105, 115, 120, 120, 125, 130, 110, 110]
+            summary_frame = ttk.Frame(summary_win)
+            summary_frame.pack(fill="both", expand=True, padx=8, pady=8)
+            summary_tree = ttk.Treeview(summary_frame, columns=summary_columns, show="headings")
+            for column, width in zip(summary_columns, summary_widths):
+                summary_tree.heading(column, text=column)
+                summary_tree.column(column, width=width, stretch=True)
+            summary_y = ttk.Scrollbar(summary_frame, orient="vertical", command=summary_tree.yview)
+            summary_x = ttk.Scrollbar(summary_frame, orient="horizontal", command=summary_tree.xview)
+            summary_tree.configure(yscrollcommand=summary_y.set, xscrollcommand=summary_x.set)
+            summary_tree.pack(side="left", fill="both", expand=True)
+            summary_y.pack(side="right", fill="y")
+            summary_x.pack(side="bottom", fill="x")
+            for index, item in enumerate(summary_rows):
+                summary_tree.insert(
+                    "", "end", iid=f"counterparty-{index}",
+                    values=[item[field] for field in summary_columns],
+                )
+
+            pay_total = sum((Decimal(item["待处理金额"]) for item in summary_rows if item["方向"] == "待付款"), Decimal("0"))
+            receipt_total = sum((Decimal(item["待处理金额"]) for item in summary_rows if item["方向"] == "待收款"), Decimal("0"))
+            ttk.Label(
+                summary_win,
+                text=f"汇总组数：{len(summary_rows)}    待付款：{pay_total:.2f} 元    待收款：{receipt_total:.2f} 元",
+                padding=8,
+            ).pack(fill="x")
+            ttk.Label(
+                summary_win,
+                text="按合同编号、往来方和收付方向分别汇总；付款与收款不相互抵销，金额仅包含待处理节点。",
+                padding=6,
+            ).pack(fill="x")
+
+            def export_summary():
+                target = filedialog.asksaveasfilename(
+                    parent=summary_win,
+                    title="导出往来方账龄汇总",
+                    defaultextension=".csv",
+                    initialfile=f"合同资金往来方汇总_{as_of.isoformat()}.csv",
+                    filetypes=[("CSV 文件", "*.csv")],
+                )
+                if not target:
+                    return
+                try:
+                    count = export_finance_aging_summary_csv(
+                        target, self.store.rows, self.workflow.milestones, as_of
+                    )
+                    messagebox.showinfo(
+                        "导出完成",
+                        f"已导出 {count} 组往来方汇总；CSV 使用 UTF-8 BOM、公式安全转义和原子写入。",
+                        parent=summary_win,
+                    )
+                except (OSError, ValueError) as exc:
+                    messagebox.showerror("导出失败", str(exc), parent=summary_win)
+
+            ttk.Button(
+                summary_win, text="导出往来方汇总 CSV", command=export_summary
+            ).pack(anchor="e", padx=10, pady=(0, 10))
+
+        actions = ttk.Frame(win)
+        actions.pack(anchor="e", padx=10, pady=(0, 10))
+        ttk.Button(actions, text="查看往来方汇总", command=show_summary).pack(side="left", padx=4)
+        ttk.Button(actions, text="导出资金账龄明细 CSV", command=export_report).pack(side="left", padx=4)
 
     def import_milestones(self):
         path = filedialog.askopenfilename(filetypes=[("CSV 文件", "*.csv")])
@@ -823,6 +890,14 @@ def self_test():
     assert sample["合同金额"] == "123.46"
     assert reminder_state(sample, date(2026, 12, 1))[0] == "即将到期"
     assert reminder_state(sample, date(2027, 1, 1))[0] == "已逾期"
+    sample_milestone = {
+        "合同编号": "C001", "节点编号": "M001", "节点名称": "测试付款",
+        "节点类型": "付款", "计划日期": "2026-11-30", "金额": "12.34",
+        "状态": "待处理", "备注": "",
+    }
+    summary = finance_aging_summary([sample], [sample_milestone], date(2026, 12, 1))
+    assert summary[0]["待处理金额"] == "12.34"
+    assert summary[0]["逾期金额"] == "12.34"
     print("SELF_TEST_OK")
 
 

@@ -20,11 +20,11 @@ def _make_inputs(tmp_path):
     return release, manuals, output
 
 
-def test_series_catalog_covers_all_36_products_once():
+def test_series_catalog_covers_all_37_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 36
-    assert len(assigned) == 36
+    assert len(MODULE.PRODUCTS) == 37
+    assert len(assigned) == 37
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "36 款业务软件 + 工具箱启动器" in catalog
+    assert "37 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -177,8 +177,8 @@ def test_static_series_catalog_lists_each_business_product_once():
     catalog = catalog_path.read_text(encoding="utf-8")
     for name, _, _ in MODULE.PRODUCTS.values():
         assert catalog.count(f"- {name}\n") == 1, name
-    assert "| C | 财务与交易系列 | 10 |" in catalog
-    assert "| F | 全系列综合套餐 | 36 款业务软件 + 工具箱启动器 |" in catalog
+    assert "| C | 财务与交易系列 | 11 |" in catalog
+    assert "| F | 全系列综合套餐 | 37 款业务软件 + 工具箱启动器 |" in catalog
 
 
 
@@ -220,3 +220,11 @@ def test_store_series_contains_receiving_discrepancy_assistant():
     assert MODULE.PRODUCTS["store-receiving"][1] == "MainlandStoreReceivingDiscrepancy.exe"
     assert MODULE.PRODUCTS["store-receiving"][2] == "35-门店收货验收与差异处理助手-用户说明书.md"
     assert len(store_series["products"]) == 14
+
+
+def test_finance_series_contains_xianyu_pick_pack_checklist():
+    finance = next(item for item in MODULE.SERIES if item["code"] == "C")
+    assert "xianyu-pick-pack" in finance["products"]
+    assert MODULE.PRODUCTS["xianyu-pick-pack"][1] == "MainlandXianyuPickPackAssistant.exe"
+    assert MODULE.PRODUCTS["xianyu-pick-pack"][2] == "37-闲鱼订单拣货与打包清单助手-用户说明书.md"
+    assert len(finance["products"]) == 11

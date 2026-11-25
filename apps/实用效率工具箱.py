@@ -24,6 +24,7 @@ TOOLS = [
     ("闲鱼商品发布管理助手", "MainlandXianyuListingManager.exe"),
     ("闲鱼发货与物流管理助手", "MainlandXianyuShippingAssistant.exe"),
     ("闲鱼退货退款跟进助手", "MainlandXianyuReturnFollowup.exe"),
+    ("闲鱼订单拣货与打包清单助手", "MainlandXianyuPickPackAssistant.exe"),
     ("报价单生成器", "MainlandQuotationGenerator.exe"),
     ("费用报销管理助手", "MainlandExpenseReimbursement.exe"),
     ("售后维修工单管理助手", "MainlandRepairWorkOrderManager.exe"),
@@ -56,7 +57,7 @@ def application_directory():
 
 
 def self_test():
-    assert len(TOOLS) == 36
+    assert len(TOOLS) == 37
     names = [name for name, _ in TOOLS]
     exes = [exe for _, exe in TOOLS]
     assert len(set(names)) == len(names)

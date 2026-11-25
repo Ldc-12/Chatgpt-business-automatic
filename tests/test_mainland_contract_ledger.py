@@ -553,7 +553,7 @@ def test_finance_aging_summary_groups_by_contract_counterparty_direction_and_buc
     pay_two = by_key[("C002", "待付款")]
     assert pay_two["待处理金额"] == "30.00"
     assert pay_two["往来方"] == "=供应商A"
-    assert Decimal(summary[0]["逾期金额"]) == Decimal("150.00")
+    assert summary[0]["逾期金额"] == "150.00"
 
 
 def test_finance_aging_summary_csv_is_formula_safe_atomic_and_writes_header_when_empty(tmp_path, monkeypatch):

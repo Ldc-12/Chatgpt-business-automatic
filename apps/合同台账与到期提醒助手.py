@@ -732,10 +732,12 @@ class App:
         for column, width in zip(columns, widths):
             tree.heading(column, text=column)
             tree.column(column, width=width, stretch=True)
-        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
-        tree.configure(yscrollcommand=scrollbar.set)
+        yscrollbar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+        xscrollbar = ttk.Scrollbar(frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=yscrollbar.set, xscrollcommand=xscrollbar.set)
         tree.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        yscrollbar.pack(side="right", fill="y")
+        xscrollbar.pack(side="bottom", fill="x")
         for index, item in enumerate(rows):
             tree.insert("", "end", iid=f"aging-{index}", values=[item[field] for field in columns])
 

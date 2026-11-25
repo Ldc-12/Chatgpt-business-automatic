@@ -1,3 +1,58 @@
+# Latest checkpoint — 2026-11-25 (PR #134 merged; main Mainland Windows run #546 and ABE #550 verified)
+
+## Repository state
+
+- Product-code commit used by verified main run #546: `96efb94cb21ccc9358f51b68d42a4a81251612f0`; the release artifacts below were built from this exact code commit. This documentation-only PR records that release checkpoint and may move the `main` HEAD without changing the product-code commit.
+- PR [#134 Add counterparty-level contract cash-flow aging summary](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/134) merged at `96efb94cb21ccc9358f51b68d42a4a81251612f0`. The contract ledger now shows a counterparty summary grouped by contract, counterparty and direction, with aging buckets and a formula-safe atomic CSV export.
+- Current open PR: [#135 Add overdue priority metrics to contract cash-flow aging summary](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/135), current head `81f43c61995e83415edc2f404cc58e493f2afa21`. It adds overdue-node count, earliest overdue date and maximum overdue days. The current PR Mainland run #548 is still queued/in progress; do not merge until the latest-head run and full customer package pass.
+- PR #135 run #547 (older head `60c59b3c7cf54468c9070c842e3a297040af25af`) was cancelled when the GUI window width was reduced to keep the report usable on common laptop displays. Its contract-ledger job had passed 176 tests and frozen-EXE self-test, but that run is superseded by #548 and is not the current PR acceptance result.
+- Products remain local/offline. No VPN, ChatGPT, external AI, marketplace API, or cloud service is required by the Windows utilities.
+
+## Latest main Mainland Windows EXE — run #546
+
+- [Mainland Windows EXE run #546](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45541507070), run ID `45541507070`, event `push`, head `96efb94cb21ccc9358f51b68d42a4a81251612f0`, completed success: **38/38 jobs** (37 Windows product builds + customer package), zero failed jobs.
+- Contract-ledger job [138960885233](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45541507070/job/138960885233): `175 passed in 4.90s`; PyInstaller 6.22.3; frozen EXE self-test logged `FROZEN_EXE_SELF_TEST_OK` and exited 0.
+- Main contract-ledger artifact [14989731593](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45541507070/artifacts/14989731593), 55,656,447 bytes; outer SHA256 `132562796ef64a44496c3fe302a32e55f8ea4d1c1a1050b610e56420707a7933`; outer ZIP CRC passed. Inner delivery ZIP: 27,819,439 bytes, SHA256 `2d10ee9cd24966e74de9ded795faa0afc6537bab5dddd02b3af99ffbcf7b076f`; inner ZIP CRC passed. EXE: 28,142,101 bytes, SHA256 `d1d621d9d36412e7833f2eec723e8f530209ec33bf637e91d3046b206b76bdf6`. The inner ZIP contains the updated Chinese contract-ledger manual.
+
+## Latest main customer package — run #546
+
+- Customer artifact [14989846803](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45541507070/artifacts/14989846803): 601,046,075 bytes; GitHub artifact digest `sha256:7205f8be9192bdb6fa19e3f9d87d0597edc4fd566ca961bd6c8f3cf5ace08b89`.
+- The outer artifact exceeds the connector's 512 MiB direct-download limit. The workflow itself successfully re-downloaded the uploaded artifact and logged `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`; its reinspection matched the original inspected ZIP byte-for-byte. The package was independently reconstructed from all eight bounded chunk-group artifacts and the manifest.
+- Manifest artifact [14988829467](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45541507070/artifacts/14988829467), 4,405 bytes; GitHub artifact digest `sha256:b3363e9731976006fc443c3725e1530440373a6f8713b3bb94f162af834bd852`.
+- Chunk-group artifacts: 01 [14988859433], 02 [14990295101], 03 [14989412501], 04 [14989452410], 05 [14989337767], 06 [14990210377], 07 [14988709820], 08 [14990120881]. All nine downloaded group/manifest ZIP files passed outer ZIP CRC checks. All 29 chunk byte counts and SHA256 values matched `package-chunks/chunk-groups.json`.
+- Reassembled inner `Phase1-Mainland-Windows-Tools.zip`: 600,874,945 bytes; SHA256 `5ce7d052629b8c90bb646276e1cf974fcfe12e517e74ea679cffb79fddc266fd`; inner ZIP CRC passed. It has 80 entries (78 files, 2 directories), **37 EXEs** (36 business tools + 1 efficiency-toolbox launcher), and **37 product manuals** plus the manual-index README. All 37 executable paths and 37 product-manual paths exactly match the inspection manifest.
+- All inner ZIP entries have timestamp `2026-11-25 03:43:40 UTC` (11:43:40 China time). The workflow package job [138962056632](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45541507070/job/138962056632) logged `MAINLAND_PACKAGE_INSPECTION_OK`, `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`, and `MAINLAND_PACKAGE_CHUNKING_OK parts=29 bytes=600874945` with the same SHA256.
+- Bundle catalog read from the reconstructed ZIP:
+  - A — Office efficiency: 5 tools, suggested ¥29.9.
+  - B — Store operations: 14 tools, suggested ¥29.9.
+  - C — Finance and transactions: 10 tools, suggested ¥29.9.
+  - D — Contracts, construction and property: 4 tools, suggested ¥29.9.
+  - E — Customer and personal affairs: 3 tools, suggested ¥19.9.
+  - F — All 36 business tools + toolbox launcher, suggested ¥39.9.
+- Prices remain unvalidated suggestions, not actual Xianyu sales. The separate series-package artifact [14989586987] (586,384,534 bytes) was not independently downloaded/CRC-checked in this checkpoint; only the combined customer ZIP's bundle descriptions/catalog were verified.
+
+## Latest Autonomous Business Engine — run #550
+
+- [ABE run #550](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45541507048), run ID `45541507048`, event `push`, head `96efb94cb21ccc9358f51b68d42a4a81251612f0`, build/deploy **2/2 success**.
+- Build job [138960884106](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45541507048/job/138960884106): `854 passed in 5.58s`; opportunity-source output reported `"error": null`; generated 12 product pages and 12 Xianyu listing files.
+- Pages artifact [14989039298](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45541507048/artifacts/14989039298), 46,411 bytes; SHA256 `29bf099222b937f13362394c1aed1342fc8eda75069f4b2979fe08b0717b99e8`. Downloaded and checked: outer ZIP CRC passed; inner TAR has 198 entries, including 17 `product.json` and 12 `listing.txt`. Deploy job [138961498952](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45541507048/job/138961498952) succeeded.
+
+## Failure-log review
+
+- Main Mainland run #546: all 38 jobs succeeded; no failed job logs were present to remediate.
+- Main ABE run #550: build/deploy 2/2 succeeded; 854 tests passed; opportunity-source result was `error: null`, with no HTTPError/fallback in the inspected log.
+- The only non-blocking workflow warnings observed were upstream Node.js 20 deprecation notices from GitHub Actions dependencies.
+
+## Authorization and final acceptance — still blocked
+
+- Current `src/license.py` embedded Ed25519 public-key DER SHA256: `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`.
+- Current `config/mainland_license_public_key.pem` DER SHA256: `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`. They still differ.
+- No seller private key was read, requested, uploaded, guessed, created, replaced, or rotated. No production public key was changed.
+- Code-side license path, product-ID and signature-verification tests continue. **The release remains 待最终验收 and is not approved as a fully accepted commercial Xianyu release.** Genuine Windows GUI/data-flow acceptance and seller-key match followed by real issue/activate/exit/restart/re-verify remain incomplete.
+- Required seller-side operation: on the trusted Windows PC that already holds the seller signing key, export only the public key PEM or SHA256 fingerprint and provide that public value for comparison. Never send or upload the private key.
+
+---
+
 # Latest checkpoint — 2026-11-24 (PR #129 merged; main Mainland run #536 and ABE #546 verified)
 
 ## Repository state

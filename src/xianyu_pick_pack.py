@@ -127,6 +127,14 @@ def packing_progress(rows: list[dict]) -> dict:
     }
 
 
+def _validated_items(payload, label: str) -> list[dict]:
+    if not isinstance(payload, dict) or payload.get("version") != 1 or not isinstance(payload.get("items"), list):
+        raise ValueError(f"{label}版本或结构不受支持")
+    if any(not isinstance(row, dict) for row in payload["items"]):
+        raise ValueError(f"{label}明细结构无效")
+    return payload["items"]
+
+
 class PickPackStore:
     def __init__(self, path: Path):
         self.path = Path(path)
@@ -143,12 +151,11 @@ class PickPackStore:
             return []
         try:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
-            if payload.get("version") != 1 or not isinstance(payload.get("items"), list):
-                raise ValueError("数据文件版本或结构不受支持")
-            rows = [normalize_row(row) for row in payload["items"]]
+            items = _validated_items(payload, "数据文件")
+            rows = [normalize_row(row) for row in items]
             self._validate_unique(rows)
             return rows
-        except (OSError, json.JSONDecodeError) as exc:
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise ValueError(f"无法读取拣货台账：{exc}") from exc
 
     def _commit(self, rows):
@@ -234,13 +241,15 @@ class PickPackStore:
         _atomic_write(Path(path), _canonical(payload))
 
     def restore(self, path):
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
-        if payload.get("version") != 1 or not isinstance(payload.get("items"), list):
-            raise ValueError("备份版本或结构不受支持")
-        data = {"version": 1, "items": payload["items"]}
+        try:
+            payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"无法读取备份：{exc}") from exc
+        items = _validated_items(payload, "备份")
+        data = {"version": 1, "items": items}
         if payload.get("sha256") != hashlib.sha256(_canonical(data)).hexdigest():
             raise ValueError("备份 SHA256 校验失败")
-        rows = [normalize_row(row) for row in payload["items"]]
+        rows = [normalize_row(row) for row in items]
         self._validate_unique(rows)
         self._commit(rows)
         return len(rows)

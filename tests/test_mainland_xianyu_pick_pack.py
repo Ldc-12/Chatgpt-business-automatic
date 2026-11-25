@@ -158,6 +158,40 @@ def test_backup_restore_checks_sha256_before_replacing_current_data(tmp_path):
     assert restored.path.read_bytes() == before_bytes
 
 
+
+@pytest.mark.parametrize("payload", [
+    [],
+    None,
+    {"version": 1, "items": {}},
+    {"version": 1, "items": [None]},
+    {"version": 1, "items": [[]]},
+])
+def test_store_rejects_malformed_json_shapes_as_value_error(tmp_path, payload):
+    path = tmp_path / "corrupt-data.json"
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError, match="数据文件"):
+        module.PickPackStore(path)
+
+
+@pytest.mark.parametrize("payload", [
+    [],
+    None,
+    {"version": 1, "items": {}},
+    {"version": 1, "items": [None]},
+    {"version": 1, "items": [[]]},
+])
+def test_restore_rejects_malformed_json_shapes_without_replacing_current_data(tmp_path, payload):
+    store = module.PickPackStore(tmp_path / "current.json")
+    store.add(sample())
+    before_rows, before_bytes = list(store.rows), store.path.read_bytes()
+    backup = tmp_path / "malformed-backup.json"
+    backup.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError, match="备份"):
+        store.restore(backup)
+    assert store.rows == before_rows
+    assert store.path.read_bytes() == before_bytes
+
+
 def test_self_test_is_local_and_does_not_touch_default_user_data(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "default_data_path", lambda: tmp_path / "unused.json")
     module.self_test()

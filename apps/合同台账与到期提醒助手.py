@@ -13,7 +13,7 @@ from tkinter import ttk, filedialog, messagebox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
-from src.contract_workflow import (WorkflowStore, MILESTONE_FIELDS, MILESTONE_TYPES, MILESTONE_STATUSES, AUDIT_FIELDS, WORKFLOW_FORMAT, WORKFLOW_VERSION, risk_findings, finance_summary)
+from src.contract_workflow import (WorkflowStore, MILESTONE_FIELDS, MILESTONE_TYPES, MILESTONE_STATUSES, AUDIT_FIELDS, WORKFLOW_FORMAT, WORKFLOW_VERSION, risk_findings, finance_summary, FINANCE_AGING_FIELDS, finance_aging_report, export_finance_aging_csv)
 from src.contract_document_parser import write_draft_csv
 from src.contract_review import ReviewStore, restore_spreadsheet_safe_cell, spreadsheet_safe_cell
 
@@ -314,7 +314,7 @@ class App:
         bar = ttk.Frame(root, padding=8); bar.pack(fill="x")
         toolbars = [
             [("新增合同", self.add), ("编辑", self.edit), ("删除", self.delete),
-             ("履约节点", self.manage_milestones), ("风险检查", self.show_risks),
+             ("履约节点", self.manage_milestones), ("风险检查", self.show_risks), ("资金账龄", self.show_finance_aging),
              ("节点导入", self.import_milestones), ("节点导出", self.export_milestones),
              ("操作记录", self.show_audit)],
             [("批量识别合同文件", self.import_documents), ("导入复核结果", self.import_review_results),
@@ -717,6 +717,72 @@ class App:
         low = sum(item["等级"] == "低" for item in findings)
         ttk.Label(win, text=f"规则检查：{len(findings)} 项｜高风险 {high}｜中风险 {medium}｜低风险 {low}。"
                             "结果仅用于业务核对，不构成法律意见。", padding=8).pack(fill="x")
+
+    def show_finance_aging(self):
+        as_of = date.today()
+        rows = finance_aging_report(self.store.rows, self.workflow.milestones, as_of)
+        win = tk.Toplevel(self.root)
+        win.title("合同资金计划账龄｜待付款与待收款")
+        win.geometry("1260x560")
+        columns = FINANCE_AGING_FIELDS
+        widths = [95, 145, 125, 105, 150, 85, 100, 105, 85, 95, 85, 190]
+        frame = ttk.Frame(win)
+        frame.pack(fill="both", expand=True, padx=8, pady=8)
+        tree = ttk.Treeview(frame, columns=columns, show="headings")
+        for column, width in zip(columns, widths):
+            tree.heading(column, text=column)
+            tree.column(column, width=width, stretch=True)
+        yscrollbar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+        xscrollbar = ttk.Scrollbar(frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=yscrollbar.set, xscrollcommand=xscrollbar.set)
+        tree.pack(side="left", fill="both", expand=True)
+        yscrollbar.pack(side="right", fill="y")
+        xscrollbar.pack(side="bottom", fill="x")
+        for index, item in enumerate(rows):
+            tree.insert("", "end", iid=f"aging-{index}", values=[item[field] for field in columns])
+
+        pending_pay = sum((Decimal(item["金额"]) for item in rows if item["方向"] == "待付款"), Decimal("0"))
+        pending_receipt = sum((Decimal(item["金额"]) for item in rows if item["方向"] == "待收款"), Decimal("0"))
+        overdue_pay = sum((Decimal(item["金额"]) for item in rows if item["方向"] == "待付款" and int(item["逾期天数"]) > 0), Decimal("0"))
+        overdue_receipt = sum((Decimal(item["金额"]) for item in rows if item["方向"] == "待收款" and int(item["逾期天数"]) > 0), Decimal("0"))
+        ttk.Label(
+            win,
+            text=(
+                f"统计日：{as_of.isoformat()}    待付款：{pending_pay:.2f} 元（其中逾期 {overdue_pay:.2f} 元）"
+                f"    待收款：{pending_receipt:.2f} 元（其中逾期 {overdue_receipt:.2f} 元）"
+                f"    待处理资金节点：{len(rows)} 条"
+            ),
+            padding=8,
+        ).pack(fill="x")
+        ttk.Label(
+            win,
+            text="仅统计待处理的付款/收款节点；已完成、已取消及交付/验收等非资金节点不计入。逾期天数按计划日期计算。",
+            padding=6,
+        ).pack(fill="x")
+
+        def export_report():
+            path = filedialog.asksaveasfilename(
+                parent=win,
+                title="导出合同资金账龄报表",
+                defaultextension=".csv",
+                initialfile=f"合同资金账龄_{as_of.isoformat()}.csv",
+                filetypes=[("CSV 文件", "*.csv")],
+            )
+            if not path:
+                return
+            try:
+                count = export_finance_aging_csv(
+                    path, self.store.rows, self.workflow.milestones, as_of
+                )
+                messagebox.showinfo(
+                    "导出完成",
+                    f"已导出 {count} 条待处理资金节点；CSV 使用 UTF-8 BOM、公式安全转义和原子写入。",
+                    parent=win,
+                )
+            except (OSError, ValueError) as exc:
+                messagebox.showerror("导出失败", str(exc), parent=win)
+
+        ttk.Button(win, text="导出资金账龄 CSV", command=export_report).pack(anchor="e", padx=10, pady=(0, 10))
 
     def import_milestones(self):
         path = filedialog.askopenfilename(filetypes=[("CSV 文件", "*.csv")])

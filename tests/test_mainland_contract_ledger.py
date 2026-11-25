@@ -589,6 +589,7 @@ def test_finance_aging_summary_csv_is_formula_safe_atomic_and_writes_header_when
         )
     assert target.read_bytes() == b"previous-valid-summary"
     assert list(target.parent.glob("counterparty-aging.csv*.tmp")) == []
+    monkeypatch.undo()
 
     empty_target = tmp_path / "exports" / "empty-summary.csv"
     assert module.export_finance_aging_summary_csv(empty_target, [], [], date(2026, 11, 25)) == 0

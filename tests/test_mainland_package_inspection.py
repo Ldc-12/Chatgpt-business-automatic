@@ -45,7 +45,7 @@ def test_inspector_reports_counts_crc_hash_bundle_labels_and_timestamps(tmp_path
     assert report["crc"] == "passed"
     assert report["exe_count"] == 38
     assert report["manual_count"] == 38
-    assert report["entry_count"] == 78
+    assert report["entry_count"] == 80
     assert len(report["executables"]) == 38
     assert len(report["manuals"]) == 38
     assert len(report["sha256"]) == 64

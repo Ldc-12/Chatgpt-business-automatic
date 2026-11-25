@@ -415,7 +415,8 @@ def finance_aging_report(contracts, milestones, today=None):
 
 
 FINANCE_AGING_SUMMARY_FIELDS = [
-    "合同编号", "合同名称", "往来方", "方向", "待处理节点数", "最早计划日期",
+    "合同编号", "合同名称", "往来方", "方向", "待处理节点数", "逾期节点数",
+    "最早计划日期", "最早逾期日期", "最长逾期天数",
     "未逾期金额", "逾期1-7天金额", "逾期8-30天金额", "逾期31-90天金额",
     "逾期91天以上金额", "待处理金额", "逾期金额",
 ]
@@ -443,7 +444,10 @@ def finance_aging_summary(contracts, milestones, today=None):
                 "往来方": row["往来方"],
                 "方向": row["方向"],
                 "待处理节点数": 0,
+                "逾期节点数": 0,
                 "最早计划日期": row["计划日期"],
+                "最早逾期日期": "",
+                "最长逾期天数": 0,
             }
             record.update({field: Decimal("0.00") for field in amount_fields})
             grouped[key] = record
@@ -456,8 +460,13 @@ def finance_aging_summary(contracts, milestones, today=None):
         bucket_field = _FINANCE_AGING_BUCKET_COLUMNS[row["账龄分组"]]
         record[bucket_field] += amount
         record["待处理金额"] += amount
-        if int(row["逾期天数"]) > 0:
+        overdue_days = int(row["逾期天数"])
+        if overdue_days > 0:
             record["逾期金额"] += amount
+            record["逾期节点数"] += 1
+            if not record["最早逾期日期"] or row["计划日期"] < record["最早逾期日期"]:
+                record["最早逾期日期"] = row["计划日期"]
+            record["最长逾期天数"] = max(record["最长逾期天数"], overdue_days)
 
     result = []
     for record in grouped.values():

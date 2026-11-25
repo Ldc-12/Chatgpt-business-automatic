@@ -2,9 +2,9 @@
 
 ## Repository state
 
-- Main HEAD and product-code commit: `6d11c8c17a2abb4b842c7bcf4bbce341f7cacb25`.
+- Verified product-code commit for main run #554: `6d11c8c17a2abb4b842c7bcf4bbce341f7cacb25`. Subsequent main commits are documentation-only release-ledger updates; no product source changed after this verified build.
 - PR [#137 Add offline Xianyu order picking and packing checklist utility](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/137) merged by squash at the main commit above. PR head: `2c5e527c8e512b7f0e4da054209a5c07b00b6c89`.
-- Open PRs after merge: 0.
+- No product PRs remained open after PR #137 merged.
 - Product remains local/offline for Mainland Windows. No VPN, ChatGPT, external AI, Xianyu account integration, marketplace API, or cloud service is required by this utility.
 
 ## Product change — Xianyu order picking and packing checklist

@@ -399,3 +399,100 @@ def test_workflow_mutations_restore_full_audit_history_when_save_fails_at_limit(
         assert len(store.audit) == 5000
         assert store.audit[0]["说明"] == "0"
         assert store.audit[-1]["说明"] == "4999"
+
+
+
+def test_finance_aging_report_uses_exact_overdue_bucket_boundaries_and_excludes_closed_nodes(tmp_path):
+    today = date(2026, 11, 25)
+    contract = module.normalize(row("C001"))
+    workflow = module.WorkflowStore(tmp_path / "workflow.json")
+
+    def add_node(node_id, kind, due, amount="10.00", status="待处理", completed=""):
+        return workflow.add("C001", {
+            "节点编号": node_id,
+            "合同编号": "C001",
+            "节点名称": node_id,
+            "节点类型": kind,
+            "计划日期": due,
+            "金额": amount,
+            "状态": status,
+            "完成日期": completed,
+            "备注": "",
+        })
+
+    cases = [
+        ("M091", "付款", "2026-08-26", "91", "逾期90天以上"),
+        ("M090", "收款", "2026-08-27", "90", "逾期31-90天"),
+        ("M031", "付款", "2026-10-25", "31", "逾期31-90天"),
+        ("M030", "收款", "2026-10-26", "30", "逾期8-30天"),
+        ("M008", "付款", "2026-11-17", "8", "逾期8-30天"),
+        ("M007", "收款", "2026-11-18", "7", "逾期1-7天"),
+        ("M001", "付款", "2026-11-24", "1", "逾期1-7天"),
+        ("M000", "收款", "2026-11-25", "0", "未到期"),
+        ("M-FUTURE", "付款", "2026-11-26", "0", "未到期"),
+    ]
+    for node_id, kind, due, days, bucket in cases:
+        add_node(node_id, kind, due)
+    add_node("M-DONE", "收款", "2026-11-20", status="已完成", completed="2026-11-20")
+    add_node("M-CANCEL", "付款", "2026-11-20", status="已取消")
+    add_node("M-DELIVERY", "交付", "2026-11-20")
+
+    report = module.finance_aging_report([contract], workflow.milestones, today)
+    assert len(report) == len(cases)
+    by_id = {item["节点编号"]: item for item in report}
+    for node_id, _, _, days, bucket in cases:
+        assert by_id[node_id]["逾期天数"] == days
+        assert by_id[node_id]["账龄分组"] == bucket
+    assert by_id["M091"]["方向"] == "待付款"
+    assert by_id["M090"]["方向"] == "待收款"
+    assert by_id["M091"]["往来方"] == "乙方"
+    assert by_id["M090"]["往来方"] == "甲方"
+    assert "M-DONE" not in by_id and "M-CANCEL" not in by_id and "M-DELIVERY" not in by_id
+    assert [item["计划日期"] for item in report] == sorted(item["计划日期"] for item in report)
+
+
+def test_finance_aging_report_keeps_orphan_contract_nodes_visible(tmp_path):
+    workflow = module.WorkflowStore(tmp_path / "workflow.json")
+    workflow.add("MISSING", {
+        "节点编号": "ORPHAN-1", "合同编号": "MISSING", "节点名称": "历史应收款",
+        "节点类型": "收款", "计划日期": "2026-11-01", "金额": "88.00",
+        "状态": "待处理", "完成日期": "", "备注": "请核对合同档案",
+    })
+    report = module.finance_aging_report([], workflow.milestones, date(2026, 11, 25))
+    assert len(report) == 1
+    assert report[0]["合同编号"] == "MISSING"
+    assert report[0]["合同名称"] == ""
+    assert report[0]["往来方"] == ""
+    assert report[0]["备注"] == "请核对合同档案；合同记录不存在"
+
+
+def test_finance_aging_csv_is_formula_safe_atomic_and_preserves_existing_file_on_replace_failure(tmp_path, monkeypatch):
+    contract = module.normalize(row("C001"))
+    contract["合同名称"] = "=HYPERLINK(\"https://evil.invalid\",\"合同\")"
+    contract["乙方/供应商"] = "@SUM(1,1)"
+    workflow = module.WorkflowStore(tmp_path / "workflow.json")
+    workflow.add("C001", {
+        "节点编号": "M001", "合同编号": "C001", "节点名称": "=收款节点",
+        "节点类型": "付款", "计划日期": "2026-11-24", "金额": "100.00",
+        "状态": "待处理", "完成日期": "", "备注": "'@原始备注",
+    })
+    target = tmp_path / "exports" / "finance-aging.csv"
+    assert module.export_finance_aging_csv(target, [contract], workflow.milestones, date(2026, 11, 25)) == 1
+    assert target.read_bytes().startswith(bytes((0xEF, 0xBB, 0xBF)))
+    with target.open("r", encoding="utf-8-sig", newline="") as handle:
+        exported = next(csv.DictReader(handle))
+    assert exported["合同名称"].startswith("'=")
+    assert exported["往来方"].startswith("'@")
+    assert exported["节点名称"] == "'=收款节点"
+    assert exported["备注"] == "''@原始备注"
+
+    target.write_bytes(b"previous-valid-report")
+
+    def fail_replace(source, destination):
+        raise OSError("simulated aging CSV replace failure")
+
+    monkeypatch.setattr(module.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="simulated aging CSV replace failure"):
+        module.export_finance_aging_csv(target, [contract], workflow.milestones, date(2026, 11, 25))
+    assert target.read_bytes() == b"previous-valid-report"
+    assert list(target.parent.glob("finance-aging.csv*.tmp")) == []

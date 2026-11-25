@@ -346,3 +346,93 @@ def finance_summary(milestones):
             key = "已完成收款" if item["状态"] == "已完成" else "待收款"
             totals[key] += Decimal(item["金额"])
     return {key: f"{value:.2f}" for key, value in totals.items()}
+
+
+FINANCE_AGING_FIELDS = [
+    "合同编号", "合同名称", "往来方", "节点编号", "节点名称",
+    "方向", "计划日期", "账龄分组", "逾期天数", "金额", "状态", "备注",
+]
+
+
+def finance_aging_report(contracts, milestones, today=None):
+    """Return pending payment/receipt milestones with deterministic overdue buckets."""
+    if today is None:
+        today = date.today()
+    elif isinstance(today, datetime):
+        today = today.date()
+    elif isinstance(today, str):
+        today = date.fromisoformat(today)
+    if not isinstance(today, date):
+        raise ValueError("统计日期必须是 date、datetime 或 YYYY-MM-DD 字符串")
+
+    contract_map = {
+        str(row.get("合同编号", "")): row
+        for row in contracts
+        if isinstance(row, dict) and str(row.get("合同编号", ""))
+    }
+    result = []
+    for milestone in milestones:
+        if milestone.get("状态") != "待处理" or milestone.get("节点类型") not in ("付款", "收款"):
+            continue
+        due = date.fromisoformat(str(milestone.get("计划日期", "")))
+        overdue_days = max(0, (today - due).days)
+        if overdue_days == 0:
+            bucket = "未到期"
+        elif overdue_days <= 7:
+            bucket = "逾期1-7天"
+        elif overdue_days <= 30:
+            bucket = "逾期8-30天"
+        elif overdue_days <= 90:
+            bucket = "逾期31-90天"
+        else:
+            bucket = "逾期90天以上"
+
+        contract_id = str(milestone.get("合同编号", ""))
+        contract = contract_map.get(contract_id, {})
+        is_payment = milestone["节点类型"] == "付款"
+        counterparty_field = "乙方/供应商" if is_payment else "甲方/客户"
+        note = str(milestone.get("备注", ""))
+        if not contract:
+            note = (note + "；" if note else "") + "合同记录不存在"
+        amount = Decimal(_money(milestone.get("金额", "0")))
+        result.append({
+            "合同编号": contract_id,
+            "合同名称": str(contract.get("合同名称", "")),
+            "往来方": str(contract.get(counterparty_field, "")),
+            "节点编号": str(milestone.get("节点编号", "")),
+            "节点名称": str(milestone.get("节点名称", "")),
+            "方向": "待付款" if is_payment else "待收款",
+            "计划日期": due.isoformat(),
+            "账龄分组": bucket,
+            "逾期天数": str(overdue_days),
+            "金额": f"{amount:.2f}",
+            "状态": "待处理",
+            "备注": note,
+        })
+
+    result.sort(key=lambda row: (row["计划日期"], row["合同编号"], row["节点编号"]))
+    return result
+
+
+def export_finance_aging_csv(path, contracts, milestones, today=None):
+    """Atomically export a spreadsheet-safe UTF-8 BOM cash-flow aging report."""
+    rows = finance_aging_report(contracts, milestones, today)
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(prefix=target.name, suffix=".tmp", dir=str(target.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8-sig", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=FINANCE_AGING_FIELDS)
+            writer.writeheader()
+            for row in rows:
+                writer.writerow({
+                    field: spreadsheet_safe_cell(row.get(field, ""))
+                    for field in FINANCE_AGING_FIELDS
+                })
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_name, target)
+    finally:
+        if os.path.exists(temp_name):
+            os.unlink(temp_name)
+    return len(rows)

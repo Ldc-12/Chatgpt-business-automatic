@@ -786,7 +786,7 @@ class App:
             summary_rows = finance_aging_summary(self.store.rows, self.workflow.milestones, as_of)
             summary_win = tk.Toplevel(win)
             summary_win.title("合同资金往来方账龄汇总")
-            summary_win.geometry("1580x560")
+            summary_win.geometry("1320x560")
             summary_columns = FINANCE_AGING_SUMMARY_FIELDS
             summary_widths = [95, 150, 135, 85, 95, 85, 105, 105, 105, 115, 120, 120, 125, 130, 110, 110]
             summary_frame = ttk.Frame(summary_win)

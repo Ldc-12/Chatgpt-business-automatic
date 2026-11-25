@@ -377,7 +377,7 @@ def finance_aging_report(contracts, milestones, today=None):
         due = date.fromisoformat(str(milestone.get("计划日期", "")))
         overdue_days = max(0, (today - due).days)
         if overdue_days == 0:
-            bucket = "未到期"
+            bucket = "未逾期（含统计日）"
         elif overdue_days <= 7:
             bucket = "逾期1-7天"
         elif overdue_days <= 30:
@@ -385,7 +385,7 @@ def finance_aging_report(contracts, milestones, today=None):
         elif overdue_days <= 90:
             bucket = "逾期31-90天"
         else:
-            bucket = "逾期90天以上"
+            bucket = "逾期91天以上"
 
         contract_id = str(milestone.get("合同编号", ""))
         contract = contract_map.get(contract_id, {})

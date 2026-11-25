@@ -1,3 +1,58 @@
+# Latest checkpoint — 2026-11-25 (PR #137 merged; Mainland Windows run #554 and ABE #554 verified)
+
+## Repository state
+
+- Main HEAD and product-code commit: `6d11c8c17a2abb4b842c7bcf4bbce341f7cacb25`.
+- PR [#137 Add offline Xianyu order picking and packing checklist utility](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/137) merged by squash at the main commit above. PR head: `2c5e527c8e512b7f0e4da054209a5c07b00b6c89`.
+- Open PRs after merge: 0.
+- Product remains local/offline for Mainland Windows. No VPN, ChatGPT, external AI, Xianyu account integration, marketplace API, or cloud service is required by this utility.
+
+## Product change — Xianyu order picking and packing checklist
+
+- Added `src/xianyu_pick_pack.py` and the Tkinter GUI `apps/闲鱼订单拣货与打包清单助手.py`.
+- Supports manual order-line entry, SKU/variant picking aggregation across orders, per-line picked/packed quantities, parcel number and derived processing status.
+- Local JSON atomic persistence; CSV import accepts UTF-8, UTF-8 BOM and GB18030, validates the entire batch and rejects duplicate line IDs; exports order detail, SKU picking summary and packing list with spreadsheet-formula protection.
+- SHA256 backup/restore rejects malformed or tampered backup payloads without replacing current data. Added strict JSON-root/item-shape validation so malformed local JSON or backups produce a controlled ValueError rather than an unhandled AttributeError.
+- Updated toolbox launcher, series C catalog, package inspector defaults, 37-product manual index and Chinese product manual.
+- Added regression coverage for quantity boundaries, SKU/variant grouping, status/progress, persistence, CSV encodings and formula safety, all-or-nothing import, duplicate IDs, three exports, backup integrity, malformed JSON structures and self-test.
+- PR candidate Mainland run [#553](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45603080614): 39/39 jobs succeeded. The pick-pack job reported 132 passed, `SELF_TEST_OK`, PyInstaller 6.22.3, and frozen EXE self-test exit code 0.
+- Authoritative main pick-pack job [139169679309](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45603914036/job/139169679309): 132 passed in 1.66s; source self-test passed; standard EXE build succeeded; frozen EXE self-test logged `FROZEN_EXE_SELF_TEST_OK` and exited 0.
+- Main pick-pack artifact [15016454134](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45603914036/artifacts/15016454134): 29,589,527 bytes; outer SHA256 `eb37fe949cc2d02d4660a6ebb8271142a5d7d1ebd294182779367dddaab18d43`; outer ZIP CRC passed. Inner delivery ZIP: 14,787,830 bytes, SHA256 `2d510be2475f59e07916c12fd686a2db4c0dfba054baf2fc914a925b5968e7b4`; inner ZIP CRC passed. EXE: 15,071,562 bytes, SHA256 `ff2dfa1d934f0d2c24a2b75c4a64ba9cb9db9648058a597f2c4b1b0f516a1c26`. Product manual: 3,423 bytes, SHA256 `9de097fbc29d96df519d886bef9bdb32dc5d9300cf304ee6fc116dd1ce048134`.
+
+## Latest main Mainland Windows EXE — run #554
+
+- [Mainland Windows EXE run #554](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45603914036), run ID `45603914036`, push head `6d11c8c17a2abb4b842c7bcf4bbce341f7cacb25`, completed success: **39/39 jobs**, zero failed jobs (38 Windows product/launcher builds + customer package).
+- Package job `139171486617` passed catalog creation, ZIP inspection, upload, post-upload re-download verification, chunking and grouping. Log confirmed `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK` and `MAINLAND_PACKAGE_CHUNKING_OK parts=30 bytes=615658663 sha256=b8233ddd7984d3468a11b822a1d7ba3d6298c7910f4e48e5b9f0d0932bdcc591`.
+- Customer artifact [15017002974](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45603914036/artifacts/15017002974): 615,834,701 bytes; GitHub artifact digest `sha256:31b0941dcc0d1c03a8e45a89b34ea138b3551c288d0fbb50162d0160266aaaa6`. Workflow re-downloaded the uploaded artifact and verified byte-for-byte equality with the inspected ZIP.
+- Manifest artifact [15017695297](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45603914036/artifacts/15017695297): 4,477 bytes; digest `sha256:d3a5e4f7808e09f18bb2f5d3abda97957ab429eba4e0af990063392a9ae88a9d`.
+- Eight part-group artifacts: 01 [15016204418], 02 [15017555693], 03 [15016003723], 04 [15017152200], 05 [15017301930], 06 [15017356711], 07 [15016073555], 08 [15017262033]. All eight downloaded group ZIPs passed CRC. All 30 chunk sizes and SHA256 values matched the manifest.
+- Reassembled inner `Phase1-Mainland-Windows-Tools.zip`: 615,658,663 bytes; SHA256 `b8233ddd7984d3468a11b822a1d7ba3d6298c7910f4e48e5b9f0d0932bdcc591`; ZIP CRC passed. It contains 82 entries (80 files, 2 directories), **38 EXEs** (37 business tools + 1 efficiency-toolbox launcher), and **38 product/launcher manuals** (37 product manuals + launcher manual; the manual-index README is separate). All EXE and manual paths match the inspection manifest. Every ZIP entry timestamp is `2026-11-25 11:27:10 UTC` (19:27:10 China time).
+- Verified catalog: A office efficiency 5 tools / suggested ¥29.9; B store operations 14 / ¥29.9; C finance and transactions 11 / ¥29.9; D contracts/construction/property 4 / ¥29.9; E customer and personal affairs 3 / ¥19.9; F all 37 business tools + launcher / ¥39.9. The new pick-pack utility is in series C. Prices remain unvalidated suggestions, not actual Xianyu sales.
+- The separate `mainland-phase1-series-packages` artifact [15016893213] (601,173,652 bytes) was generated but was not independently downloaded/CRC-checked in this checkpoint; do not claim separate category-package verification.
+
+## Latest Autonomous Business Engine — run #554
+
+- [ABE run #554](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45603914044), run ID `45603914044`, push head `6d11c8c17a2abb4b842c7bcf4bbce341f7cacb25`, build/deploy **2/2 success**.
+- Build job `139169677402`: `879 passed in 5.71s`; opportunity-source output reported `error: null`; generated 12 product pages with live Stripe checkout links and 12 Xianyu listing files.
+- Pages artifact [15016127807](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45603914044/artifacts/15016127807): 46,374 bytes; SHA256 `34adbe5345ed5e788eac51b312e78de5e4d9dfb8f65f3e5d24c28345d9b7471b`. Downloaded and checked: outer ZIP CRC passed; inner TAR has 198 entries, including 17 `product.json` and 12 `listing.txt`. Deploy job `139169930243` succeeded.
+
+## Failure-log review
+
+- Historical Mainland run #517 [45312641424](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45312641424) failed in package-inspection tests because old fixtures still expected 36 EXEs while the package actually contained 37; the same stale expected count caused downstream assertion mismatches (e.g. 4 failed / 103 passed in one job and 4 failed / 144 passed in another).
+- PR #137 updated the package inspector, test fixtures, workflow expected counts, launcher and series catalog to 38 EXEs/manuals. Candidate run #553 and main run #554 then passed all 39 jobs. This historical count failure is resolved.
+- Mainland runs #550 and #551 were cancelled by concurrency when newer PR heads superseded them; they were not build failures.
+- Only upstream GitHub Actions Node.js 20 deprecation warnings were observed in successful jobs.
+
+## Authorization and final acceptance — still blocked
+
+- Current `src/license.py` embedded Ed25519 public-key DER SHA256: `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`.
+- Current `config/mainland_license_public_key.pem` DER SHA256: `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`. They still differ.
+- No seller private key was read, requested, uploaded, guessed, created, replaced, or rotated. No production public key was changed.
+- Code-side license path, product-ID and signature-verification tests continue. **The release remains 待最终验收 and is not approved as a fully accepted commercial Xianyu release.** CI frozen-EXE self-tests are not a substitute for real Windows GUI/data-flow acceptance and real production issue/activate/exit/restart/re-verify.
+- Required seller-side operation: on the trusted Windows PC that already holds the seller signing key, export only the public key PEM or SHA256 fingerprint and provide that public value for comparison. Never send or upload the private key.
+
+---
+
 # Latest checkpoint — 2026-11-25 (PR #134 merged; main Mainland Windows run #546 and ABE #550 verified)
 
 ## Repository state

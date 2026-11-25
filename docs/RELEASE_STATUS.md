@@ -2,7 +2,7 @@
 
 ## Repository state
 
-- Default branch: `main`; verified main HEAD and product-code HEAD: `96efb94cb21ccc9358f51b68d42a4a81251612f0`.
+- Product-code commit used by verified main run #546: `96efb94cb21ccc9358f51b68d42a4a81251612f0`; the release artifacts below were built from this exact code commit. This documentation-only PR records that release checkpoint and may move the `main` HEAD without changing the product-code commit.
 - PR [#134 Add counterparty-level contract cash-flow aging summary](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/134) merged at `96efb94cb21ccc9358f51b68d42a4a81251612f0`. The contract ledger now shows a counterparty summary grouped by contract, counterparty and direction, with aging buckets and a formula-safe atomic CSV export.
 - Current open PR: [#135 Add overdue priority metrics to contract cash-flow aging summary](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/135), current head `81f43c61995e83415edc2f404cc58e493f2afa21`. It adds overdue-node count, earliest overdue date and maximum overdue days. The current PR Mainland run #548 is still queued/in progress; do not merge until the latest-head run and full customer package pass.
 - PR #135 run #547 (older head `60c59b3c7cf54468c9070c842e3a297040af25af`) was cancelled when the GUI window width was reduced to keep the report usable on common laptop displays. Its contract-ledger job had passed 176 tests and frozen-EXE self-test, but that run is superseded by #548 and is not the current PR acceptance result.

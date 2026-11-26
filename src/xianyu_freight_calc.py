@@ -36,7 +36,7 @@ QUOTE_FIELDS = (
     "运费差额(元)", "试算日期", "备注",
 )
 RATE_REQUIRED = set(RATE_FIELDS[:9])
-QUOTE_REQUIRED = {"订单编号", "承运商", "目的地区", "实重(kg)", "长(cm)", "宽(cm)", "高(cm)"}
+QUOTE_REQUIRED = set(QUOTE_FIELDS) - {"试算编号", "商品/SKU", "实际运费(元)", "运费差额(元)", "试算日期", "备注"}
 
 
 def _text(value, label: str, limit: int = 160) -> str:
@@ -213,6 +213,8 @@ def calculate_freight(package: dict, rate: dict) -> dict:
     tariff = normalize_rate(rate)
     carrier = _text(package.get("承运商"), "承运商", 60)
     destination = _text(package.get("目的地区"), "目的地区", 120)
+    if carrier not in CARRIERS:
+        raise ValueError("承运商不在内置列表中")
     if carrier != tariff["承运商"] and tariff["承运商"] != "全部承运商":
         raise ValueError("费率规则承运商与包裹承运商不一致")
     if tariff["目的地区关键词"] != "全国" and tariff["目的地区关键词"] not in destination:
@@ -273,11 +275,15 @@ def normalize_quote(raw: dict) -> dict:
     for field in ("订单编号", "承运商", "目的地区", "费率规则编号"):
         if not row[field]:
             raise ValueError(f"{field}不能为空")
+    numeric_values = {}
     for field, label in (("实重(kg)", "实重"), ("长(cm)", "长度"), ("宽(cm)", "宽度"), ("高(cm)", "高度"), ("抛重系数(cm³/kg)", "抛重系数"), ("首重(kg)", "首重"), ("续重单位(kg)", "续重单位"), ("体积重(kg)", "体积重"), ("计费重量(kg)", "计费重量")):
         number = _decimal(row[field], label)
         if number <= 0:
             raise ValueError(f"{label}必须大于 0")
+        numeric_values[field] = number
         row[field] = _quantity(number, label, minimum=Decimal("0.001"))
+    if numeric_values["实重(kg)"] > Decimal("1000") or any(numeric_values[field] > Decimal("10000") for field in ("长(cm)", "宽(cm)", "高(cm)")):
+        raise ValueError("重量或尺寸超出支持范围")
     for field, label in (("首费(元)", "首费"), ("续费(元)", "续费"), ("附加费(元)", "附加费"), ("预估运费(元)", "预估运费")):
         number = _decimal(row[field], label)
         if number < 0:
@@ -356,6 +362,12 @@ class FreightStore:
         if len(quote_ids) != len(set(quote_ids)):
             raise ValueError("试算编号重复")
 
+    def _ensure_external_path(self, path: Path) -> Path:
+        target = Path(path)
+        if target.resolve() == self.path.resolve():
+            raise ValueError("导出或备份目标不能覆盖软件当前数据文件")
+        return target
+
     def _commit(self, rates=None, rows=None):
         new_rates = [normalize_rate(item) for item in (self.rates if rates is None else rates)]
         new_rows = [normalize_quote(item) for item in (self.rows if rows is None else rows)]
@@ -427,8 +439,10 @@ class FreightStore:
             except UnicodeDecodeError as exc:
                 raise ValueError("CSV 不是可识别的 UTF-8 或 GB18030 编码") from exc
         reader = csv.DictReader(io.StringIO(text, newline=""))
-        if not reader.fieldnames or not QUOTE_REQUIRED.issubset(reader.fieldnames):
-            raise ValueError("CSV 必须包含订单编号、承运商、目的地区、实重和包裹长宽高")
+        if not reader.fieldnames or len(reader.fieldnames) != len(set(reader.fieldnames)):
+            raise ValueError("CSV 表头为空或包含重复列名")
+        if not QUOTE_REQUIRED.issubset(reader.fieldnames):
+            raise ValueError("CSV 必须包含完整报价字段；试算编号、商品/SKU、实际运费、差额、日期和备注可留空")
         imported, seen = [], {row["试算编号"] for row in self.rows}
         for index, source in enumerate(reader, start=2):
             row = {field: _restore_safe_text(source.get(field, "")) for field in QUOTE_FIELDS}
@@ -453,6 +467,7 @@ class FreightStore:
         self._commit(rows=candidate)
 
     def export_csv(self, path: Path) -> int:
+        path = self._ensure_external_path(path)
         buffer = io.StringIO(newline="")
         writer = csv.DictWriter(buffer, fieldnames=QUOTE_FIELDS)
         writer.writeheader()
@@ -473,7 +488,9 @@ class FreightStore:
             except UnicodeDecodeError as exc:
                 raise ValueError("CSV 不是可识别的 UTF-8 或 GB18030 编码") from exc
         reader = csv.DictReader(io.StringIO(text, newline=""))
-        if not reader.fieldnames or not RATE_REQUIRED.issubset(reader.fieldnames):
+        if not reader.fieldnames or len(reader.fieldnames) != len(set(reader.fieldnames)):
+            raise ValueError("费率 CSV 表头为空或包含重复列名")
+        if not RATE_REQUIRED.issubset(reader.fieldnames):
             raise ValueError("费率 CSV 必须包含规则编号、承运商、地区关键词、抛重系数、首重首费和续重单位续费")
         imported, seen = [], {rate["规则编号"] for rate in self.rates}
         for index, source in enumerate(reader, start=2):
@@ -492,6 +509,7 @@ class FreightStore:
         return len(imported)
 
     def export_rate_csv(self, path: Path) -> int:
+        path = self._ensure_external_path(path)
         buffer = io.StringIO(newline="")
         writer = csv.DictWriter(buffer, fieldnames=RATE_FIELDS)
         writer.writeheader()
@@ -501,12 +519,18 @@ class FreightStore:
         return len(self.rates)
 
     def backup(self, path: Path) -> None:
+        path = self._ensure_external_path(path)
         data = {"format": BACKUP_FORMAT, "version": VERSION, "rates": self.rates, "items": self.rows}
         payload = {**data, "sha256": hashlib.sha256(_canonical(data)).hexdigest()}
-        _atomic_write(Path(path), _canonical(payload))
+        encoded = _canonical(payload)
+        if len(encoded) > MAX_BYTES:
+            raise ValueError("备份文件超过 50 MB 限制")
+        _atomic_write(path, encoded)
 
     def restore(self, path: Path) -> int:
         try:
+            if Path(path).stat().st_size > MAX_BYTES:
+                raise ValueError("备份文件超过 50 MB 限制")
             payload = json.loads(Path(path).read_text(encoding="utf-8"))
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise ValueError(f"无法读取备份：{exc}") from exc

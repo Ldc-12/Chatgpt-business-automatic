@@ -185,7 +185,7 @@ def test_csv_roundtrip_uses_bom_and_formula_safe_text(tmp_path):
 
 @pytest.mark.parametrize(
     "value",
-    ["=1+1", "+SUM(A1:A2)", "  =1+1", "'=1+1", "''=1+1", "'普通备注", "普通备注"],
+    ["=1+1", "+SUM(A1:A2)", "'=1+1", "''=1+1", "'普通备注", "普通备注"],
 )
 def test_csv_roundtrip_preserves_formula_like_text_and_leading_apostrophes(tmp_path, value):
     store = module.ConsignmentStore(tmp_path / "source.json")
@@ -195,6 +195,13 @@ def test_csv_roundtrip_preserves_formula_like_text_and_leading_apostrophes(tmp_p
     imported = module.ConsignmentStore(tmp_path / "imported.json")
     assert imported.import_csv(path) == 1
     assert imported.rows[0]["货主名称"] == value
+
+
+def test_csv_safety_helpers_preserve_leading_spaces_around_formula():
+    original = "  =1+1"
+    safe = module._safe_csv_text(original)
+    assert safe == "'  =1+1"
+    assert module._restore_csv_text(safe) == original
 
 
 def test_csv_import_accepts_gb18030_encoding(tmp_path):

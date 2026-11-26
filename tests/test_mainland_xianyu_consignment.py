@@ -204,6 +204,20 @@ def test_csv_safety_helpers_preserve_leading_spaces_around_formula():
     assert module._restore_csv_text(safe) == original
 
 
+def test_csv_import_checks_size_before_reading_file_bytes(tmp_path, monkeypatch):
+    path = tmp_path / "oversized.csv"
+    path.write_bytes(b"x" * 9)
+    monkeypatch.setattr(module, "MAX_BYTES", 8)
+
+    def unexpected_read(_self):
+        raise AssertionError("oversized CSV should be rejected before reading")
+
+    monkeypatch.setattr(type(path), "read_bytes", unexpected_read)
+    store = module.ConsignmentStore(tmp_path / "store.json")
+    with pytest.raises(ValueError, match="50 MiB"):
+        store.import_csv(path)
+
+
 def test_csv_import_accepts_gb18030_encoding(tmp_path):
     store = module.ConsignmentStore(tmp_path / "store.json")
     path = tmp_path / "gb18030.csv"

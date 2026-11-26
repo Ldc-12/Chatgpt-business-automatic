@@ -675,3 +675,5 @@ def test_xianyu_freight_readme_discloses_manual_tariff_scope():
     assert "体积重" in text
     assert "手工录入" in text
     assert "不连接快递公司" in text
+    assert "\\n" not in text
+    assert "闲鱼退货退款跟进助手.json”“闲鱼订单拣货与打包清单助手.json" in workflow

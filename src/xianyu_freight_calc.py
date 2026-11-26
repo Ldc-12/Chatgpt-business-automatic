@@ -289,10 +289,47 @@ def normalize_quote(raw: dict) -> dict:
         if number < 0:
             raise ValueError(f"{label}不能为负数")
         row[field] = _money(number, label)
+    if (
+        numeric_values["抛重系数(cm³/kg)"] > Decimal("1000000")
+        or numeric_values["首重(kg)"] > Decimal("1000")
+        or numeric_values["续重单位(kg)"] > Decimal("1000")
+    ):
+        raise ValueError("费率快照超出支持范围")
     actual = _decimal(row["实际运费(元)"], "实际运费", allow_blank=True)
     if actual is not None and actual < 0:
         raise ValueError("实际运费不能为负数")
     row["实际运费(元)"] = "" if actual is None else _money(actual, "实际运费")
+
+    volume_weight = (
+        numeric_values["长(cm)"] * numeric_values["宽(cm)"] * numeric_values["高(cm)"]
+        / numeric_values["抛重系数(cm³/kg)"]
+    )
+    if volume_weight.quantize(Decimal("0.001"), rounding=ROUND_HALF_UP) <= 0:
+        raise ValueError("计算出的体积重小于 0.001 kg，请核对尺寸和抛重系数")
+    expected_volume = _quantity(volume_weight, "体积重")
+    if row["体积重(kg)"] != expected_volume:
+        raise ValueError("体积重与包裹尺寸和抛重系数不一致")
+
+    billable_basis = max(numeric_values["实重(kg)"], volume_weight)
+    first_weight = numeric_values["首重(kg)"]
+    step = numeric_values["续重单位(kg)"]
+    extra_units = (
+        int(((billable_basis - first_weight) / step).to_integral_value(rounding=ROUND_CEILING))
+        if billable_basis > first_weight else 0
+    )
+    expected_billable = _quantity(first_weight + Decimal(extra_units) * step, "计费重量")
+    if row["计费重量(kg)"] != expected_billable:
+        raise ValueError("计费重量与实重、体积重和续重单位不一致")
+
+    expected_fee = _money(
+        Decimal(row["首费(元)"])
+        + Decimal(extra_units) * Decimal(row["续费(元)"])
+        + Decimal(row["附加费(元)"]),
+        "预估运费",
+    )
+    if row["预估运费(元)"] != expected_fee:
+        raise ValueError("预估运费与费率快照不一致")
+
     row["运费差额(元)"] = "" if actual is None else _money(actual - Decimal(row["预估运费(元)"]), "运费差额")
     row["试算日期"] = _date(row["试算日期"] or date.today().isoformat(), "试算日期")
     return row
@@ -344,6 +381,8 @@ class FreightStore:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
             if not isinstance(payload, dict) or payload.get("version") != VERSION or not isinstance(payload.get("rates"), list) or not isinstance(payload.get("items"), list):
                 raise ValueError("数据文件版本或结构不受支持")
+            if len(payload["rates"]) > MAX_ROWS or len(payload["items"]) > MAX_ROWS:
+                raise ValueError("数据文件记录数量超过上限")
             if any(not isinstance(item, dict) for item in payload["rates"] + payload["items"]):
                 raise ValueError("数据文件明细结构无效")
             rates = [normalize_rate(item) for item in payload["rates"]]

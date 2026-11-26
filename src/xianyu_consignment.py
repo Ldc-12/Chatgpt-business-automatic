@@ -147,6 +147,8 @@ def normalize_row(raw: dict) -> dict:
     if sold:
         if not row["成交日期"] or sale_amount <= 0:
             raise ValueError("已售商品必须填写成交日期和大于 0 的实际成交金额")
+        if row["成交日期"] < row["收货日期"]:
+            raise ValueError("成交日期不能早于收货日期")
         if row["退回日期"]:
             raise ValueError("已售商品不能同时填写退回日期")
         if row["结算期限"] and row["结算期限"] < row["成交日期"]:

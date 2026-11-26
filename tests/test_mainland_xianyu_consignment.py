@@ -170,8 +170,9 @@ def test_store_persists_updates_deletes_and_rejects_duplicate_ids(tmp_path):
 
 
 def test_csv_roundtrip_uses_bom_and_formula_safe_text(tmp_path):
+    original_name = "=HYPERLINK(\"https://bad.example\",\"click\")"
     store = module.ConsignmentStore(tmp_path / "consignments.json")
-    store.add(sample(**{"货主名称": "=HYPERLINK(\"https://bad.example\",\"click\")"}))
+    store.add(sample(**{"货主名称": original_name}))
     path = tmp_path / "consignments.csv"
     store.export_csv(path)
     raw = path.read_bytes()
@@ -179,8 +180,33 @@ def test_csv_roundtrip_uses_bom_and_formula_safe_text(tmp_path):
     assert "'=HYPERLINK" in raw.decode("utf-8-sig")
     imported = module.ConsignmentStore(tmp_path / "imported.json")
     assert imported.import_csv(path) == 1
-    assert imported.rows[0]["货主名称"].startswith("'=")
+    assert imported.rows[0]["货主名称"] == original_name
 
+
+@pytest.mark.parametrize(
+    "value",
+    ["=1+1", "+SUM(A1:A2)", "  =1+1", "'=1+1", "''=1+1", "'普通备注", "普通备注"],
+)
+def test_csv_roundtrip_preserves_formula_like_text_and_leading_apostrophes(tmp_path, value):
+    store = module.ConsignmentStore(tmp_path / "source.json")
+    store.add(sample(**{"货主名称": value}))
+    path = tmp_path / "export.csv"
+    store.export_csv(path)
+    imported = module.ConsignmentStore(tmp_path / "imported.json")
+    assert imported.import_csv(path) == 1
+    assert imported.rows[0]["货主名称"] == value
+
+
+def test_csv_import_accepts_gb18030_encoding(tmp_path):
+    store = module.ConsignmentStore(tmp_path / "store.json")
+    path = tmp_path / "gb18030.csv"
+    with path.open("w", encoding="gb18030", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=module.FIELDS)
+        writer.writeheader()
+        writer.writerow(sample(**{"货主名称": "广州寄售货主", "备注": "中文备注"}))
+    assert store.import_csv(path) == 1
+    assert store.rows[0]["货主名称"] == "广州寄售货主"
+    assert store.rows[0]["备注"] == "中文备注"
 
 def test_csv_import_rejects_invalid_rows_and_duplicate_records_atomically(tmp_path):
     store = module.ConsignmentStore(tmp_path / "consignments.json")

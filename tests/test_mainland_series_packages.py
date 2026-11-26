@@ -20,11 +20,11 @@ def _make_inputs(tmp_path):
     return release, manuals, output
 
 
-def test_series_catalog_covers_all_38_products_once():
+def test_series_catalog_covers_all_39_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 38
-    assert len(assigned) == 38
+    assert len(MODULE.PRODUCTS) == 39
+    assert len(assigned) == 39
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "38 款业务软件 + 工具箱启动器" in catalog
+    assert "39 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -177,8 +177,8 @@ def test_static_series_catalog_lists_each_business_product_once():
     catalog = catalog_path.read_text(encoding="utf-8")
     for name, _, _ in MODULE.PRODUCTS.values():
         assert catalog.count(f"- {name}\n") == 1, name
-    assert "| C | 财务与交易系列 | 12 |" in catalog
-    assert "| F | 全系列综合套餐 | 38 款业务软件 + 工具箱启动器 |" in catalog
+    assert "| C | 财务与交易系列 | 13 |" in catalog
+    assert "| F | 全系列综合套餐 | 39 款业务软件 + 工具箱启动器 |" in catalog
 
 
 
@@ -227,7 +227,7 @@ def test_finance_series_contains_xianyu_pick_pack_checklist():
     assert "xianyu-pick-pack" in finance["products"]
     assert MODULE.PRODUCTS["xianyu-pick-pack"][1] == "MainlandXianyuPickPackAssistant.exe"
     assert MODULE.PRODUCTS["xianyu-pick-pack"][2] == "37-闲鱼订单拣货与打包清单助手-用户说明书.md"
-    assert len(finance["products"]) == 12
+    assert len(finance["products"]) == 13
 
 
 def test_finance_series_contains_xianyu_freight_calculator():
@@ -235,4 +235,12 @@ def test_finance_series_contains_xianyu_freight_calculator():
     assert "xianyu-freight-calc" in finance["products"]
     assert MODULE.PRODUCTS["xianyu-freight-calc"][1] == "MainlandXianyuFreightCalculator.exe"
     assert MODULE.PRODUCTS["xianyu-freight-calc"][2] == "38-闲鱼运费试算与包装规格助手-用户说明书.md"
-    assert len(finance["products"]) == 12
+    assert len(finance["products"]) == 13
+
+
+def test_finance_series_contains_xianyu_consignment_settlement():
+    finance = next(item for item in MODULE.SERIES if item["code"] == "C")
+    assert "xianyu-consignment" in finance["products"]
+    assert MODULE.PRODUCTS["xianyu-consignment"][1] == "MainlandXianyuConsignmentSettlement.exe"
+    assert MODULE.PRODUCTS["xianyu-consignment"][2] == "39-闲鱼寄售代卖结算助手-用户说明书.md"
+    assert len(finance["products"]) == 13

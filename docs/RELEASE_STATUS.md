@@ -2318,3 +2318,44 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - 授权仍未解除：`src/license.py` 内嵌 Ed25519 公钥 DER SHA256 `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`；`config/mainland_license_public_key.pem` DER SHA256 `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`。两者仍不一致。
 - 未读取、上传、猜测、生成、替换或轮换任何生产私钥/公钥。仍需用户在可信 Windows 电脑用原有本地私钥导出公钥 PEM 或 SHA256 指纹进行比对；绝不上传私钥。
 - **当前 main 客户包仍标记为“待最终验收”，不是正式可销售版。**尚未在可信真实 Windows 电脑完成生产密钥匹配、真实签发/激活、退出重启后复验，以及逐款 GUI 和数据流程验收。CI 冻结 EXE 自检不等同于真实用户端最终验收。
+
+
+---
+
+## 2026-11-26 — PR #142 merged; current main Windows package and ABE verification
+
+**Product-code main commit:** `33a3d938c86e938ad355b4effad8856ebc085e55`  
+**Merged PR:** [#142 — Add offline Xianyu freight and package-size calculator](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/142)  
+**PR merge method:** squash  
+**PR candidate validation:** [Mainland Windows EXE run #565](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45748710869) — 40/40 jobs succeeded, 0 failed. Freight calculator job #139671057480: 144 tests passed, source self-test passed, PyInstaller succeeded, frozen EXE process exited 0. Candidate customer package artifact ID `15084423603` was independently reassembled from 31 chunks / 8 groups and checked against manifest SHA256 `54a5f4082ade743de130b00ee1daa393273307a3077e9a8d54d59c33512d6097`; CRC passed, 39 EXEs and 39 manuals.
+
+### Main push release — Windows EXE
+
+[Mainland Windows EXE run #566](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45749436307)  
+- Main commit: `33a3d938c86e938ad355b4effad8856ebc085e55`
+- Workflow result: 40/40 jobs succeeded; 0 failed; 0 unfinished.
+- Freight calculator Windows job: #139673390650; 144 tests passed; `SELF_TEST_OK`; PyInstaller build succeeded; `FROZEN_EXE_SELF_TEST_OK`, process exit code 0.
+- Standalone freight EXE artifact ID: `15084976862`, 29,618,319 bytes, artifact SHA256 `0cdaa20d05274b19fb0f38cc6d9ba3f75f86f9f85d6b9812f09c364d270aa0f5`. Downloaded ZIP CRC passed; it contains the EXE, mainland README and Chinese manual. EXE SHA256: `a7f66ed6f5b99e2c137255506eaec27266dd875c605cf15c9d6a4676f26a4fde`; nested delivery ZIP SHA256: `9653d2984511040afefd5ac0e39608cd7426804f587ab76989599f599ade9902`, CRC passed.
+- Main customer package artifact ID: `15085207006`, 630,640,691 bytes, artifact SHA256 `f3f3f5174542d1fc736be2c9632a2b07d93b61379b6e2bb9633afd20ebc5e2af`.
+- Manifest artifact ID: `15084967508`, 4,552 bytes, artifact SHA256 `4959bdd0ead8be7b679a5fcbc076416f4018d0671144e78d6970f437cce87860`.
+- Independent category ZIP artifact ID: `15084557944`, 615,982,511 bytes, artifact SHA256 `7523f2cc6ecac3bab8c04a93e6a103129f87d686eb81dd83050366f03549b255`.
+- Manifest inner customer ZIP: 630,461,069 bytes; SHA256 `e83b822545c632f9fefb836a13ed1429c03b328309c79ce8778e8ae6ade0906d`; CRC passed; 84 entries / 82 files; 39 EXEs / 39 product manuals. All 31 chunks across 8 groups were individually size/SHA256 checked and reassembled to the exact manifest byte count and SHA256. ZIP entry timestamps: 2026-11-26 03:34:42 UTC.
+- Package job #139674300465 logged `MAINLAND_PACKAGE_INSPECTION_OK`, `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK` (uploaded artifact byte-for-byte matched the inspected ZIP) and `MAINLAND_PACKAGE_CHUNKING_OK`.
+- Actual bundle catalog: A office efficiency 5 tools; B store operations 14; C finance/trading 12; D contracts/construction/property 4; E customer/personal 3; F 38 business tools + toolbox launcher. Suggested prices: A–D ¥29.9, E ¥19.9, F ¥39.9; all are unvalidated market-test suggestions, not proven sales prices.
+
+### Main push release — Autonomous Business Engine
+
+[Autonomous Business Engine run #558](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45749436348)  
+- Main commit: `33a3d938c86e938ad355b4effad8856ebc085e55`
+- Build/deploy: 2/2 succeeded.
+- Build job #139673390102: 912 tests passed; product factory and Xianyu factory completed.
+- Market-source status: `fallback: HTTPError`; HN RSS returned HTTP 502 and the engine used its built-in fallback data. This did not fail the build/deploy.
+- Pages artifact ID: `15084222997`, 46,393 bytes, artifact SHA256 `82bee861c8d31a6f32f5c8716a2fb5e9370f52d64335e5cee5d0eb47a291df04`. Downloaded ZIP CRC passed; `artifact.tar` is 307,200 bytes, SHA256 `4cdebd36696c146696730fa2c13150f1d60bd7be752bd69268e9faaf9ecfa0d8`, with 198 tar entries (17 product.json and 12 listing.txt files).
+
+### Remaining release blockers — pending final acceptance
+
+- `src/license.py` embedded public key fingerprint remains `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`.
+- `config/mainland_license_public_key.pem` fingerprint remains `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`.
+- The mismatch is intentionally unchanged; no seller private key or production public key was requested, uploaded, generated or replaced.
+- Genuine Windows GUI/use-flow acceptance is not yet evidenced. Real seller-key match, license issue/activate, close/restart and post-restart verification remain incomplete.
+- **Release status: PENDING FINAL ACCEPTANCE.** The successful main Windows package is technically verified, but it is not yet authorized for sale/listing until the GUI and seller-key/license acceptance gates pass.

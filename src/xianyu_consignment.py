@@ -184,12 +184,16 @@ def normalize_row(raw: dict) -> dict:
 def calculate_item(raw: dict) -> dict:
     row = normalize_row(raw)
     sold = row["商品状态"] == "已售"
-    sale = Decimal(row["实际成交金额(元)"]) if sold else Decimal("0")
-    fees = Decimal(row["平台实际费用(元)"])
-    freight = Decimal(row["发货运费(元)"])
-    preparation = Decimal(row["包装整备成本(元)"])
-    agreed = Decimal(row["货主约定结算额(元)"]) if sold else Decimal("0")
-    paid = Decimal(row["已结算金额(元)"]) if sold else Decimal("0")
+    if sold:
+        sale = Decimal(row["实际成交金额(元)"])
+        fees = Decimal(row["平台实际费用(元)"])
+        freight = Decimal(row["发货运费(元)"])
+        preparation = Decimal(row["包装整备成本(元)"])
+        agreed = Decimal(row["货主约定结算额(元)"])
+        paid = Decimal(row["已结算金额(元)"])
+    else:
+        # Do not recognize selling costs or margin before an actual sale.
+        sale = fees = freight = preparation = agreed = paid = Decimal("0")
     net_proceeds = sale - fees - freight - preparation
     due = agreed - paid
     margin = net_proceeds - agreed

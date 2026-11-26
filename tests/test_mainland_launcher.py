@@ -31,6 +31,7 @@ def test_launcher_lists_every_business_exe():
         "MainlandXianyuReturnFollowup.exe",
         "MainlandXianyuPickPackAssistant.exe",
         "MainlandXianyuFreightCalculator.exe",
+        "MainlandXianyuConsignmentSettlement.exe",
         "MainlandQuotationGenerator.exe",
         "MainlandExpenseReimbursement.exe",
         "MainlandRepairWorkOrderManager.exe",
@@ -51,7 +52,7 @@ def test_launcher_lists_every_business_exe():
     ]
     actual = [exe for _, exe in module.TOOLS]
     assert actual == expected
-    assert len(module.TOOLS) == 38
+    assert len(module.TOOLS) == 39
 
 
 def test_frozen_launcher_resolves_sibling_exes_next_to_launcher(tmp_path, monkeypatch):

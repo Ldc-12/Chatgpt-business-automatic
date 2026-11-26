@@ -395,9 +395,9 @@ class ConsignmentStore:
 
     def import_csv(self, path):
         source = Path(path)
-        raw_bytes = source.read_bytes()
-        if len(raw_bytes) > MAX_BYTES:
+        if source.stat().st_size > MAX_BYTES:
             raise ValueError("CSV 文件超过 50 MiB，拒绝导入")
+        raw_bytes = source.read_bytes()
         try:
             csv_text = raw_bytes.decode("utf-8-sig")
         except UnicodeDecodeError:

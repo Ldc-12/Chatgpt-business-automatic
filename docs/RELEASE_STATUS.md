@@ -2373,7 +2373,7 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 ### Main push release — Windows EXE
 
 [Mainland Windows EXE run #574](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45815453400)  
-- Main HEAD: `a86d4b5cde358573a02908d326eb19320b510015`; run head matches main.
+- Product-code commit built by run #574: `a86d4b5cde358573a02908d326eb19320b510015`; run head matches this product-code commit. Current main later received only the documentation commit `1818e8d620977f154d19b994654c1c8ce5e3d29d` (`[skip ci]`); no product source changed after the verified build.
 - Workflow result: 41/41 jobs succeeded; 0 failed.
 - New consignment assistant job #139893927323: 149 tests passed in 1.80s; `SELF_TEST_OK`; PyInstaller 6.22.3; `FROZEN_EXE_SELF_TEST_OK`, process exit code 0.
 - Single-product artifact ID `15115107166`, 29,609,890 bytes; artifact SHA256 `b12b197473b4151110dcf704136a5fa169d0fa3b5a6fa6852bc12a5916a54bf0`. Downloaded outer ZIP CRC passed. Nested delivery ZIP is 14,798,485 bytes, SHA256 `6f89e0dbe46b896a4aac4cc18a71f2039280d2cadd4f966ff8dc4fb9fd417ec2`, CRC passed; it contains the EXE, mainland README and the 5,001-byte Chinese manual. EXE is 15,082,267 bytes, SHA256 `a1873147177e39cb127451dcb237a7bc67fd582980449ebb9274e9304748f0b3`.

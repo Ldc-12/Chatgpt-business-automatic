@@ -1,5 +1,6 @@
 import csv
 import json
+from pathlib import Path
 
 import pytest
 
@@ -263,3 +264,52 @@ def test_imported_quote_rejects_excessive_dimensions(tmp_path):
         writer.writerow(row)
     with pytest.raises(ValueError, match="重量或尺寸"):
         store.import_csv(path)
+
+
+@pytest.mark.parametrize("field", ["rates", "items"])
+def test_load_rejects_data_file_over_record_limit(tmp_path, monkeypatch, field):
+    monkeypatch.setattr(module, "MAX_ROWS", 1)
+    payload = {"version": module.VERSION, "rates": [], "items": []}
+    payload[field] = [{}, {}]
+    path = tmp_path / "too-many-records.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="记录数量超过上限"):
+        module.FreightStore(path)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("体积重(kg)", "3", "体积重"),
+        ("计费重量(kg)", "3", "计费重量"),
+        ("预估运费(元)", "999", "预估运费"),
+    ],
+)
+def test_quote_csv_import_rejects_tampered_derived_values_atomically(tmp_path, field, value, message):
+    source = module.FreightStore(tmp_path / "source.json")
+    source.add_rate(rate())
+    source.quote(package())
+    csv_path = tmp_path / "tampered.csv"
+    source.export_csv(csv_path)
+
+    with csv_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    rows[0][field] = value
+    with csv_path.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=module.QUOTE_FIELDS)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    target = module.FreightStore(tmp_path / "target.json")
+    target.add_rate(rate())
+    before = target.path.read_bytes()
+    with pytest.raises(ValueError, match=message):
+        target.import_csv(csv_path)
+    assert target.path.read_bytes() == before
+
+
+def test_manual_data_path_uses_valid_inline_code_and_single_windows_separators():
+    root = Path(__file__).resolve().parents[1]
+    manual = (root / "docs" / "manuals" / "38-闲鱼运费试算与包装规格助手-用户说明书.md").read_text(encoding="utf-8")
+    line = next(line for line in manual.splitlines() if line.startswith("默认数据位置："))
+    assert line == "默认数据位置：`%LOCALAPPDATA%\\MainlandBusinessTools\\xianyu_freight_calculator.json`。"

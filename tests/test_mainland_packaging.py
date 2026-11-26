@@ -693,5 +693,7 @@ def test_xianyu_consignment_product_is_in_build_matrix_launcher_license_and_seri
     assert "MainlandXianyuConsignmentSettlement" in workflow
     assert "39-闲鱼寄售代卖结算助手-用户说明书.md" in workflow
     assert "MainlandXianyuConsignmentSettlement.exe" in launcher
+    app = (root / "apps" / "闲鱼寄售代卖结算助手.py").read_text(encoding="utf-8")
+    assert '"结算状态"' in app and 'calc["结算状态"]' in app
     assert "闲鱼寄售代卖结算助手" in license_tests
     assert "xianyu-consignment" in series_builder

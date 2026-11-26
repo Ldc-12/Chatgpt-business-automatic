@@ -17,7 +17,7 @@ from src.xianyu_consignment import (
 
 PRODUCT = "闲鱼寄售代卖结算助手"
 DISPLAY_COLUMNS = (
-    "货主名称", "商品编号/SKU", "商品名称", "商品状态",
+    "货主名称", "商品编号/SKU", "商品名称", "商品状态", "结算状态",
     "实际成交金额(元)", "待结算金额(元)", "卖家毛利(元)", "结算期限",
 )
 
@@ -42,7 +42,7 @@ class App:
         area = ttk.Frame(root, padding=(8, 0, 8, 4))
         area.pack(fill="both", expand=True)
         self.tree = ttk.Treeview(area, columns=DISPLAY_COLUMNS, show="headings")
-        widths = (130, 130, 220, 90, 130, 120, 120, 110)
+        widths = (130, 130, 220, 90, 100, 130, 120, 120, 110)
         for column, width in zip(DISPLAY_COLUMNS, widths):
             self.tree.heading(column, text=column)
             self.tree.column(column, width=width, minwidth=80, stretch=False)
@@ -73,7 +73,7 @@ class App:
             margin_total += Decimal(calc["卖家毛利(元)"])
             values = [
                 row["货主名称"], row["商品编号/SKU"], row["商品名称"],
-                row["商品状态"], row["实际成交金额(元)"],
+                row["商品状态"], calc["结算状态"], row["实际成交金额(元)"],
                 calc["待结算金额(元)"], calc["卖家毛利(元)"], row["结算期限"],
             ]
             self.tree.insert("", "end", iid=row["记录编号"], values=values)

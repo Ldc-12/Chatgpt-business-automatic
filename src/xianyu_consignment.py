@@ -271,10 +271,28 @@ def owner_summary(rows: list[dict], as_of: date | None = None) -> dict:
     }
 
 
+def _is_formula_like_text(value: str) -> bool:
+    probe = value.lstrip(" \t\r\n")
+    while probe.startswith("'"):
+        probe = probe[1:]
+    probe = probe.lstrip(" \t\r\n")
+    return bool(probe) and probe[0] in ("=", "+", "-", "@")
+
+
 def _safe_csv_text(value) -> str:
     text = str("" if value is None else value)
-    probe = text.lstrip(" \t\r\n")
-    return "'" + text if probe[:1] in ("=", "+", "-", "@") else text
+    if _is_formula_like_text(text) or text.startswith("'"):
+        return "'" + text
+    return text
+
+
+def _restore_csv_text(value) -> str:
+    text = str("" if value is None else value)
+    if text.startswith("''"):
+        return text[1:]
+    if text.startswith("'") and _is_formula_like_text(text[1:]):
+        return text[1:]
+    return text
 
 
 def _atomic_write(path: Path, data: bytes) -> None:
@@ -377,24 +395,35 @@ class ConsignmentStore:
 
     def import_csv(self, path):
         source = Path(path)
-        if source.stat().st_size > MAX_BYTES:
+        raw_bytes = source.read_bytes()
+        if len(raw_bytes) > MAX_BYTES:
             raise ValueError("CSV 文件超过 50 MiB，拒绝导入")
+        try:
+            csv_text = raw_bytes.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            try:
+                csv_text = raw_bytes.decode("gb18030")
+            except UnicodeDecodeError as exc:
+                raise ValueError("CSV 编码不受支持，请使用 UTF-8 或 GB18030") from exc
         incoming = []
-        with source.open("r", encoding="utf-8-sig", newline="") as handle:
-            reader = csv.DictReader(handle)
-            if reader.fieldnames != list(FIELDS):
-                raise ValueError("CSV 表头必须与软件导出的字段和顺序完全一致")
-            for line, raw in enumerate(reader, start=2):
-                if None in raw:
-                    raise ValueError(f"第 {line} 行包含多余字段")
-                if not any(str(value or "").strip() for value in raw.values()):
-                    continue
-                try:
-                    incoming.append(normalize_row(raw))
-                except ValueError as exc:
-                    raise ValueError(f"第 {line} 行：{exc}") from exc
-                if len(incoming) > MAX_ROWS:
-                    raise ValueError(f"单次最多导入 {MAX_ROWS} 条记录")
+        reader = csv.DictReader(io.StringIO(csv_text, newline=""))
+        if reader.fieldnames != list(FIELDS):
+            raise ValueError("CSV 表头必须与软件导出的字段和顺序完全一致")
+        for line, raw in enumerate(reader, start=2):
+            if None in raw:
+                raise ValueError(f"第 {line} 行包含多余字段")
+            if not any(str(value or "").strip() for value in raw.values()):
+                continue
+            try:
+                restored = {
+                    field: _restore_csv_text(raw.get(field, ""))
+                    for field in FIELDS
+                }
+                incoming.append(normalize_row(restored))
+            except ValueError as exc:
+                raise ValueError(f"第 {line} 行：{exc}") from exc
+            if len(incoming) > MAX_ROWS:
+                raise ValueError(f"单次最多导入 {MAX_ROWS} 条记录")
         self.validate_rows(incoming)
         existing = {item["记录编号"] for item in self.rows}
         duplicates = existing.intersection(item["记录编号"] for item in incoming)

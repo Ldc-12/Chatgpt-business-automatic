@@ -2359,3 +2359,61 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - The mismatch is intentionally unchanged; no seller private key or production public key was requested, uploaded, generated or replaced.
 - Genuine Windows GUI/use-flow acceptance is not yet evidenced. Real seller-key match, license issue/activate, close/restart and post-restart verification remain incomplete.
 - **Release status: PENDING FINAL ACCEPTANCE.** The successful main Windows package is technically verified, but it is not yet authorized for sale/listing until the GUI and seller-key/license acceptance gates pass.
+
+
+---
+
+## 2026-11-26 — PR #144 merged; current main package #574 independently verified
+
+**Product-code main commit:** `a86d4b5cde358573a02908d326eb19320b510015`  
+**Merged PR:** [#144 — Add offline Xianyu consignment settlement assistant](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/144)  
+**PR candidate validation:** [Mainland Windows EXE run #573](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45814708041) — 41/41 jobs succeeded. The consignment assistant job #139891368972 completed 149 tests, `SELF_TEST_OK`, PyInstaller 6.22.3, and `FROZEN_EXE_SELF_TEST_OK` (exit code 0). Candidate package inspection reported 40 EXEs / 40 manuals and uploaded-package re-download matched byte-for-byte.  
+**Merge commit:** `a86d4b5cde358573a02908d326eb19320b510015` (squash). No open PRs remain at this check.
+
+### Main push release — Windows EXE
+
+[Mainland Windows EXE run #574](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45815453400)  
+- Main HEAD: `a86d4b5cde358573a02908d326eb19320b510015`; run head matches main.
+- Workflow result: 41/41 jobs succeeded; 0 failed.
+- New consignment assistant job #139893927323: 149 tests passed in 1.80s; `SELF_TEST_OK`; PyInstaller 6.22.3; `FROZEN_EXE_SELF_TEST_OK`, process exit code 0.
+- Single-product artifact ID `15115107166`, 29,609,890 bytes; artifact SHA256 `b12b197473b4151110dcf704136a5fa169d0fa3b5a6fa6852bc12a5916a54bf0`. Downloaded outer ZIP CRC passed. Nested delivery ZIP is 14,798,485 bytes, SHA256 `6f89e0dbe46b896a4aac4cc18a71f2039280d2cadd4f966ff8dc4fb9fd417ec2`, CRC passed; it contains the EXE, mainland README and the 5,001-byte Chinese manual. EXE is 15,082,267 bytes, SHA256 `a1873147177e39cb127451dcb237a7bc67fd582980449ebb9274e9304748f0b3`.
+- Latest main customer package artifact ID `15116216072`, 645,433,392 bytes; GitHub artifact digest SHA256 `8d7505983ad7f2b966f0c194ada75d4bf306c0dd6e427f8ccda43c19dd83c1a6`.
+- Manifest artifact ID `15115706905`, 4,584 bytes; artifact digest SHA256 `cdb0f3e75268ec93f3c839f629ede5c1d96668d122c4740a1ff7ae36d40b5ab4`.
+- Inner `Phase1-Mainland-Windows-Tools.zip`: 645,249,943 bytes; SHA256 `c3ddb5288ab7764ee78ca4169a133c8dfed175570dbb842db643762118b6af0c`; CRC passed; 86 entries (84 files, 2 directories); 40 EXEs (39 business tools + toolbox launcher); 40 product/launcher manuals. All 31 chunks across 8 groups were downloaded, each group ZIP CRC checked, every chunk byte count and SHA256 matched the manifest, and the reassembled inner ZIP matched the manifest size and SHA256 exactly.
+- Group artifact IDs: 01 `15116455685`, 02 `15116525624`, 03 `15115926721`, 04 `15116265848`, 05 `15115781756`, 06 `15116545655`, 07 `15116236046`, 08 `15115846839`.
+- ZIP entry timestamps are all `2026-11-26 12:03:14 UTC` (20:03:14 China Standard Time).
+- Package job #139895663475 logged `MAINLAND_PACKAGE_INSPECTION_OK`, `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK` (uploaded artifact byte-for-byte matched the inspected ZIP), and `MAINLAND_PACKAGE_CHUNKING_OK parts=31`.
+- Actual package catalog: A office efficiency 5 tools / suggested ¥29.9; B store operations 14 / ¥29.9; C finance & trading 13 / ¥29.9; D contracts/construction/property 4 / ¥29.9; E customer/personal matters 3 / ¥19.9; F all 39 business tools + toolbox launcher / ¥39.9. These remain suggested prices pending market validation, not confirmed transaction prices.
+- [Latest main customer package artifact](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45815453400/artifacts/15116216072); [Manifest](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45815453400/artifacts/15115706905).
+
+### Latest Autonomous Business Engine — run #561
+
+[Autonomous Business Engine run #561](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45815453471)  
+- Build/deploy: 2/2 succeeded.
+- Build job #139893927114: 947 tests passed in 6.24s; business/product/Xianyu factories completed.
+- Market source: HN RSS returned HTTP 502; engine reported `fallback: HTTPError` and used its built-in fallback data. This did not fail the build or deployment.
+- Pages artifact ID `15115716353`, 46,391 bytes; SHA256 `10b162145c14dfa16908a5a11a3a2dd73512275aff68a80b347365c143d5af40`. Downloaded ZIP CRC passed; internal TAR is 307,200 bytes with 198 entries, including 17 `product.json` and 12 `listing.txt` files. Deploy job #139894719395 succeeded.
+
+### Failure review and corrections
+
+- Historical run #560 had 39 matrix jobs fail on the same packaging regression test: `test_xianyu_freight_readme_discloses_manual_tariff_scope` raised `NameError: name 'workflow' is not defined` at `tests/test_mainland_packaging.py:679`. The test now reads the workflow file within its own function; subsequent main run #566 and #574 passed.
+- PR run #571 failed one newly added CSV round-trip assertion because the product's existing input normalizer trims leading/trailing whitespace. The test was corrected to assert the normalized round-trip and separately test formula-prefix handling with leading spaces. The subsequent candidate run #573 passed 41/41 jobs, and main run #574 passed 41/41.
+- Runs #570 and #572 were cancelled by newer commits; they are not source/build failures.
+- At this check, no open PRs and no failing jobs remain in the latest main Windows or ABE runs.
+
+### New product CSV improvements
+
+- Consignment assistant imports UTF-8, UTF-8 BOM and GB18030 CSV.
+- Formula-safe export prefixes are reversible on re-import, including original leading apostrophes.
+- CSV size is checked before reading file bytes; regression test verifies oversized input is rejected without reading.
+- Added tests for formula-like text, leading apostrophes, GB18030 Chinese text and pre-read size guard.
+- JSON persistence, backup/restore format, product ID and license keys were not changed.
+
+### Remaining release blockers — pending final acceptance
+
+- `src/license.py` embedded Ed25519 public key DER SHA256: `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`.
+- `config/mainland_license_public_key.pem` DER SHA256: `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`.
+- The mismatch remains unresolved. No private key was accessed, uploaded, guessed, generated, replaced or rotated.
+- The seller must use the original private key on a trusted Windows PC to export only its public PEM or SHA256 fingerprint with `tools/export_license_public_key.py`; do not send the private key. If the original key is not available locally, recover its existing secure backup rather than creating a replacement.
+- Real Windows seller-key match, license issue/activation, close/restart re-verification and GUI/data workflow acceptance remain incomplete.
+- **Release status: PENDING FINAL ACCEPTANCE.** The current main package is technically built and independently verified, but it is not yet authorized to be listed or represented as fully sale-ready until the seller-key and real Windows activation gates pass.

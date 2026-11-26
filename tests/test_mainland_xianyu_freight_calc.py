@@ -200,3 +200,66 @@ def test_quote_import_rejects_unknown_carrier_and_invalid_encoding(tmp_path):
     invalid.write_bytes(b"\x81\x81\x81")
     with pytest.raises(ValueError, match="编码"):
         store.import_csv(invalid)
+
+
+def test_export_and_backup_refuse_to_overwrite_live_data(tmp_path):
+    store = module.FreightStore(tmp_path / "data.json")
+    store.add_rate(rate())
+    before = store.path.read_bytes()
+    with pytest.raises(ValueError, match="不能覆盖"):
+        store.export_csv(store.path)
+    with pytest.raises(ValueError, match="不能覆盖"):
+        store.export_rate_csv(store.path)
+    with pytest.raises(ValueError, match="不能覆盖"):
+        store.backup(store.path)
+    assert store.path.read_bytes() == before
+
+
+def test_csv_import_rejects_duplicate_headers(tmp_path):
+    store = module.FreightStore(tmp_path / "data.json")
+    path = tmp_path / "duplicate-header.csv"
+    path.write_text("订单编号,订单编号,承运商\nA,B,中通快递\n", encoding="utf-8-sig")
+    with pytest.raises(ValueError, match="重复列名"):
+        store.import_csv(path)
+
+
+def test_csv_import_accepts_gb18030_exported_rows(tmp_path):
+    source = module.FreightStore(tmp_path / "source.json")
+    source.add_rate(rate())
+    source.quote(package(**{"备注": "广州客户，易碎品"}))
+    csv_path = tmp_path / "gb18030.csv"
+    source.export_csv(csv_path)
+    text = csv_path.read_text(encoding="utf-8-sig")
+    csv_path.write_bytes(text.encode("gb18030"))
+    target = module.FreightStore(tmp_path / "target.json")
+    assert target.import_csv(csv_path) == 1
+    assert target.rows[0]["备注"] == "广州客户，易碎品"
+
+
+def test_quote_import_rejects_missing_calculated_columns(tmp_path):
+    store = module.FreightStore(tmp_path / "data.json")
+    path = tmp_path / "minimal.csv"
+    path.write_text("订单编号,承运商,目的地区,实重(kg),长(cm),宽(cm),高(cm)\nXY-1,中通快递,广东,1,10,10,10\n", encoding="utf-8-sig")
+    with pytest.raises(ValueError, match="完整报价字段"):
+        store.import_csv(path)
+
+
+def test_imported_quote_rejects_excessive_dimensions(tmp_path):
+    store = module.FreightStore(tmp_path / "data.json")
+    row = {field: "" for field in module.QUOTE_FIELDS}
+    row.update({
+        "试算编号": "FQ-LARGE", "订单编号": "XY-LARGE", "承运商": "中通快递",
+        "目的地区": "广东省广州市", "费率规则编号": "FR-001", "实重(kg)": "1",
+        "长(cm)": "10001", "宽(cm)": "10", "高(cm)": "10",
+        "抛重系数(cm³/kg)": "6000", "首重(kg)": "1", "首费(元)": "8",
+        "续重单位(kg)": "0.5", "续费(元)": "2", "附加费(元)": "0",
+        "体积重(kg)": "166.683", "计费重量(kg)": "167", "预估运费(元)": "8",
+        "试算日期": "2026-11-26",
+    })
+    path = tmp_path / "large.csv"
+    with path.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=module.QUOTE_FIELDS)
+        writer.writeheader()
+        writer.writerow(row)
+    with pytest.raises(ValueError, match="重量或尺寸"):
+        store.import_csv(path)

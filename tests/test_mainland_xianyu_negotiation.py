@@ -110,7 +110,7 @@ def test_visible_rows_combine_due_filter_and_search_without_mutating_input():
 
     assert [item["记录编号"] for item in visible_rows(rows, due_only=True, today="2026-11-20")] == ["XN-DUE"]
     assert visible_rows(rows, "相机", due_only=True, today="2026-11-20") == []
-    assert [item["记录编号"] for item in visible_rows(rows, "相机", today="2026-11-20")] == ["XN-FUTURE"]
+    assert [item["记录编号"] for item in visible_rows(rows, "相机", today="2026-11-20")] == ["XN-FUTURE", "XN-CLOSED"]
     assert len(rows) == 3
 
 

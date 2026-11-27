@@ -9,7 +9,7 @@ from pathlib import Path
 
 PART_PREFIX = "Phase1-Mainland-Windows-Tools.zip.part-"
 MAX_PARTS = 48
-MAX_GROUP_BYTES = 80 * 1024 * 1024
+MAX_GROUP_BYTES = 120 * 1024 * 1024
 
 
 def _sha256(path: Path) -> str:
@@ -50,11 +50,13 @@ def group_chunks(
         raise ValueError("分片不能为空")
 
     destination.mkdir(parents=True, exist_ok=True)
-    per_group = (len(parts) + groups - 1) // groups
+    base_count, remainder = divmod(len(parts), groups)
     result_groups = []
+    cursor = 0
     for group_index in range(groups):
-        start = group_index * per_group
-        selected = parts[start:start + per_group]
+        group_size = base_count + (1 if group_index < remainder else 0)
+        selected = parts[cursor:cursor + group_size]
+        cursor += group_size
         if not selected:
             raise ValueError("分组后出现空分片组")
         selected_bytes = sum(path.stat().st_size for _, path in selected)

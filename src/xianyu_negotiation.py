@@ -160,6 +160,29 @@ def followup_rows(rows: list[dict], today: str | date | None = None) -> list[dic
     return sorted(result, key=lambda row: (row["下次跟进日期"], row["询价日期"], row["商品编号"], row["记录编号"]))
 
 
+def visible_rows(
+    rows: list[dict],
+    query: str = "",
+    *,
+    due_only: bool = False,
+    today: str | date | None = None,
+) -> list[dict]:
+    """Return display rows with optional due-follow-up and text filters."""
+    candidates = followup_rows(rows, today) if due_only else list(rows)
+    needle = str(query or "").strip().casefold()
+    if needle:
+        searchable = ("商品编号", "订单编号", "商品名称", "SKU", "买家备注", "内部备注")
+        candidates = [
+            row for row in candidates
+            if needle in " ".join(str(row.get(field, "")) for field in searchable).casefold()
+        ]
+    return sorted(
+        candidates,
+        key=lambda row: (row["询价日期"], row["商品编号"], row["SKU"], row["记录编号"]),
+        reverse=True,
+    )
+
+
 def summary_rows(rows: list[dict]) -> list[dict]:
     groups = defaultdict(list)
     for row in rows:

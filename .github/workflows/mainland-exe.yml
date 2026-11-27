@@ -472,7 +472,7 @@ jobs:
             --output-dir release \
             --max-chunks 48
       - name: Group bounded package chunks for independent downloads
-        run: python tools/group_mainland_package_chunks.py --input-dir release --output-dir release/package-chunks --groups 8 --max-group-bytes 83886080
+        run: python tools/group_mainland_package_chunks.py --input-dir release --output-dir release/package-chunks --groups 8 --max-group-bytes 125829120
       - uses: actions/upload-artifact@v4
         with:
           name: mainland-phase1-package-manifest

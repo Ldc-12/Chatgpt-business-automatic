@@ -19,6 +19,7 @@ RESULTS = ("待回复", "议价中", "已成交", "未成交", "已取消")
 OPEN_RESULTS = ("待回复", "议价中")
 CENT = Decimal("0.01")
 MAX_MONEY = Decimal("9999999999.99")
+MAX_IMPORT_BYTES = 20 * 1024 * 1024
 
 
 def default_data_path() -> Path:
@@ -255,7 +256,20 @@ class NegotiationStore:
         self._commit(candidate)
 
     def import_csv(self, path: Path) -> int:
-        raw = Path(path).read_bytes()
+        source_path = Path(path)
+        try:
+            size_bytes = source_path.stat().st_size
+        except OSError as exc:
+            raise ValueError(f"无法读取 CSV 文件：{exc}") from exc
+        if size_bytes > MAX_IMPORT_BYTES:
+            raise ValueError(f"CSV 文件超过 {MAX_IMPORT_BYTES // (1024 * 1024)} MB 限制")
+        try:
+            with source_path.open("rb") as stream:
+                raw = stream.read(MAX_IMPORT_BYTES + 1)
+        except OSError as exc:
+            raise ValueError(f"无法读取 CSV 文件：{exc}") from exc
+        if len(raw) > MAX_IMPORT_BYTES:
+            raise ValueError(f"CSV 文件超过 {MAX_IMPORT_BYTES // (1024 * 1024)} MB 限制")
         try:
             text = raw.decode("utf-8-sig")
         except UnicodeDecodeError:

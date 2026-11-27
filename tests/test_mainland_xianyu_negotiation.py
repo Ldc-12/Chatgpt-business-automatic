@@ -1,11 +1,12 @@
 import csv
 import json
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
 from src.xianyu_negotiation import (
-    FIELDS, PRODUCT, NegotiationStore, _money, _safe_text, _restore_safe_text, default_data_path,
+    FIELDS, MAX_IMPORT_BYTES, PRODUCT, NegotiationStore, _money, _safe_text, _restore_safe_text, default_data_path,
     followup_rows, normalize_row, self_test, summary_rows,
 )
 
@@ -243,3 +244,19 @@ def test_default_data_path_uses_local_appdata(monkeypatch, tmp_path):
 def test_product_identity_and_self_test():
     assert PRODUCT == "闲鱼询价转化与议价复盘助手"
     self_test()
+
+
+
+def test_import_csv_rejects_oversized_file_before_reading(tmp_path, monkeypatch):
+    csv_path = tmp_path / "oversized.csv"
+    with csv_path.open("wb") as stream:
+        stream.truncate(MAX_IMPORT_BYTES + 1)
+    store = NegotiationStore(tmp_path / "data.json")
+
+    def forbidden_open(self, *args, **kwargs):
+        raise AssertionError("oversized CSV must be rejected before opening it")
+
+    monkeypatch.setattr(Path, "open", forbidden_open)
+    with pytest.raises(ValueError, match="超过 20 MB 限制"):
+        store.import_csv(csv_path)
+    assert store.rows == []

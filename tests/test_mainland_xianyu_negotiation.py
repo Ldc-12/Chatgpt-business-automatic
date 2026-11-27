@@ -104,7 +104,7 @@ def test_visible_rows_combine_due_filter_and_search_without_mutating_input():
     ))
     closed = normalize_row(row(
         记录编号="XN-CLOSED", 商品编号="XY-CLOSED", 商品名称="已成交相机",
-        结果="已成交", 成交价="900", 下次跟进日期="2026-11-19",
+        询价日期="2026-11-18", 结果="已成交", 成交价="900", 下次跟进日期="2026-11-19",
     ))
     rows = [due, future, closed]
 

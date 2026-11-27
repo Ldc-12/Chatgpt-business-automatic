@@ -9,7 +9,7 @@ from pathlib import Path
 
 PART_PREFIX = "Phase1-Mainland-Windows-Tools.zip.part-"
 MAX_PARTS = 48
-MAX_GROUP_BYTES = 80 * 1024 * 1024
+MAX_GROUP_BYTES = 120 * 1024 * 1024
 
 
 def _sha256(path: Path) -> str:

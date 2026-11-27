@@ -1,4 +1,4 @@
-# Latest checkpoint — 2026-11-27 (PR #149 merged; Mainland Windows run #589 and ABE run #568 verified)
+# Latest checkpoint — 2026-11-27 (PR #149 merged; Mainland Windows run #589 and ABE run #569 verified)
 
 ## Repository state
 
@@ -2534,3 +2534,14 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - The seller must use the original private key on a trusted Windows PC to export only its public PEM or SHA256 fingerprint with `tools/export_license_public_key.py`; do not send the private key. If the original key is unavailable locally, recover its existing secure backup rather than creating a replacement.
 - Real Windows seller-key match, license issue/activation, close/restart re-verification and GUI/data workflow acceptance remain incomplete.
 - **Release status: PENDING FINAL ACCEPTANCE.** The current main package is technically built and independently verified, but it is not authorized to be listed or represented as fully sale-ready until the seller-key and real Windows activation gates pass.
+
+
+### Follow-up documentation-only Autonomous Business Engine run #569
+
+[Autonomous Business Engine run #569](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45994499215)
+
+- Triggered by the release-ledger-only commit `625e6fe3dd4a0fdab336dcf75ed071c2cb23a152`; it did not change product source or the already verified Main #589 binaries.
+- Build/deploy: **2/2 succeeded**.
+- Build job #140490363702: **1,024 tests passed in 14.03s**; market/source status `status: live`, `error: null`; product and Xianyu factories completed.
+- Pages artifact [15195710433](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45994499215/artifacts/15195710433): 46,398 bytes; SHA256 `db12f9e275c532e98c7c69fec8a3daeb6cce6c4a5932454617d37812a1752df6`. Downloaded ZIP CRC passed; internal TAR is 307,200 bytes, SHA256 `6b8a05060251aa8209bf090bf34970501d5920242cd4a1af9c586d10f4d9fd43`, with 198 entries (17 `product.json` and 12 `listing.txt` files). Deploy job #140490657621 succeeded.
+- This was a documentation-only follow-up run; the current product-code build and customer package remain Main #589 / commit `55c337cf53e4dae32f64a58d5751f6970209e3c8`.

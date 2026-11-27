@@ -5,7 +5,7 @@ from decimal import Decimal
 import pytest
 
 from src.xianyu_negotiation import (
-    FIELDS, PRODUCT, NegotiationStore, _money, default_data_path,
+    FIELDS, PRODUCT, NegotiationStore, _money, _safe_text, _restore_safe_text, default_data_path,
     followup_rows, normalize_row, self_test, summary_rows,
 )
 
@@ -192,10 +192,12 @@ def test_formula_safe_export_guards_leading_whitespace_and_controls_and_roundtri
     with export.open("r", encoding="utf-8-sig", newline="") as stream:
         exported = next(csv.DictReader(stream))["买家备注"]
     assert exported.startswith("'")
+    assert _restore_safe_text(_safe_text(value)) == value
 
     restored = NegotiationStore(tmp_path / "restored.json")
     assert restored.import_csv(export) == 1
-    assert restored.rows[0]["买家备注"] == value
+    # normalize_row intentionally trims surrounding whitespace in user-entered fields.
+    assert restored.rows[0]["买家备注"] == value.strip()
 
 
 def test_backup_restore_roundtrip_and_tamper_rejection_preserves_current_data(tmp_path):

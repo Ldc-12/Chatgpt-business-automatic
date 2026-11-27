@@ -190,6 +190,40 @@ def test_formula_safe_export_roundtrips_formula_like_text(tmp_path):
     assert restored.rows[0]["内部备注"] == "@SUM(1,1)"
 
 
+def test_followup_export_includes_overdue_age_and_hint_without_mutating_records(tmp_path):
+    store = NegotiationStore(tmp_path / "data.json")
+    store.add(row(
+        记录编号="XN-OVERDUE", 询价日期="2026-11-19",
+        最近沟通日期="2026-11-19", 下次跟进日期="2026-11-20",
+    ))
+    store.add(row(
+        记录编号="XN-TODAY", 商品编号="XY-TODAY", 询价日期="2026-11-20",
+        最近沟通日期="2026-11-20", 下次跟进日期="2026-11-21",
+    ))
+    store.add(row(
+        记录编号="XN-FUTURE", 商品编号="XY-FUTURE", 询价日期="2026-11-20",
+        最近沟通日期="2026-11-20", 下次跟进日期="2026-11-22",
+    ))
+    store.add(row(
+        记录编号="XN-CLOSED", 商品编号="XY-CLOSED", 询价日期="2026-11-19",
+        最近沟通日期="2026-11-19", 下次跟进日期="2026-11-20",
+        结果="已成交", 成交价="900",
+    ))
+    before = [dict(item) for item in store.rows]
+    export = tmp_path / "followups.csv"
+
+    assert store.export_followups_csv(export, today="2026-11-21") == 2
+    with export.open("r", encoding="utf-8-sig", newline="") as stream:
+        exported = list(csv.DictReader(stream))
+
+    assert [item["记录编号"] for item in exported] == ["XN-OVERDUE", "XN-TODAY"]
+    assert [(item["逾期天数"], item["跟进提示"]) for item in exported] == [
+        ("1", "已逾期 1 天"),
+        ("0", "今日到期"),
+    ]
+    assert store.rows == before
+
+
 def test_summary_and_followup_exports_are_formula_safe(tmp_path):
     store = NegotiationStore(tmp_path / "data.json")
     store.add(row(买家备注="=1+1"))

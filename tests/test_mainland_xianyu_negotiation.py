@@ -84,10 +84,10 @@ def test_delete_and_duplicate_ids_are_checked(tmp_path):
 
 def test_followup_rows_only_include_open_due_records(tmp_path):
     store = NegotiationStore(tmp_path / "data.json")
-    store.add(row(记录编号="XN-1", 下次跟进日期="2026-11-19"))
+    store.add(row(记录编号="XN-1", 询价日期="2026-11-18", 下次跟进日期="2026-11-19"))
     store.add(row(记录编号="XN-2", 结果="待回复", 下次跟进日期="2026-11-22"))
-    store.add(row(记录编号="XN-3", 结果="已成交", 成交价="900", 下次跟进日期="2026-11-19"))
-    store.add(row(记录编号="XN-4", 结果="未成交", 下次跟进日期="2026-11-19"))
+    store.add(row(记录编号="XN-3", 结果="已成交", 成交价="900", 下次跟进日期="2026-11-20"))
+    store.add(row(记录编号="XN-4", 结果="未成交", 下次跟进日期="2026-11-20"))
     due = followup_rows(store.rows, "2026-11-20")
     assert [item["记录编号"] for item in due] == ["XN-1"]
 

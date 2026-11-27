@@ -1,4 +1,4 @@
-# Latest checkpoint — 2026-11-27 (PR #147 merged; Mainland Windows run #587 and ABE run #565 verified)
+# Latest checkpoint — 2026-11-27 (PR #149 merged; Mainland Windows run #589 and ABE run #568 verified)
 
 ## Repository state
 
@@ -2476,3 +2476,61 @@ py tools/export_license_public_key.py --private-key "C:\你的私钥路径\selle
 - The seller must use the original private key on a trusted Windows PC to export only its public PEM or SHA256 fingerprint with `tools/export_license_public_key.py`; do not send the private key. If the original key is not available locally, recover its existing secure backup rather than creating a replacement.
 - Real Windows seller-key match, license issue/activation, close/restart re-verification and GUI/data workflow acceptance remain incomplete.
 - **Release status: PENDING FINAL ACCEPTANCE.** The current main package is technically built and independently verified, but it is not yet authorized to be listed or represented as fully sale-ready until the seller-key and real Windows activation gates pass.
+
+
+---
+
+## 2026-11-27 — PR #149 merged; CSV import memory guard and latest main package #589
+
+**Current main HEAD / product-code commit:** `55c337cf53e4dae32f64a58d5751f6970209e3c8`  
+**Merged PR:** [#149 — Guard Xianyu negotiation CSV imports against oversized files](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/149)  
+**Merge commit:** `55c337cf53e4dae32f64a58d5751f6970209e3c8` (squash). Current open PRs: 0.
+
+### PR candidate validation — Mainland Windows run #588
+
+- [PR candidate Mainland Windows run #588](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45992401128): **43/43 jobs succeeded**, zero failed jobs.
+- Xianyu negotiation-review job [140483260108](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45992401128/job/140483260108): **160 passed in 2.25s**, `SELF_TEST_OK`, PyInstaller 6.22.3, and `FROZEN_EXE_SELF_TEST_OK` (process exit code 0).
+- Candidate customer package inspection and CRC/SHA checks succeeded; the uploaded package was re-downloaded and re-inspected; chunk manifest/group generation succeeded.
+- The PR adds a 20 MiB CSV import limit. It checks file size before opening, caps the actual read at 20 MiB + 1 byte to defend against a file-size race, rejects oversized files without changing the ledger, adds a regression test proving the file is not opened, and documents the limit in the Chinese manual.
+- Product ID, JSON data schema, backup format, license paths and production keys were not changed.
+
+### Main push release — Windows EXE run #589
+
+[Mainland Windows EXE run #589](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45993249813)
+
+- Main commit: `55c337cf53e4dae32f64a58d5751f6970209e3c8`.
+- Workflow result: **43/43 jobs succeeded**, zero failed jobs.
+- Xianyu negotiation-review job [140486141176](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45993249813/job/140486141176): **160 passed in 2.09s**; `SELF_TEST_OK`; PyInstaller 6.22.3; `FROZEN_EXE_SELF_TEST_OK`, process exit code 0.
+- Standalone product artifact [15193914450](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45993249813/artifacts/15193914450): 29,598,652 bytes; SHA256 `c9cbb0b93d088e1395ebc11adc11159d98994c05c55be5090613518d261b9125`. Downloaded outer ZIP CRC passed. Nested delivery ZIP: 14,792,634 bytes, SHA256 `c4eb27ab30aceeb8bb326983028af74090ed01dd857b03cfc267742a147fd002`, CRC passed; it contains the EXE, mainland README and the 5,159-byte Chinese manual. EXE: 15,076,171 bytes, SHA256 `ccc557dcabc89a27526ffa0f9a746178f2ecd3636780185a499e475f7bc05a89`.
+- Main customer package artifact [15194557650](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45993249813/artifacts/15194557650): 675,027,941 bytes; GitHub artifact digest SHA256 `122c1099e6b1fc4defff3dca91a39facaedfc6fd4b6f96c38d9ade5414c778fc`.
+- Manifest artifact [15195590141](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45993249813/artifacts/15195590141): 4,746 bytes; artifact digest SHA256 `c8fee625c1ab8281e05715d0b85a7c485dcd5e456fb8df49aa020f03196d5707`.
+- Inner `Phase1-Mainland-Windows-Tools.zip`: **674,835,820 bytes**, SHA256 `7551ffa59c3e665c36ec1908d16962b1de24b6ba131a98c285fc205fb71943da`; ZIP CRC passed; 90 entries (88 files, 2 directories); **42 EXEs** (41 business tools + toolbox launcher) and **42 product/launcher manuals** (the separate manual-index README is not counted as a product manual).
+- All 33 chunks across 8 group artifacts were downloaded. Each group ZIP CRC passed; every chunk byte count and SHA256 matched the manifest; the reassembled inner ZIP matched the manifest size and SHA256 exactly.
+- Group artifact IDs: 01 `15194902822`, 02 `15194563184`, 03 `15194682549`, 04 `15194437992`, 05 `15194627623`, 06 `15195027143`, 07 `15195112012`, 08 `15194328168`.
+- All package ZIP entry timestamps are `2026-11-27 11:50:50 UTC` (19:50:50 China Standard Time).
+- Package job #140487542854 logged `MAINLAND_PACKAGE_INSPECTION_OK`, `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK` (uploaded artifact matched the inspected package byte-for-byte), and `MAINLAND_PACKAGE_CHUNKING_OK parts=33 bytes=674835820 sha256=7551ffa59c3e665c36ec1908d16962b1de24b6ba131a98c285fc205fb71943da`.
+- Actual package catalog: A office efficiency 5 tools / suggested ¥29.9; B store operations 15 / ¥29.9; C finance & trading 14 / ¥29.9; D contracts/construction/property 4 / ¥29.9; E customer/personal matters 3 / ¥19.9; F all 41 business tools + toolbox launcher / ¥39.9. These are suggested prices pending market validation, not confirmed transaction prices.
+- [Latest main customer package artifact](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45993249813/artifacts/15194557650); [Manifest](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45993249813/artifacts/15195590141).
+
+### Latest Autonomous Business Engine — run #568
+
+[Autonomous Business Engine run #568](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45993249804)
+
+- Build/deploy: **2/2 succeeded**.
+- Build job #140486138772: **1,024 tests passed in 6.69s**; business/product/Xianyu factories completed; data source status reported `error: null`.
+- Pages artifact [15194203120](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45993249804/artifacts/15194203120): 46,384 bytes; SHA256 `307cb55bc45f0e8319c7a9912b041929f5f9c9be9cb1d75910710778aaefa36e`. Downloaded ZIP CRC passed; internal TAR is 307,200 bytes, SHA256 `c4a9005773905480435c36da4762c51295919e4bbdffabd2990d5f680a160b5a`, with 198 entries (17 `product.json` and 12 `listing.txt` files). Deploy job #140486303385 succeeded.
+
+### Failure review
+
+- Historical Mainland run #581 failed in the package job, not in product code. The actual failing step was grouping 33 chunks with an 80 MiB group limit while group-01 contained 100 MiB: `ValueError: 分片组超过最大字节限制：group-01 104857600 > 83886080`.
+- PR #147 had already raised the workflow group cap to 125 MiB. The latest #587 and #589 package jobs now complete grouping successfully; #589 generated all 33 parts in 8 groups and passed post-upload re-download verification.
+- PR run #588 and main run #589 both passed all 43 jobs; no current open PRs or failed jobs remain in these latest workflows.
+
+### Remaining release blockers — pending final acceptance
+
+- `src/license.py` embedded Ed25519 public key DER SHA256 remains `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`.
+- `config/mainland_license_public_key.pem` DER SHA256 remains `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`.
+- The mismatch remains unresolved. No seller private key was accessed, uploaded, guessed, generated, replaced or rotated.
+- The seller must use the original private key on a trusted Windows PC to export only its public PEM or SHA256 fingerprint with `tools/export_license_public_key.py`; do not send the private key. If the original key is unavailable locally, recover its existing secure backup rather than creating a replacement.
+- Real Windows seller-key match, license issue/activation, close/restart re-verification and GUI/data workflow acceptance remain incomplete.
+- **Release status: PENDING FINAL ACCEPTANCE.** The current main package is technically built and independently verified, but it is not authorized to be listed or represented as fully sale-ready until the seller-key and real Windows activation gates pass.

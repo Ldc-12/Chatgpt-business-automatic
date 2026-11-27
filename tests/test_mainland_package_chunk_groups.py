@@ -85,7 +85,7 @@ def test_group_chunks_creates_eight_download_groups_under_size_limit(tmp_path):
     assert result["part_count"] == 33
     assert result["group_count"] == 8
     assert result["max_group_bytes"] == 5 * 1024
-    assert [len(group["parts"]) for group in result["groups"]] == [5, 5, 5, 5, 5, 5, 5, 3]
+    assert [len(group["parts"]) for group in result["groups"]] == [5, 4, 4, 4, 4, 4, 4, 4]
     assert all(group["bytes"] <= result["max_group_bytes"] for group in result["groups"])
 
 

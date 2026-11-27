@@ -185,9 +185,6 @@ class App:
 
 
 def main():
-    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
-        self_test()
-        os._exit(0)
     require_license(PRODUCT)
     root = tk.Tk()
     App(root)
@@ -195,4 +192,7 @@ def main():
 
 
 if __name__ == "__main__":
+    if "--self-test" in sys.argv or os.environ.get("MAINLAND_EXE_SELF_TEST") == "1":
+        self_test()
+        os._exit(0)
     main()

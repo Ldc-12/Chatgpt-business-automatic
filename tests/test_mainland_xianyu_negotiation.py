@@ -7,7 +7,7 @@ import pytest
 
 from src.xianyu_negotiation import (
     FIELDS, MAX_IMPORT_BYTES, PRODUCT, NegotiationStore, _money, _safe_text, _restore_safe_text, default_data_path,
-    followup_rows, normalize_row, self_test, summary_rows,
+    followup_rows, normalize_row, self_test, summary_rows, visible_rows,
 )
 
 
@@ -91,6 +91,27 @@ def test_followup_rows_only_include_open_due_records(tmp_path):
     store.add(row(记录编号="XN-4", 结果="未成交", 下次跟进日期="2026-11-20"))
     due = followup_rows(store.rows, "2026-11-20")
     assert [item["记录编号"] for item in due] == ["XN-1"]
+
+
+def test_visible_rows_combine_due_filter_and_search_without_mutating_input():
+    due = normalize_row(row(
+        记录编号="XN-DUE", 商品编号="XY-DUE", 商品名称="待跟进手机",
+        询价日期="2026-11-18", 下次跟进日期="2026-11-19",
+    ))
+    future = normalize_row(row(
+        记录编号="XN-FUTURE", 商品编号="XY-FUTURE", 商品名称="待跟进相机",
+        下次跟进日期="2026-11-22",
+    ))
+    closed = normalize_row(row(
+        记录编号="XN-CLOSED", 商品编号="XY-CLOSED", 商品名称="已成交相机",
+        询价日期="2026-11-18", 结果="已成交", 成交价="900", 下次跟进日期="2026-11-19",
+    ))
+    rows = [due, future, closed]
+
+    assert [item["记录编号"] for item in visible_rows(rows, due_only=True, today="2026-11-20")] == ["XN-DUE"]
+    assert visible_rows(rows, "相机", due_only=True, today="2026-11-20") == []
+    assert [item["记录编号"] for item in visible_rows(rows, "相机", today="2026-11-20")] == ["XN-FUTURE", "XN-CLOSED"]
+    assert len(rows) == 3
 
 
 def test_summary_calculates_conversion_discount_and_estimated_profit():

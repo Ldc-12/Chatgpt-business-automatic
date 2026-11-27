@@ -8,7 +8,7 @@ from tkinter import filedialog, messagebox, ttk
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
-from src.xianyu_negotiation import FIELDS, PRODUCT, NegotiationStore, default_data_path, followup_rows, summary_rows, self_test
+from src.xianyu_negotiation import FIELDS, PRODUCT, NegotiationStore, default_data_path, followup_rows, summary_rows, visible_rows, self_test
 
 DISPLAY_COLUMNS = ("商品编号", "订单编号", "商品名称", "SKU", "买家备注", "询价日期", "标价", "买家报价", "卖家回价", "成交价", "结果", "下次跟进日期")
 
@@ -19,6 +19,7 @@ class App:
         root.title("闲鱼询价转化与议价复盘助手｜大陆离线版")
         root.geometry("1500x780")
         self.store = NegotiationStore(default_data_path())
+        self.followups_only = False
         toolbar = ttk.Frame(root, padding=8)
         toolbar.pack(fill="x")
         actions = [
@@ -29,6 +30,8 @@ class App:
         ]
         for label, action in actions:
             ttk.Button(toolbar, text=label, command=action).pack(side="left", padx=2)
+        self.followup_button = ttk.Button(toolbar, text="仅看待跟进", command=self.toggle_followups)
+        self.followup_button.pack(side="left", padx=2)
         search = ttk.Frame(root, padding=(8, 0, 8, 6))
         search.pack(fill="x")
         ttk.Label(search, text="搜索商品编号/名称、订单号、SKU 或买家备注：").pack(side="left")
@@ -57,20 +60,23 @@ class App:
 
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
-        query = self.search_var.get().strip().casefold()
-        ordered = sorted(self.store.rows, key=lambda row: (row["询价日期"], row["商品编号"], row["SKU"], row["记录编号"]), reverse=True)
+        query = self.search_var.get().strip()
+        ordered = visible_rows(self.store.rows, query, due_only=self.followups_only)
         for row in ordered:
-            haystack = " ".join(row[field] for field in ("商品编号", "订单编号", "商品名称", "SKU", "买家备注", "内部备注")).casefold()
-            if query and query not in haystack:
-                continue
             self.tree.insert("", "end", iid=row["记录编号"], values=tuple(row[field] for field in DISPLAY_COLUMNS))
         due = len(followup_rows(self.store.rows))
         reports = summary_rows(self.store.rows)
         sold = sum(1 for row in self.store.rows if row["结果"] == "已成交")
+        mode = "｜筛选：今日及逾期待跟进" if self.followups_only else ""
         self.status.set(
-            f"询价记录：{len(self.store.rows)}｜商品/SKU 组：{len(reports)}｜已成交：{sold}｜"
-            f"今日及逾期待跟进：{due}｜本地数据：{self.store.path}"
+            f"显示：{len(ordered)}/{len(self.store.rows)}{mode}｜商品/SKU 组：{len(reports)}｜"
+            f"已成交：{sold}｜今日及逾期待跟进：{due}｜本地数据：{self.store.path}"
         )
+
+    def toggle_followups(self):
+        self.followups_only = not self.followups_only
+        self.followup_button.configure(text="显示全部" if self.followups_only else "仅看待跟进")
+        self.refresh()
 
     def selected_id(self):
         selected = self.tree.selection()

@@ -1,3 +1,57 @@
+# Latest checkpoint — 2026-11-27 (PR #145 merged; Mainland Windows run #577 and ABE run #563 verified)
+
+## Repository state
+
+- Verified main HEAD and product-code commit: `ec57d02465308b1bb09dbe8cfa2d97cbe58e4bf7` (PR #145, “Add store purchase order and partial-delivery tracker”, merged by squash).
+- PR [#145](https://github.com/Ldc-12/Chatgpt-business-automatic/pull/145) merged at the exact main commit above. The PR head was `380554e0a81a8766e1af4f6264bab7d81d11cdfc`.
+- Current open PRs at checkpoint: 0.
+- The new purchase-order tracker is an offline Windows utility. No VPN, ChatGPT, external AI, Xianyu account integration, marketplace API, or cloud service is required.
+
+## Latest main Mainland Windows EXE — run #577
+
+- [Mainland Windows EXE run #577](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45929710993), run ID `45929710993`, event `push`, head `ec57d02465308b1bb09dbe8cfa2d97cbe58e4bf7`, completed success on 2026-11-27 02:45:25 UTC: **42/42 jobs succeeded**, zero failed jobs (40 product builds + launcher build + customer package).
+- Purchase-order tracker job [140279251750](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45929710993/job/140279251750): **150 passed in 2.00s**; source self-test `SELF_TEST_OK`; PyInstaller 6.22.3 build succeeded; frozen EXE self-test `FROZEN_EXE_SELF_TEST_OK`, process exit code 0.
+- Purchase-order single-product artifact [15167871881](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45929710993/artifacts/15167871881): 29,606,087 bytes; artifact digest `sha256:acd56f173fcbb6bb56a9ddcd1614fbd804e3ab2fbe3969a08ff76af69799bba2`.
+- Package job [140280169966](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45929710993/job/140280169966) logged `MAINLAND_PACKAGE_INSPECTION_OK`, `POST_UPLOAD_PACKAGE_REDOWNLOAD_OK`, and `MAINLAND_PACKAGE_CHUNKING_OK parts=32 bytes=660041537 sha256=529e6104e7066290138dd602ec9db85ae543a7d0ca3d85dacb644769d881c466`.
+- Customer package artifact [15168071483](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45929710993/artifacts/15168071483): 660,229,541 bytes; GitHub artifact digest `sha256:ee634f831b60794315eaf370c6ce749ea8a56ce14b6a830ccf3994e2e7f8652f`. The artifact exceeds the connector's 512 MiB single-download limit, so it was independently reconstructed from the manifest and all eight bounded group artifacts.
+- Manifest artifact [15168206346](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45929710993/artifacts/15168206346): 4,649 bytes; GitHub artifact digest `sha256:ae354eefe1d445e25e7dd528102ff3933d338fe63801854345f119fe7250503a`.
+- Eight group artifacts: 01 [15167827408], 02 [15168450904], 03 [15167926807], 04 [15168905247], 05 [15168196960], 06 [15167784629], 07 [15167729838], 08 [15168905263]. All eight downloaded group ZIPs passed outer CRC checks. All 32 chunk sizes and SHA256 values matched `package-chunks/chunk-groups.json`.
+- Reassembled inner `Phase1-Mainland-Windows-Tools.zip`: **660,041,537 bytes**, SHA256 `529e6104e7066290138dd602ec9db85ae543a7d0ca3d85dacb644769d881c466`; inner ZIP CRC passed. It contains 88 entries (86 files, 2 directories), **41 EXEs** (40 business tools + 1 toolbox launcher), and **41 product/launcher manuals** (40 business-tool manuals + launcher manual; manual-index README is separate). All 32 chunk SHA256 values, reassembled size and final SHA256 matched the manifest and workflow inspection JSON.
+- Every inner ZIP file entry has timestamp `2026-11-27 02:44:16 UTC` (10:44:16 China time).
+- Verified bundle descriptions/catalog:
+  - A — Office efficiency: 5 tools, suggested ¥29.9.
+  - B — Store operations: 15 tools, suggested ¥29.9.
+  - C — Finance and transactions: 13 tools, suggested ¥29.9.
+  - D — Contracts, construction and property: 4 tools, suggested ¥29.9.
+  - E — Customer and personal affairs: 3 tools, suggested ¥19.9.
+  - F — All 40 business tools + toolbox launcher, suggested ¥39.9.
+- The separate `mainland-phase1-series-packages` artifact [15167799467] (645,572,803 bytes) was generated but not independently downloaded/CRC-checked in this checkpoint; only the combined customer ZIP's embedded catalog and bundle descriptions were verified. Prices remain unvalidated suggestions, not actual Xianyu sales.
+
+## Latest Autonomous Business Engine — run #563
+
+- [Autonomous Business Engine run #563](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45929710808), run ID `45929710808`, event `push`, head `ec57d02465308b1bb09dbe8cfa2d97cbe58e4bf7`, build/deploy **2/2 success**.
+- Build job [140279249574](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45929710808/job/140279249574): **981 passed in 4.78s**; generated 12 product pages and 12 Xianyu listing files. The opportunity source returned `fallback: HTTPError` with `HTTP Error 502: Bad Gateway`; the configured fallback path completed and the workflow did not fail.
+- Pages artifact [15168430660](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45929710808/artifacts/15168430660): 46,397 bytes; digest `sha256:f8ba5a1cc5f5ac49d76603c3621c6e73750b8170177e4c366ed265503a2cd459`. Downloaded and checked: outer ZIP CRC passed; inner TAR contains 198 entries (152 files), including 17 `product.json` and 12 `listing.txt`. Deploy job [140279348081](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45929710808/job/140279348081) succeeded.
+- The separate Windows EXE Build run #320 [45929710905](https://github.com/Ldc-12/Chatgpt-business-automatic/actions/runs/45929710905) also completed 2/2 success; it is not the Mainland customer-package workflow.
+
+## Failure-log review
+
+- Mainland run #577 had 42 jobs and **zero failed jobs**; no failed job logs required remediation.
+- Purchase-order Windows log confirms 150 passing tests, source self-test and frozen EXE process exit code 0.
+- Package log confirms pre-upload and post-upload package inspection and 32-part chunking with the same inner ZIP SHA256.
+- ABE run #563 had 2/2 successful jobs and 981 passing tests. The optional opportunity source returned HTTP 502 and the engine used its fallback; this is recorded as a non-blocking data-source limitation, not a passing live-source result.
+- Successful workflows emitted upstream Node.js 20 deprecation warnings; no job failed because of them.
+
+## Authorization and final acceptance — still blocked
+
+- Current `src/license.py` embedded Ed25519 public-key DER SHA256: `B64663DA16A11E9E927D2FAE897973373ADBEA81B45D300C208ACF4F2896E741`.
+- Current `config/mainland_license_public_key.pem` DER SHA256: `7AEA3764E5D59B0C2502CCD302CBBBBC79CD96555AE2D5472477B5E473A2E961`. They still differ.
+- No seller private key was read, requested, uploaded, guessed, created, replaced, or rotated. No production public key was changed.
+- Code-side license path, product-ID and signature-verification tests continue. **All releases remain 待最终验收; this successful CI build is not approval for commercial Xianyu listing.** CI frozen-EXE self-tests do not prove genuine Windows GUI/data-flow acceptance or production issue/activate/exit/restart/re-verify.
+- Required seller-side operation: on the trusted Windows PC that already holds the seller signing key, export only the public key PEM or SHA256 fingerprint and provide that public value for comparison. Never send or upload the private key.
+
+---
+
 # Latest checkpoint — 2026-11-25 (PR #137 merged; Mainland Windows run #554 and ABE #554 verified)
 
 ## Repository state

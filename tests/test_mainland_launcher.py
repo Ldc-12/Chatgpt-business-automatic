@@ -32,6 +32,7 @@ def test_launcher_lists_every_business_exe():
         "MainlandXianyuPickPackAssistant.exe",
         "MainlandXianyuFreightCalculator.exe",
         "MainlandXianyuConsignmentSettlement.exe",
+        "MainlandXianyuNegotiationReview.exe",
         "MainlandQuotationGenerator.exe",
         "MainlandExpenseReimbursement.exe",
         "MainlandRepairWorkOrderManager.exe",
@@ -53,7 +54,7 @@ def test_launcher_lists_every_business_exe():
     ]
     actual = [exe for _, exe in module.TOOLS]
     assert actual == expected
-    assert len(module.TOOLS) == 40
+    assert len(module.TOOLS) == 41
 
 
 def test_frozen_launcher_resolves_sibling_exes_next_to_launcher(tmp_path, monkeypatch):
@@ -73,3 +74,13 @@ def test_launcher_manual_lists_all_business_tools_and_same_folder_rule():
     for name, _ in module.TOOLS:
         assert name in manual
     assert "同一目录" in manual
+
+
+def test_launcher_launches_sibling_exe_with_os_startfile(tmp_path, monkeypatch):
+    executable = tmp_path / "MainlandXianyuNegotiationReview.exe"
+    executable.write_bytes(b"MZ-test")
+    monkeypatch.setattr(module, "application_directory", lambda: tmp_path)
+    launched = []
+    monkeypatch.setattr(module.os, "startfile", lambda path: launched.append(path), raising=False)
+    module.App.launch(object(), executable.name)
+    assert launched == [str(executable)]

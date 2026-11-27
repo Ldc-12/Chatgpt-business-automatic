@@ -1,4 +1,5 @@
 import os
+import os
 import sys
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -27,6 +28,7 @@ TOOLS = [
     ("闲鱼订单拣货与打包清单助手", "MainlandXianyuPickPackAssistant.exe"),
     ("闲鱼运费试算与包装规格助手", "MainlandXianyuFreightCalculator.exe"),
     ("闲鱼寄售代卖结算助手", "MainlandXianyuConsignmentSettlement.exe"),
+    ("闲鱼询价转化与议价复盘助手", "MainlandXianyuNegotiationReview.exe"),
     ("报价单生成器", "MainlandQuotationGenerator.exe"),
     ("费用报销管理助手", "MainlandExpenseReimbursement.exe"),
     ("售后维修工单管理助手", "MainlandRepairWorkOrderManager.exe"),
@@ -60,7 +62,7 @@ def application_directory():
 
 
 def self_test():
-    assert len(TOOLS) == 40
+    assert len(TOOLS) == 41
     names = [name for name, _ in TOOLS]
     exes = [exe for _, exe in TOOLS]
     assert len(set(names)) == len(names)

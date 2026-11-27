@@ -48,17 +48,35 @@ def _atomic_write(path: Path, data: bytes) -> None:
         raise
 
 
+_FORMULA_PREFIXES = ("=", "+", "-", "@")
+_FORMULA_LEADING_CONTROLS = "\\t\\r\\n"
+
+
+def _needs_formula_escape(text: str) -> bool:
+    if not text:
+        return False
+    if text[0] == "'" or text[0] in _FORMULA_LEADING_CONTROLS:
+        return True
+    return text.lstrip().startswith(_FORMULA_PREFIXES)
+
+
 def _safe_text(value) -> str:
     text = "" if value is None else str(value)
-    return "'" + text if text.startswith(("=", "+", "-", "@", "'")) else text
+    return "'" + text if _needs_formula_escape(text) else text
 
 
 def _restore_safe_text(value) -> str:
     text = "" if value is None else str(value)
-    if text.startswith("''"):
-        return text[1:]
-    if len(text) > 1 and text[0] == "'" and text[1] in "=+-@":
-        return text[1:]
+    if not text.startswith("'"):
+        return text
+    original = text[1:]
+    if original.startswith("'") or (
+        original and (
+            original[0] in _FORMULA_LEADING_CONTROLS
+            or original.lstrip().startswith(_FORMULA_PREFIXES)
+        )
+    ):
+        return original
     return text
 
 

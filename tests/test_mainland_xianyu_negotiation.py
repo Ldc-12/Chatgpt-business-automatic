@@ -176,6 +176,28 @@ def test_summary_and_followup_exports_are_formula_safe(tmp_path):
     assert "'=1+1" in (tmp_path / "due.csv").read_text(encoding="utf-8-sig")
 
 
+@pytest.mark.parametrize(
+    "value",
+    [
+        "=1+1", "+SUM(1,1)", "-1+1", "@SUM(1,1)",
+        "  =1+1", "\\t=1+1", "\\r=1+1", "\\n=1+1",
+        "\\u00a0=1+1", "'=1+1", "'ordinary text",
+    ],
+)
+def test_formula_safe_export_guards_leading_whitespace_and_controls_and_roundtrips(tmp_path, value):
+    store = NegotiationStore(tmp_path / "data.json")
+    store.add(row(买家备注=value))
+    export = tmp_path / "formula-safe.csv"
+    store.export_csv(export)
+    with export.open("r", encoding="utf-8-sig", newline="") as stream:
+        exported = next(csv.DictReader(stream))["买家备注"]
+    assert exported.startswith("'")
+
+    restored = NegotiationStore(tmp_path / "restored.json")
+    assert restored.import_csv(export) == 1
+    assert restored.rows[0]["买家备注"] == value
+
+
 def test_backup_restore_roundtrip_and_tamper_rejection_preserves_current_data(tmp_path):
     store = NegotiationStore(tmp_path / "data.json")
     store.add(row())

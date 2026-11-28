@@ -6,7 +6,7 @@ from tkinter import filedialog, messagebox, ttk
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.license import require_license
-from src.xianyu_condition_report import FIELDS, FUNCTION_VALUES, GRADE_VALUES, MULTILINE_FIELDS, PRODUCT, ConditionStore, default_data_path, disclosure_text, generate_report_pdf, self_test
+from src.xianyu_condition_report import FIELDS, FUNCTION_VALUES, GRADE_VALUES, MULTILINE_FIELDS, PRODUCT, ConditionStore, default_data_path, disclosure_text, generate_report_pdf, generate_batch_reports_zip, self_test
 
 DISPLAY_COLUMNS=("商品编号","商品名称","品类","成色等级","功能检测结论","检测日期","建议售价")
 
@@ -16,13 +16,13 @@ class App:
         self.root=root; root.title("闲鱼售前质检与成色报告助手｜大陆离线版"); root.geometry("1280x760")
         self.store=ConditionStore(default_data_path())
         toolbar=ttk.Frame(root,padding=8); toolbar.pack(fill="x")
-        actions=[("新增记录",self.add),("编辑记录",self.edit),("删除记录",self.delete),("导入 CSV",self.import_csv),("导出 CSV",self.export_csv),("生成质检 PDF",self.export_pdf),("复制披露文案",self.copy_disclosure),("备份",self.backup),("恢复备份",self.restore)]
+        actions=[("新增记录",self.add),("编辑记录",self.edit),("删除记录",self.delete),("导入 CSV",self.import_csv),("导出 CSV",self.export_csv),("生成质检 PDF",self.export_pdf),("批量导出报告包",self.export_batch_pdf),("复制披露文案",self.copy_disclosure),("备份",self.backup),("恢复备份",self.restore)]
         for label,action in actions: ttk.Button(toolbar,text=label,command=action).pack(side="left",padx=2)
         search=ttk.Frame(root,padding=(8,0,8,6)); search.pack(fill="x")
         ttk.Label(search,text="搜索商品编号、名称、品类、型号或瑕疵：").pack(side="left")
         self.search_var=tk.StringVar(); entry=ttk.Entry(search,textvariable=self.search_var,width=48); entry.pack(side="left",padx=6); entry.bind("<KeyRelease>",lambda _event:self.refresh())
         area=ttk.Frame(root,padding=(8,0,8,4)); area.pack(fill="both",expand=True)
-        self.tree=ttk.Treeview(area,columns=DISPLAY_COLUMNS,show="headings")
+        self.tree=ttk.Treeview(area,columns=DISPLAY_COLUMNS,show="headings",selectmode="extended")
         for column,width in zip(DISPLAY_COLUMNS,(125,190,100,105,120,105,100)):
             self.tree.heading(column,text=column); self.tree.column(column,width=width,minwidth=75,stretch=True)
         yscroll=ttk.Scrollbar(area,orient="vertical",command=self.tree.yview); self.tree.configure(yscrollcommand=yscroll.set)
@@ -37,10 +37,13 @@ class App:
         pending=sum(1 for row in self.store.rows if row["功能检测结论"]=="未完成检测" or row["成色等级"]=="待检测")
         self.status.set(f"显示：{len(rows)}/{len(self.store.rows)}｜待完成检测：{pending}｜本地数据：{self.store.path}")
 
+    def selected_rows(self):
+        selected=set(self.tree.selection())
+        return [row for row in self.store.rows if row["记录编号"] in selected]
+
     def selected_row(self):
-        selected=self.tree.selection()
-        if not selected: return None
-        return next((row for row in self.store.rows if row["记录编号"]==selected[0]),None)
+        rows=self.selected_rows()
+        return rows[0] if rows else None
 
     def form(self, existing=None):
         values={field:(existing or {}).get(field,"") for field in FIELDS}
@@ -100,6 +103,17 @@ class App:
         if path:
             try: generate_report_pdf(row,Path(path)); messagebox.showinfo("报告已生成",f"PDF 报告已保存：\n{path}")
             except Exception as exc: messagebox.showerror("生成失败",str(exc))
+
+    def export_batch_pdf(self):
+        rows=self.selected_rows()
+        if not rows: messagebox.showwarning("请选择商品","请按 Ctrl 或 Shift 多选至少一条质检记录"); return
+        path=filedialog.asksaveasfilename(initialfile=f"闲鱼质检报告包-{len(rows)}件.zip",defaultextension=".zip",filetypes=[("ZIP 报告包","*.zip")])
+        if path:
+            try:
+                generate_batch_reports_zip(rows,Path(path))
+                messagebox.showinfo("报告包已生成",f"已导出 {len(rows)} 份 PDF，并附带 CSV 索引与 SHA256 清单：\\n{path}")
+            except Exception as exc: messagebox.showerror("批量导出失败",str(exc))
+
     def copy_disclosure(self):
         row=self.selected_row()
         if not row: messagebox.showwarning("请选择商品","请先选择一条质检记录"); return

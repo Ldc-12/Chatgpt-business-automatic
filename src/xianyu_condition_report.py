@@ -1,6 +1,6 @@
 """Offline Xianyu pre-sale inspection ledger and printable condition report."""
 from __future__ import annotations
-import csv, hashlib, io, json, os, tempfile, uuid
+import csv, hashlib, io, json, os, re, tempfile, uuid, zipfile
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
@@ -60,6 +60,15 @@ def _restore_safe_text(value) -> str:
     if original.startswith("'") or (original and (original[0] in _FORMULA_LEADING_CONTROLS or original.lstrip().startswith(_FORMULA_PREFIXES))):
         return original
     return text
+
+
+
+def _safe_archive_component(value: str) -> str:
+    text = re.sub(r'[<>:"/\\\\|?*\\x00-\\x1f]+', "_", str(value or "").strip()).strip(" .")
+    if not text: text = "record"
+    if text.upper() in {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}:
+        text = "_" + text
+    return text[:60].rstrip(" .") or "record"
 
 
 def _money(value, field: str) -> str:
@@ -172,6 +181,68 @@ def generate_report_pdf(row: dict, path: Path) -> Path:
         Path(temporary).unlink(missing_ok=True); raise
 
 
+def generate_batch_reports_zip(rows, path: Path) -> Path:
+    """Create an atomic ZIP of buyer-facing PDFs, a safe index, and SHA256 manifest."""
+    items = [normalize_row(row) for row in rows]
+    if not items: raise ValueError("至少选择一条质检记录")
+    ids = [row["记录编号"] for row in items]
+    if len(ids) != len(set(ids)): raise ValueError("批量报告中的记录编号重复")
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=f".{target.stem}.", suffix=".zip", dir=str(target.parent))
+    os.close(fd)
+    try:
+        with tempfile.TemporaryDirectory(prefix="xianyu-condition-reports-") as directory:
+            root = Path(directory)
+            reports = []
+            for index, item in enumerate(items, start=1):
+                filename = f"{index:03d}-{_safe_archive_component(item['记录编号'])}-{_safe_archive_component(item['商品编号'])}.pdf"
+                pdf_path = root / filename
+                generate_report_pdf(item, pdf_path)
+                data = pdf_path.read_bytes()
+                reports.append({"file": filename, "data": data, "size_bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()})
+            index_buffer = io.StringIO(newline="")
+            writer = csv.writer(index_buffer)
+            writer.writerow(("记录编号", "商品编号", "商品名称", "成色等级", "功能检测结论", "检测日期", "报告文件"))
+            for item, report in zip(items, reports):
+                writer.writerow(tuple(_safe_text(value) for value in (
+                    item["记录编号"], item["商品编号"], item["商品名称"], item["成色等级"],
+                    item["功能检测结论"], item["检测日期"], report["file"],
+                )))
+            index_bytes = index_buffer.getvalue().encode("utf-8-sig")
+            manifest = {
+                "version": 1,
+                "product": PRODUCT,
+                "report_count": len(reports),
+                "index": {"file": "报告索引.csv", "size_bytes": len(index_bytes), "sha256": hashlib.sha256(index_bytes).hexdigest()},
+                "reports": [{key: report[key] for key in ("file", "size_bytes", "sha256")} for report in reports],
+            }
+            readme = (
+                "本报告包由卖家自行录入的质检记录生成。\\n"
+                "PDF 是卖家自检记录，不是第三方检测、品牌官方鉴定或无瑕疵保证。\\n"
+                "空白检查项目表示未填写，不代表检测通过。\\n"
+                "报告索引不包含建议售价、购入成本或内部备注。\\n"
+            ).encode("utf-8")
+            with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+                for report in reports: archive.writestr(report["file"], report["data"])
+                archive.writestr("报告索引.csv", index_bytes)
+                archive.writestr("manifest.json", _canonical(manifest))
+                archive.writestr("使用说明.txt", readme)
+        with zipfile.ZipFile(temporary, "r") as archive:
+            bad = archive.testzip()
+            if bad: raise ValueError(f"批量报告 ZIP 完整性检查失败：{bad}")
+            names = archive.namelist()
+            if len(names) != len(set(names)): raise ValueError("批量报告 ZIP 中存在重复文件名")
+        with open(temporary, "rb+") as stream:
+            if stream.read(2) != b"PK": raise ValueError("批量报告 ZIP 文件头无效")
+            stream.flush(); os.fsync(stream.fileno())
+        os.replace(temporary, target)
+        return target
+    except Exception:
+        Path(temporary).unlink(missing_ok=True)
+        raise
+
+
 class ConditionStore:
     def __init__(self, path: Path):
         self.path = Path(path); self.rows = self._load()
@@ -256,4 +327,6 @@ def self_test():
         backup=root/"backup.json"; store.backup(backup)
         restored=ConditionStore(root/"restored.json"); assert restored.restore(backup)==1
         pdf=generate_report_pdf(row,root/"report.pdf"); assert pdf.read_bytes().startswith(b"%PDF-")
+        batch=root/"reports.zip"; generate_batch_reports_zip([row],batch)
+        with zipfile.ZipFile(batch) as archive: assert archive.testzip() is None and len([name for name in archive.namelist() if name.endswith(".pdf")])==1
     print("SELF_TEST_OK",flush=True)

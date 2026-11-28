@@ -1,7 +1,11 @@
+import hashlib
+import io
 import json
+import zipfile
 from pathlib import Path
 import pytest
-from src.xianyu_condition_report import FUNCTION_VALUES, GRADE_VALUES, ConditionStore, disclosure_text, generate_report_pdf, normalize_row
+import src.xianyu_condition_report as condition_report
+from src.xianyu_condition_report import FUNCTION_VALUES, GRADE_VALUES, ConditionStore, disclosure_text, generate_report_pdf, generate_batch_reports_zip, normalize_row
 
 
 def sample(**overrides):
@@ -94,6 +98,64 @@ def test_pdf_failure_does_not_replace_existing_target(tmp_path,monkeypatch):
     with pytest.raises(RuntimeError,match="render failed"): generate_report_pdf(sample(),target)
     assert target.read_bytes()==b"old-pdf"
     monkeypatch.setattr(reportlab.platypus.SimpleDocTemplate,"build",original)
+
+
+
+def test_batch_report_zip_contains_safe_index_and_sha256_manifest(tmp_path):
+    rows = [
+        sample(记录编号="../QC/001", 商品编号="XY:001", 商品名称='=HYPERLINK("x")', 内部备注="PRIVATE_NOTE"),
+        sample(记录编号="QC-002", 商品编号="XY-002", 商品名称="二手相机", 建议售价="1888", 购入成本="1200"),
+    ]
+    target = generate_batch_reports_zip(rows, tmp_path / "batch.zip")
+    with zipfile.ZipFile(target) as archive:
+        assert archive.testzip() is None
+        names = archive.namelist()
+        pdf_names = [name for name in names if name.endswith(".pdf")]
+        assert len(pdf_names) == 2
+        assert all("/" not in name and "\\\\" not in name and ".." not in name for name in pdf_names)
+        manifest = json.loads(archive.read("manifest.json"))
+        assert manifest["report_count"] == 2
+        assert len(manifest["reports"]) == 2
+        for report in manifest["reports"]:
+            data = archive.read(report["file"])
+            assert len(data) == report["size_bytes"]
+            assert hashlib.sha256(data).hexdigest() == report["sha256"]
+            from pypdf import PdfReader
+            text = PdfReader(io.BytesIO(data)).pages[0].extract_text() or ""
+            assert "购入成本" not in text and "建议售价" not in text and "内部备注" not in text
+            assert "PRIVATE_NOTE" not in text and "1299.00" not in text
+        index = archive.read("报告索引.csv").decode("utf-8-sig")
+        assert "'=HYPERLINK" in index
+        assert "PRIVATE_NOTE" not in index and "900.00" not in index and "1299.00" not in index
+        assert "报告索引不包含建议售价" in archive.read("使用说明.txt").decode("utf-8")
+
+
+def test_batch_report_zip_rejects_empty_and_duplicate_ids_without_replacing_target(tmp_path):
+    target = tmp_path / "existing.zip"
+    target.write_bytes(b"existing-package")
+    with pytest.raises(ValueError, match="至少选择"):
+        generate_batch_reports_zip([], target)
+    assert target.read_bytes() == b"existing-package"
+    with pytest.raises(ValueError, match="记录编号重复"):
+        generate_batch_reports_zip([sample(记录编号="QC-1"), sample(记录编号="QC-1", 商品编号="XY-2")], target)
+    assert target.read_bytes() == b"existing-package"
+
+
+def test_batch_report_zip_failure_preserves_existing_target_and_cleans_temp(tmp_path, monkeypatch):
+    target = tmp_path / "existing.zip"
+    target.write_bytes(b"existing-package")
+    original = condition_report.generate_report_pdf
+    calls = 0
+    def fail_second(row, path):
+        nonlocal calls
+        calls += 1
+        if calls == 2: raise RuntimeError("second report failed")
+        return original(row, path)
+    monkeypatch.setattr(condition_report, "generate_report_pdf", fail_second)
+    with pytest.raises(RuntimeError, match="second report failed"):
+        condition_report.generate_batch_reports_zip([sample(记录编号="QC-1"), sample(记录编号="QC-2", 商品编号="XY-2")], target)
+    assert target.read_bytes() == b"existing-package"
+    assert not list(tmp_path.glob(".existing.*.zip"))
 
 
 def test_self_test():

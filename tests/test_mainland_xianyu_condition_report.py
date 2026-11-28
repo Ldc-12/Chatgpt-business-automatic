@@ -21,6 +21,7 @@ def test_normalize_row_validates_enums_dates_money_and_serial_suffix():
     with pytest.raises(ValueError,match="序列号尾号"): normalize_row(sample(序列号尾号="FULLSERIAL123456"))
     with pytest.raises(ValueError,match="检测日期"): normalize_row(sample(检测日期="2026/11/28"))
     with pytest.raises(ValueError,match="建议售价"): normalize_row(sample(建议售价="NaN"))
+    with pytest.raises(ValueError,match="记录编号不能超过 64"): normalize_row(sample(记录编号="X"*65))
 
 
 def test_store_persists_add_update_delete_and_rejects_duplicate_ids(tmp_path):

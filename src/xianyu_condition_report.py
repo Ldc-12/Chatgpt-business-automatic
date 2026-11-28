@@ -272,9 +272,26 @@ class ConditionStore:
             else: candidate.append(existing)
         self._commit(candidate); return updated
     def delete(self, record_id):
-        candidate=[row for row in self.rows if row["记录编号"] != record_id]
-        if len(candidate)==len(self.rows): raise ValueError("找不到要删除的质检记录")
-        self._commit(candidate)
+        self.delete_many([record_id])
+
+    def delete_many(self, record_ids) -> int:
+        try:
+            ids = list(record_ids)
+        except TypeError:
+            raise ValueError("请选择至少一条要删除的质检记录") from None
+        if not ids:
+            raise ValueError("请选择至少一条要删除的质检记录")
+        if any(not isinstance(record_id, str) or not record_id for record_id in ids):
+            raise ValueError("待删除记录编号无效")
+        if len(ids) != len(set(ids)):
+            raise ValueError("待删除记录编号重复")
+        existing = {row["记录编号"] for row in self.rows}
+        missing = [record_id for record_id in ids if record_id not in existing]
+        if missing:
+            raise ValueError("找不到要删除的质检记录：" + "、".join(missing))
+        removed = set(ids)
+        self._commit([row for row in self.rows if row["记录编号"] not in removed])
+        return len(ids)
     def import_csv(self, path: Path) -> int:
         source_path=Path(path)
         try: size_bytes=source_path.stat().st_size
@@ -329,4 +346,8 @@ def self_test():
         pdf=generate_report_pdf(row,root/"report.pdf"); assert pdf.read_bytes().startswith(b"%PDF-")
         batch=root/"reports.zip"; generate_batch_reports_zip([row],batch)
         with zipfile.ZipFile(batch) as archive: assert archive.testzip() is None and len([name for name in archive.namelist() if name.endswith(".pdf")])==1
+        second = store.add({**row, "记录编号":"QC-SELF-002", "商品编号":"XY-QC-002"})
+        third = store.add({**row, "记录编号":"QC-SELF-003", "商品编号":"XY-QC-003"})
+        assert store.delete_many([second["记录编号"], third["记录编号"]]) == 2
+        assert [item["记录编号"] for item in ConditionStore(store.path).rows] == [row["记录编号"]]
     print("SELF_TEST_OK",flush=True)

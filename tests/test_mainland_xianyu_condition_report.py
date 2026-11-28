@@ -32,6 +32,28 @@ def test_store_persists_add_update_delete_and_rejects_duplicate_ids(tmp_path):
     store.delete("QC-001"); assert store.rows==[]
 
 
+def test_delete_many_is_atomic_persistent_and_validates_all_ids(tmp_path):
+    path = tmp_path / "data.json"
+    store = ConditionStore(path)
+    first = store.add(sample(记录编号="QC-001"))
+    second = store.add(sample(记录编号="QC-002", 商品编号="XY-QC-002"))
+    third = store.add(sample(记录编号="QC-003", 商品编号="XY-QC-003"))
+
+    assert store.delete_many([first["记录编号"], second["记录编号"]]) == 2
+    assert ConditionStore(path).rows == [third]
+    before = path.read_bytes()
+
+    with pytest.raises(ValueError, match="找不到要删除的质检记录"):
+        store.delete_many(["QC-003", "MISSING"])
+    assert path.read_bytes() == before
+    assert store.rows == [third]
+
+    with pytest.raises(ValueError, match="记录编号重复"):
+        store.delete_many(["QC-003", "QC-003"])
+    with pytest.raises(ValueError, match="至少选择一条"):
+        store.delete_many([])
+
+
 def test_csv_export_is_formula_safe_and_round_trips(tmp_path):
     store=ConditionStore(tmp_path/"data.json"); store.add(sample(瑕疵说明='  =HYPERLINK("https://bad.invalid")'))
     csv_path=tmp_path/"records.csv"; assert store.export_csv(csv_path)==1

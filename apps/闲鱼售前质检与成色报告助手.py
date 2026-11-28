@@ -80,10 +80,18 @@ class App:
         row=self.selected_row()
         if row: self.form(row)
     def delete(self):
-        row=self.selected_row()
-        if row and messagebox.askyesno("确认删除","删除所选质检记录？"):
-            try: self.store.delete(row["记录编号"]); self.refresh()
-            except (ValueError,OSError) as exc: messagebox.showerror("删除失败",str(exc))
+        rows=self.selected_rows()
+        if not rows:
+            messagebox.showwarning("请选择记录","请先选择一条或多条质检记录")
+            return
+        count=len(rows)
+        if messagebox.askyesno("确认批量删除",f"确定删除选中的 {count} 条质检记录？此操作无法撤销。"):
+            try:
+                deleted=self.store.delete_many([row["记录编号"] for row in rows])
+                self.refresh()
+                messagebox.showinfo("删除完成",f"已删除 {deleted} 条质检记录")
+            except (ValueError,OSError) as exc:
+                messagebox.showerror("删除失败",str(exc))
     def import_csv(self):
         path=filedialog.askopenfilename(filetypes=[("CSV 文件","*.csv")])
         if path:

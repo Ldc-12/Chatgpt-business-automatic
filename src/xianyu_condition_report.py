@@ -278,9 +278,9 @@ class ConditionStore:
         try:
             ids = list(record_ids)
         except TypeError:
-            raise ValueError("请选择至少一条要删除的质检记录") from None
+            raise ValueError("请至少选择一条要删除的质检记录") from None
         if not ids:
-            raise ValueError("请选择至少一条要删除的质检记录")
+            raise ValueError("请至少选择一条要删除的质检记录")
         if any(not isinstance(record_id, str) or not record_id for record_id in ids):
             raise ValueError("待删除记录编号无效")
         if len(ids) != len(set(ids)):

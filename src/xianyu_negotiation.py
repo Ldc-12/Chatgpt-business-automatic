@@ -335,8 +335,21 @@ class NegotiationStore:
         return self._export_rows(path, FIELDS, self.rows)
 
     def export_followups_csv(self, path, today=None):
-        fields = ("记录编号", "商品编号", "商品名称", "SKU", "买家备注", "询价日期", "买家报价", "卖家回价", "结果", "下次跟进日期", "内部备注")
-        return self._export_rows(path, fields, followup_rows(self.rows, today))
+        fields = (
+            "记录编号", "商品编号", "商品名称", "SKU", "买家备注", "询价日期",
+            "买家报价", "卖家回价", "结果", "下次跟进日期", "内部备注",
+            "逾期天数", "跟进提示",
+        )
+        current = date.fromisoformat(today) if isinstance(today, str) else (today or date.today())
+        export_rows = []
+        for row in followup_rows(self.rows, current):
+            overdue_days = (current - date.fromisoformat(row["下次跟进日期"])).days
+            export_rows.append({
+                **row,
+                "逾期天数": str(overdue_days),
+                "跟进提示": "今日到期" if overdue_days == 0 else f"已逾期 {overdue_days} 天",
+            })
+        return self._export_rows(path, fields, export_rows)
 
     def export_summary_csv(self, path):
         fields = ("商品编号", "商品名称", "SKU", "询价数", "成交数", "转化率", "平均标价", "平均成交价", "平均议价幅度", "成交金额", "估算毛利", "低于底价成交数")

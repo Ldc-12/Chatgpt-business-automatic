@@ -104,7 +104,7 @@ def test_pdf_failure_does_not_replace_existing_target(tmp_path,monkeypatch):
 def test_batch_report_zip_contains_safe_index_and_sha256_manifest(tmp_path):
     rows = [
         sample(记录编号="../QC/001", 商品编号="XY:001", 商品名称='=HYPERLINK("x")', 内部备注="PRIVATE_NOTE"),
-        sample(记录编号="QC-002", 商品编号="XY-002", 商品名称="二手相机", 建议售价="1888", 购入成本="1200"),
+        sample(记录编号=r"..\QC\002", 商品编号="XY-002", 商品名称="二手相机", 建议售价="1888", 购入成本="1200"),
     ]
     target = generate_batch_reports_zip(rows, tmp_path / "batch.zip")
     with zipfile.ZipFile(target) as archive:
@@ -112,7 +112,7 @@ def test_batch_report_zip_contains_safe_index_and_sha256_manifest(tmp_path):
         names = archive.namelist()
         pdf_names = [name for name in names if name.endswith(".pdf")]
         assert len(pdf_names) == 2
-        assert all("/" not in name and "\\\\" not in name and ".." not in name for name in pdf_names)
+        assert all("/" not in name and "\\" not in name and ".." not in name for name in pdf_names)
         manifest = json.loads(archive.read("manifest.json"))
         assert manifest["report_count"] == 2
         assert len(manifest["reports"]) == 2

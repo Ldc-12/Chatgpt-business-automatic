@@ -96,7 +96,9 @@ class App(tk.Tk):
         self.refresh()
 
     def refresh(self):
-        self.tree.delete(*self.tree.get_children())
+        children = self.tree.get_children()
+        if children:
+            self.tree.delete(*children)
         rows = self.store.search_items(self.search_var.get())
         for item in rows:
             self.tree.insert("", "end", values=[item[field] for field in LINE_FIELDS])

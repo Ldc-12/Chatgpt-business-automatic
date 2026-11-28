@@ -170,7 +170,7 @@ def test_store_series_contains_business_compliance_reminder():
     assert "business-compliance" in store_series["products"]
     assert MODULE.PRODUCTS["business-compliance"][1] == "MainlandBusinessComplianceReminder.exe"
     assert MODULE.PRODUCTS["business-compliance"][2] == "36-经营证照与年报提醒助手-用户说明书.md"
-    assert len(store_series["products"]) == 15
+    assert len(store_series["products"]) == 16
 
 def test_static_series_catalog_lists_each_business_product_once():
     catalog_path = Path(__file__).resolve().parents[1] / "docs" / "MAINLAND_SERIES_PACKAGES.md"
@@ -193,7 +193,7 @@ def test_finance_series_contains_xianyu_return_refund_followup_assistant():
 def test_store_series_contains_member_stored_value_and_points_ledger():
     store_series = next(item for item in MODULE.SERIES if item["code"] == "B")
     assert "store-membership" in store_series["products"]
-    assert len(store_series["products"]) == 15
+    assert len(store_series["products"]) == 16
     assert MODULE.PRODUCTS["store-membership"][1] == "MainlandStoreMembershipLedger.exe"
     assert MODULE.PRODUCTS["store-membership"][2] == "32-门店会员储值与积分台账助手-用户说明书.md"
 
@@ -203,7 +203,7 @@ def test_store_series_contains_coupon_campaign_redemption_assistant():
     assert "store-coupons" in store_series["products"]
     assert MODULE.PRODUCTS["store-coupons"][1] == "MainlandStoreCouponRedemption.exe"
     assert MODULE.PRODUCTS["store-coupons"][2] == "33-门店优惠券与活动核销助手-用户说明书.md"
-    assert len(store_series["products"]) == 15
+    assert len(store_series["products"]) == 16
 
 
 def test_store_series_contains_replenishment_planner():
@@ -211,7 +211,7 @@ def test_store_series_contains_replenishment_planner():
     assert "store-replenishment" in store_series["products"]
     assert MODULE.PRODUCTS["store-replenishment"][1] == "MainlandStoreReplenishmentPlanner.exe"
     assert MODULE.PRODUCTS["store-replenishment"][2] == "34-门店采购补货计划助手-用户说明书.md"
-    assert len(store_series["products"]) == 15
+    assert len(store_series["products"]) == 16
 
 
 def test_store_series_contains_receiving_discrepancy_assistant():
@@ -219,7 +219,7 @@ def test_store_series_contains_receiving_discrepancy_assistant():
     assert "store-receiving" in store_series["products"]
     assert MODULE.PRODUCTS["store-receiving"][1] == "MainlandStoreReceivingDiscrepancy.exe"
     assert MODULE.PRODUCTS["store-receiving"][2] == "35-门店收货验收与差异处理助手-用户说明书.md"
-    assert len(store_series["products"]) == 15
+    assert len(store_series["products"]) == 16
 
 
 def test_finance_series_contains_xianyu_pick_pack_checklist():
@@ -251,7 +251,7 @@ def test_store_series_contains_purchase_order_and_partial_delivery_tracker():
     assert "store-purchase-orders" in store_series["products"]
     assert MODULE.PRODUCTS["store-purchase-orders"][1] == "MainlandStorePurchaseOrderTracker.exe"
     assert MODULE.PRODUCTS["store-purchase-orders"][2] == "40-门店采购订单与到货跟踪助手-用户说明书.md"
-    assert len(store_series["products"]) == 15
+    assert len(store_series["products"]) == 16
 
 
 def test_finance_series_contains_xianyu_negotiation_conversion_review():

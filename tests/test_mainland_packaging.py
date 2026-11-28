@@ -769,7 +769,7 @@ def test_xianyu_condition_report_product_is_in_build_matrix_launcher_license_and
 
 def test_xianyu_condition_report_readme_discloses_self_check_and_privacy_limits():
     text = module.render_mainland_readme("闲鱼售前质检与成色报告助手")
-    assert "卖家自行记录" in text
+    assert "卖家手工自检记录" in text
     assert "序列号尾号" in text
     assert "不构成专业鉴定" in text
     assert "不连接或抓取闲鱼" in text

@@ -151,7 +151,7 @@ def generate_report_pdf(row: dict, path: Path) -> Path:
             return Paragraph(escape(str(value or "未填写")).replace("\n", "<br/>"), style)
         story = [Paragraph(escape(PRODUCT) + "｜商品自检报告", title_style)]
         story += [paragraph("本报告用于整理卖家手工检查信息，方便上架前核对和向买家披露。", note_style), Spacer(1, 10)]
-        fields = ("商品编号","商品名称","品类","品牌型号","成色等级","功能检测结论","检测日期","检测人","外观检查","功能检查记录","配件清单","瑕疵说明","维修/拆修历史","序列号尾号","建议售价","购入成本")
+        fields = ("商品编号","商品名称","品类","品牌型号","成色等级","功能检测结论","检测日期","检测人","外观检查","功能检查记录","配件清单","瑕疵说明","维修/拆修历史","序列号尾号")
         data = [[paragraph("项目", label_style), paragraph("检查记录", label_style)]]
         for field in fields: data.append([paragraph(field, label_style), paragraph(item[field])])
         table = Table(data, colWidths=[105,390], repeatRows=1, hAlign="LEFT")

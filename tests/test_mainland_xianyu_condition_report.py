@@ -80,6 +80,9 @@ def test_pdf_report_is_valid_and_escapes_user_markup(tmp_path):
     reader=PdfReader(str(target)); assert len(reader.pages)==1
     text=reader.pages[0].extract_text() or ""
     assert "商品自检报告" in text and "不构成专业鉴定" in text
+    assert "购入成本" not in text and "900.00" not in text
+    assert "建议售价" not in text and "1299.00" not in text
+    assert "内部备注" not in text and "测试记录" not in text
 
 
 def test_pdf_failure_does_not_replace_existing_target(tmp_path,monkeypatch):

@@ -53,6 +53,7 @@ APP_ENTRYPOINTS = [
     "闲鱼订单拣货与打包清单助手.py",
     "装修材料用量与预算核算助手.py",
     "门店收货验收与差异处理助手.py",
+    "门店条码与价签批量打印助手.py",
     "门店采购订单与到货跟踪助手.py",
     "经营证照与年报提醒助手.py",
     "闲鱼运费试算与包装规格助手.py",
@@ -121,7 +122,7 @@ def test_expense_reimbursement_product_is_in_build_matrix_and_customer_package()
     assert 'product: "费用报销管理助手"' in workflow
     assert "tests/test_mainland_expense_reimbursement.py" in workflow
     assert "MainlandExpenseReimbursement" in workflow
-    assert "42 款 Windows EXE（41 款业务工具及工具箱启动器）" in workflow
+    assert "43 款 Windows EXE（42 款业务工具及工具箱启动器）" in workflow
     assert "费用报销管理助手.json" in workflow
 
 
@@ -148,7 +149,7 @@ def test_repair_work_order_product_is_in_build_matrix_and_customer_package():
     assert "售后维修工单管理助手.json" in workflow
     launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
     assert "MainlandRepairWorkOrderManager.exe" in launcher
-    assert "assert len(TOOLS) == 41" in launcher
+    assert "assert len(TOOLS) == 42" in launcher
 
 
 def test_mainland_windows_build_concurrency_is_scoped_per_ref():
@@ -180,7 +181,7 @@ def test_contract_ledger_product_is_in_build_matrix_and_customer_package():
     assert "MainlandContractLedgerAssistant" in workflow
     assert "合同台账与到期提醒助手.json" in workflow
     assert "MainlandContractLedgerAssistant.exe" in launcher
-    assert len(APP_ENTRYPOINTS) == 42
+    assert len(APP_ENTRYPOINTS) == 43
 
 
 
@@ -196,7 +197,7 @@ def test_construction_settlement_product_is_in_build_matrix_launcher_and_custome
     assert "MainlandConstructionSettlementAssistant.exe" in launcher
     assert "assert len(TOOLS) == 41" in launcher
     assert "42 款 Windows EXE（41 款业务工具及工具箱启动器）" in workflow
-    assert "41 款业务工具 + 工具箱启动器" in workflow
+    assert "42 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 42
 
 
@@ -215,7 +216,7 @@ def test_rental_ledger_product_is_in_build_matrix_launcher_license_and_package()
     assert "MainlandRentalLedgerAssistant.exe" in launcher
     assert "物业租金与押金管理助手" in license_tests
     assert "42 款 Windows EXE（41 款业务工具及工具箱启动器）" in workflow
-    assert "全部 41 款业务工具 + 工具箱启动器" in workflow
+    assert "全部 42 款业务工具 + 工具箱启动器" in workflow
     assert len(APP_ENTRYPOINTS) == 42
 
 
@@ -243,8 +244,8 @@ def test_every_standalone_delivery_zip_has_its_matching_chinese_manual():
         for line in workflow.splitlines()
         if line.strip().startswith("manual: ")
     ]
-    assert len(manual_names) == 42
-    assert len(set(manual_names)) == 42
+    assert len(manual_names) == 43
+    assert len(set(manual_names)) == 43
     for name in manual_names:
         assert (root / "docs" / "manuals" / name).is_file(), name
     assert "z.write('docs/manuals/${{ matrix.manual }}','说明书/${{ matrix.manual }}')" in workflow
@@ -341,8 +342,8 @@ def test_customer_zip_inspection_runs_before_artifact_upload_and_is_retained():
     customer_upload = workflow.index("name: mainland-phase1-customer-package")
     assert inspection_step < customer_upload
     assert "tools/inspect_mainland_package.py" in workflow
-    assert "--expected-exes 42" in workflow
-    assert "--expected-manuals 42" in workflow
+    assert "--expected-exes 43" in workflow
+    assert "--expected-manuals 43" in workflow
     report = "release/Phase1-Mainland-Windows-Tools.inspection.json"
     assert workflow.count(report) >= 2
     assert "tests/test_mainland_package_inspection.py" in workflow
@@ -730,3 +731,20 @@ def test_xianyu_negotiation_review_is_in_build_matrix_launcher_license_and_readm
     assert "闲鱼询价转化与议价复盘助手" in license_tests
     note = render_mainland_readme("闲鱼询价转化与议价复盘助手")
     assert "成交转化率" in note and "SHA256 备份恢复" in note
+
+
+def test_barcode_label_studio_is_in_build_matrix_launcher_license_and_store_series():
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / ".github" / "workflows" / "mainland-exe.yml").read_text(encoding="utf-8")
+    launcher = (root / "apps" / "实用效率工具箱.py").read_text(encoding="utf-8")
+    license_tests = (root / "tests" / "test_mainland_license.py").read_text(encoding="utf-8")
+    series_builder = (root / "tools" / "build_mainland_series_packages.py").read_text(encoding="utf-8")
+    assert "key: barcode-labels" in workflow
+    assert 'product: "门店条码与价签批量打印助手"' in workflow
+    assert "tests/test_mainland_barcode_labels.py" in workflow
+    assert "MainlandBarcodeLabelStudio" in workflow
+    assert "42-门店条码与价签批量打印助手-用户说明书.md" in workflow
+    assert "MainlandBarcodeLabelStudio.exe" in launcher
+    assert "门店条码与价签批量打印助手" in license_tests
+    assert '"barcode-labels"' in series_builder
+    assert "collect-submodules reportlab" in workflow

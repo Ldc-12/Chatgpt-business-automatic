@@ -48,7 +48,7 @@ def test_store_persists_and_rejects_duplicate_sku_or_barcode(tmp_path):
     assert loaded.search_items("另一商品")[0]["SKU"] == "SKU-002"
     with pytest.raises(ValueError, match="SKU 已存在"):
         loaded.add_item(item("sku-001", "重复 SKU", 条码="CODE-003"))
-    with pytest.raises(ValueError, match="条码重复"):
+    with pytest.raises(ValueError, match="条码已存在"):
         loaded.add_item(item("SKU-003", "重复条码", 条码="CODE-002"))
 
 

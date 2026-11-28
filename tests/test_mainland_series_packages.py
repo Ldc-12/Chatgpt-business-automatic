@@ -178,7 +178,7 @@ def test_static_series_catalog_lists_each_business_product_once():
     for name, _, _ in MODULE.PRODUCTS.values():
         assert catalog.count(f"- {name}\n") == 1, name
     assert "| C | 财务与交易系列 | 14 |" in catalog
-    assert "| F | 全系列综合套餐 | 41 款业务软件 + 工具箱启动器 |" in catalog
+    assert "| F | 全系列综合套餐 | 42 款业务软件 + 工具箱启动器 |" in catalog
 
 
 

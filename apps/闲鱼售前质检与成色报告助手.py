@@ -111,7 +111,7 @@ class App:
         if path:
             try:
                 generate_batch_reports_zip(rows,Path(path))
-                messagebox.showinfo("报告包已生成",f"已导出 {len(rows)} 份 PDF，并附带 CSV 索引与 SHA256 清单：\\n{path}")
+                messagebox.showinfo("报告包已生成",f"已导出 {len(rows)} 份 PDF，并附带 CSV 索引与 SHA256 清单：\n{path}")
             except Exception as exc: messagebox.showerror("批量导出失败",str(exc))
 
     def copy_disclosure(self):

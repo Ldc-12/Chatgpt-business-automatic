@@ -64,7 +64,7 @@ def _restore_safe_text(value) -> str:
 
 
 def _safe_archive_component(value: str) -> str:
-    text = re.sub(r'[<>:"/\\\\|?*\\x00-\\x1f]+', "_", str(value or "").strip()).strip(" .")
+    text = re.sub(r'[<>:"/\\|?*\x00-\x1f]+', "_", str(value or "").strip()).strip(" .")
     if not text: text = "record"
     if text.upper() in {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}:
         text = "_" + text
@@ -218,10 +218,10 @@ def generate_batch_reports_zip(rows, path: Path) -> Path:
                 "reports": [{key: report[key] for key in ("file", "size_bytes", "sha256")} for report in reports],
             }
             readme = (
-                "本报告包由卖家自行录入的质检记录生成。\\n"
-                "PDF 是卖家自检记录，不是第三方检测、品牌官方鉴定或无瑕疵保证。\\n"
-                "空白检查项目表示未填写，不代表检测通过。\\n"
-                "报告索引不包含建议售价、购入成本或内部备注。\\n"
+                "本报告包由卖家自行录入的质检记录生成。\n"
+                "PDF 是卖家自检记录，不是第三方检测、品牌官方鉴定或无瑕疵保证。\n"
+                "空白检查项目表示未填写，不代表检测通过。\n"
+                "报告索引不包含建议售价、购入成本或内部备注。\n"
             ).encode("utf-8")
             with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
                 for report in reports: archive.writestr(report["file"], report["data"])

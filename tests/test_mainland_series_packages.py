@@ -20,11 +20,11 @@ def _make_inputs(tmp_path):
     return release, manuals, output
 
 
-def test_series_catalog_covers_all_41_products_once():
+def test_series_catalog_covers_all_42_products_once():
     MODULE.validate_catalog()
     assigned = [key for series in MODULE.SERIES for key in series["products"]]
-    assert len(MODULE.PRODUCTS) == 41
-    assert len(assigned) == 41
+    assert len(MODULE.PRODUCTS) == 42
+    assert len(assigned) == 42
     assert set(assigned) == set(MODULE.PRODUCTS)
     assert len(assigned) == len(set(assigned))
 
@@ -70,7 +70,7 @@ def test_catalog_names_all_five_series_and_full_package():
     for series in MODULE.SERIES:
         assert series["title"] in catalog
     assert "全系列 F" in catalog
-    assert "41 款业务软件 + 工具箱启动器" in catalog
+    assert "42 款业务软件 + 工具箱启动器" in catalog
 
 
 
@@ -260,3 +260,10 @@ def test_finance_series_contains_xianyu_negotiation_conversion_review():
     assert MODULE.PRODUCTS["xianyu-negotiation-review"][1] == "MainlandXianyuNegotiationReview.exe"
     assert MODULE.PRODUCTS["xianyu-negotiation-review"][2] == "41-闲鱼询价转化与议价复盘助手-用户说明书.md"
     assert len(finance["products"]) == 14
+
+
+def test_store_series_contains_barcode_label_studio():
+    store_series = next(item for item in MODULE.SERIES if item["code"] == "B")
+    assert "barcode-labels" in store_series["products"]
+    assert MODULE.PRODUCTS["barcode-labels"][1] == "MainlandBarcodeLabelStudio.exe"
+    assert MODULE.PRODUCTS["barcode-labels"][2] == "42-门店条码与价签批量打印助手-用户说明书.md"
